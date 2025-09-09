@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - "main"
 
 permissions:
   contents: write
@@ -23,10 +23,19 @@ jobs:
           pip install build
       - name: Build package
         run: python -m build
+      - name: Create tag
+        id: tag
+        run: |
+          tag="v${{ github.run_number }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$tag"
+          git push origin "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Create GitHub release
         uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1
         with:
-          tag: ${{ github.ref_name }}
+          tag: ${{ steps.tag.outputs.tag }}
           generateReleaseNotes: true
