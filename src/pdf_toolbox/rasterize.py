@@ -44,6 +44,10 @@ def pdf_to_images(
         for page_no in range(start, end):
             page = doc.load_page(page_no)
             pix = page.get_pixmap(matrix=matrix)
+            if pix.colorspace is None or pix.colorspace.n not in (1, 3):
+                pix = fitz.Pixmap(fitz.csRGB, pix)
+            if pix.alpha:
+                pix = fitz.Pixmap(pix, 0)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             save_kwargs = {}
             if fmt == "JPEG":
