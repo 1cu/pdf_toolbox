@@ -10,8 +10,8 @@ def test_registry_filters_internal_functions():
 
 def test_decorator_preserves_category():
     actions = list_actions()
-    jpeg = next(a for a in actions if a.fqname == "pdf_toolbox.jpeg.pdf_to_jpegs")
-    assert jpeg.category == "PDF"
+    opt = next(a for a in actions if a.fqname == "pdf_toolbox.optimize.optimize_pdf")
+    assert opt.category == "PDF"
 
 
 def test_action_name_formatting():
