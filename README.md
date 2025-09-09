@@ -15,12 +15,28 @@ compression and smaller output files.
 
 ## Development
 
-### Create a virtual environment
+### Set up the environment
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .[dev]
+```
+
+### Build the distribution
+
+Create source and wheel distributions in the `dist/` folder:
+
+```bash
+python -m build
+```
+
+### Run the source
+
+Start the GUI application directly from the source tree:
+
+```bash
+python -m pdf_toolbox.gui
 ```
 
 ### Pre-commit hooks
