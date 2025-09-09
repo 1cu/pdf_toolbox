@@ -23,6 +23,9 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
+This installs the development dependencies, including the `build` package
+used to create distributions.
+
 ### Build the distribution
 
 Create source and wheel distributions in the `dist/` folder:
