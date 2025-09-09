@@ -23,13 +23,13 @@ def pdf_to_docx(input_pdf: str, out_dir: str | None = None) -> str:
             pix = fitz.Pixmap(pdf, xref)
             if pix.n > 3:
                 pix = fitz.Pixmap(fitz.csRGB, pix)
-            pil = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             buf = io.BytesIO()
             pil.save(buf, format="PNG")
             buf.seek(0)
             docx_doc.add_picture(buf)
     out_path = sane_output_dir(input_pdf, out_dir) / f"{Path(input_pdf).stem}.docx"
-    docx_doc.save(out_path)
+    docx_doc.save(str(out_path))
     return str(out_path)
 
 

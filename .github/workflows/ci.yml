@@ -20,14 +20,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pymupdf pillow python-docx pytest ruff mypy
+          pip install .[dev]
       - name: Lint
-        run: ruff check .
+        run: hatch run lint
       - name: Format
-        run: ruff format --check .
+        run: hatch run format
       - name: Type check
-        run: mypy .
-      - name: Compile
-        run: python -m compileall .
+        run: hatch run typecheck
       - name: Test
-        run: pytest
+        run: hatch run test
+      - name: Build
+        run: hatch run build

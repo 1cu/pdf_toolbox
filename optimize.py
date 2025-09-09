@@ -36,7 +36,7 @@ def _compress_images(doc: fitz.Document, image_quality: int) -> None:
                     pix = fitz.Pixmap(fitz.csRGB, pix)
                 if pix.n == 4:
                     pix = fitz.Pixmap(fitz.csRGB, pix)
-                pil_img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                pil_img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 buf = io.BytesIO()
                 pil_img.save(buf, format="JPEG", quality=image_quality)
                 doc.update_stream(xref, buf.getvalue())
