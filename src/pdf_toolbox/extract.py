@@ -21,6 +21,17 @@ def extract_range(
     """
 
     doc = fitz.open(input_pdf)
+    if start_page < 1:
+        raise ValueError(f"start_page must be >= 1, got {start_page}")
+    if end_page < start_page:
+        raise ValueError(
+            f"start_page ({start_page}) must not exceed end_page ({end_page})"
+        )
+    if end_page > doc.page_count:
+        raise ValueError(
+            f"end_page ({end_page}) exceeds document page count ({doc.page_count})"
+        )
+
     new_doc = fitz.open()
     new_doc.insert_pdf(doc, from_page=start_page - 1, to_page=end_page - 1)
     update_metadata(new_doc, note=" | extract_range")
@@ -39,14 +50,25 @@ def split_pdf(
     """Split a PDF into parts of ``pages_per_file`` pages."""
 
     doc = fitz.open(input_pdf)
+    if pages_per_file < 1:
+        raise ValueError(f"pages_per_file must be >= 1, got {pages_per_file}")
+    if doc.page_count < 1:
+        raise ValueError("document has no pages")
+
     outputs: List[str] = []
     for start in range(0, doc.page_count, pages_per_file):
         end = min(start + pages_per_file, doc.page_count)
+        start_page = start + 1
+        end_page = end
+        if not (1 <= start_page <= end_page <= doc.page_count):
+            raise ValueError(
+                f"Invalid page range {start_page}-{end_page} for document with {doc.page_count} pages"
+            )
         new_doc = fitz.open()
-        new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
+        new_doc.insert_pdf(doc, from_page=start_page - 1, to_page=end_page - 1)
         update_metadata(new_doc, note=" | split_pdf")
         out_path = sane_output_dir(input_pdf, out_dir) / (
-            f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
+            f"{Path(input_pdf).stem}_Split_{start_page}_{end_page}.pdf"
         )
         new_doc.save(out_path)
         outputs.append(str(out_path))
