@@ -28,6 +28,33 @@ class Action:
 _registry: dict[str, Action] = {}
 
 
+def _format_name(func_name: str) -> str:
+    acronyms = {
+        "pdf": "PDF",
+        "docx": "DOCX",
+        "pptx": "PPTX",
+        "png": "PNG",
+        "jpeg": "JPEG",
+        "jpg": "JPG",
+        "tiff": "TIFF",
+    }
+    connectors = {"to", "and", "or", "from"}
+    parts: list[str] = []
+    for i, tok in enumerate(func_name.split("_")):
+        low = tok.lower()
+        if low in acronyms:
+            parts.append(acronyms[low])
+        elif low.endswith("s") and low[:-1] in acronyms:
+            parts.append(acronyms[low[:-1]] + "s")
+        elif low in connectors:
+            parts.append(low)
+        elif i == 0:
+            parts.append(low.capitalize())
+        else:
+            parts.append(low)
+    return " ".join(parts)
+
+
 def action(name: str | None = None, category: str | None = None):
     def deco(fn):
         act = build_action(fn, name=name, category=category)
@@ -52,7 +79,7 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
         )
     return Action(
         fqname=f"{fn.__module__}.{fn.__name__}",
-        name=name or fn.__name__.replace("_", " ").title(),
+        name=name or _format_name(fn.__name__),
         func=fn,
         params=params,
         help=(fn.__doc__ or "").strip(),

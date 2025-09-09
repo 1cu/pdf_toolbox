@@ -12,3 +12,9 @@ def test_decorator_preserves_category():
     actions = list_actions()
     jpeg = next(a for a in actions if a.fqname == "pdf_toolbox.jpeg.pdf_to_jpegs")
     assert jpeg.category == "PDF"
+
+
+def test_action_name_formatting():
+    actions = list_actions()
+    img = next(a for a in actions if a.fqname == "pdf_toolbox.rasterize.pdf_to_images")
+    assert img.name == "PDF to images"

@@ -131,6 +131,7 @@ if QT_AVAILABLE:
             self.cfg = load_config()
             self.current_action: Action | None = None
             self.current_widgets: Dict[str, QWidget] = {}
+            self.resize(900, 600)
 
             central = QWidget()
             layout = QVBoxLayout(central)
@@ -142,19 +143,27 @@ if QT_AVAILABLE:
 
             self.tree = QTreeWidget()
             self.tree.setHeaderHidden(True)
+            self.tree.setMinimumWidth(200)
             splitter.addWidget(self.tree)
+            self.tree.setColumnWidth(0, 200)
 
             self.form_widget = QWidget()
             self.form_layout = QFormLayout(self.form_widget)
             splitter.addWidget(self.form_widget)
+            splitter.setSizes([250, 650])
 
+            self.info_btn = QPushButton("i")
+            self.info_btn.setFixedWidth(24)
+            self.info_btn.setEnabled(False)
             self.run_btn = QPushButton("Start")
             self.progress = QProgressBar()
             self.status = QLabel()
+            bottom.addWidget(self.info_btn)
             bottom.addWidget(self.run_btn)
             bottom.addWidget(self.progress)
             bottom.addWidget(self.status)
 
+            self.info_btn.clicked.connect(self.on_info)
             self.run_btn.clicked.connect(self.on_run)
             self.tree.itemClicked.connect(self.on_item_clicked)
 
@@ -181,6 +190,7 @@ if QT_AVAILABLE:
             if isinstance(act, Action):
                 self.current_action = act
                 self.build_form(act)
+                self.info_btn.setEnabled(bool(act.help))
 
         def build_form(self, action: Action) -> None:
             while self.form_layout.rowCount():
@@ -248,6 +258,12 @@ if QT_AVAILABLE:
                 elif isinstance(widget, QDoubleSpinBox):
                     kwargs[name] = float(widget.value())
             return kwargs
+
+        def on_info(self) -> None:  # pragma: no cover - GUI
+            if not self.current_action:
+                return
+            text = self.current_action.help or "Keine Beschreibung vorhanden."
+            QMessageBox.information(self, self.current_action.name, text)
 
         def on_run(self) -> None:  # pragma: no cover - GUI
             if not self.current_action:
