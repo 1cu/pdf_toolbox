@@ -28,6 +28,7 @@ def test_update_metadata(tmp_path):
     update_metadata(doc, "note")
     meta = doc.metadata
     assert "note" in meta.get("subject", "")
+    assert meta.get("author") == "Tester"
 
 
 def test_ensure_libs_missing(monkeypatch):
