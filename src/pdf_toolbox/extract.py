@@ -2,24 +2,38 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import fitz  # type: ignore
 
+from .actions import action
 from .utils import sane_output_dir, update_metadata
 
 
+@action(category="PDF")
 def extract_range(
     input_pdf: str,
-    start_page: int,
-    end_page: int,
+    pages: str,
     out_dir: str | None = None,
 ) -> str:
     """Extract a range of pages from ``input_pdf``.
 
+    ``pages`` may be a single page (``"5"``), a range like ``"3-7"`` or an
+    open-ended range such as ``"2-"`` which extracts from page 2 to the end.
     Returns the path of the created PDF.
     """
+
+    def _parse_range(rng: str, total: int) -> Tuple[int, int]:
+        if "-" in rng:
+            start_s, end_s = rng.split("-", 1)
+            start = int(start_s) if start_s else 1
+            end = int(end_s) if end_s else total
+        else:
+            start = end = int(rng)
+        return start, end
+
     with fitz.open(input_pdf) as doc:
+        start_page, end_page = _parse_range(pages, doc.page_count)
         if start_page < 1 or end_page < start_page or end_page > doc.page_count:
             raise ValueError("Invalid page range")
         new_doc = fitz.open()
@@ -33,6 +47,7 @@ def extract_range(
     return str(out_path)
 
 
+@action(category="PDF")
 def split_pdf(
     input_pdf: str,
     pages_per_file: int,
@@ -62,8 +77,7 @@ if __name__ == "__main__":
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_ex = sub.add_parser("extract")
-    p_ex.add_argument("start", type=int)
-    p_ex.add_argument("end", type=int)
+    p_ex.add_argument("pages")
     p_ex.add_argument("--out-dir")
 
     p_split = sub.add_parser("split")
@@ -72,6 +86,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     if args.cmd == "extract":
-        extract_range(args.input_pdf, args.start, args.end, args.out_dir)
+        extract_range(args.input_pdf, args.pages, args.out_dir)
     else:
         split_pdf(args.input_pdf, args.pages, args.out_dir)

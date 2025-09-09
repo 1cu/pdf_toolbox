@@ -8,6 +8,7 @@ from typing import Tuple, TypedDict
 import fitz  # type: ignore
 from PIL import Image
 
+from .actions import action
 from .utils import sane_output_dir, update_metadata
 
 
@@ -42,6 +43,7 @@ def _compress_images(doc: fitz.Document, image_quality: int) -> None:
                 doc.update_stream(xref, buf.getvalue())
 
 
+@action(category="PDF")
 def optimize_pdf(
     input_pdf: str,
     quality: str = "default",
