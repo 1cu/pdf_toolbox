@@ -15,24 +15,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-  "hatch",
   "pytest",
   "ruff",
   "mypy",
   "pre-commit",
 ]
-
-[tool.hatch.envs.default]
-skip-install = true
-
-[tool.hatch.envs.default.scripts]
-lint = "ruff check ."
-format = "ruff format --check ."
-typecheck = "mypy ."
-test = "pytest"
-build = "python -m compileall ."
-precommit = "pre-commit run --all-files"
-install-hooks = "pre-commit install"
 
 [tool.setuptools]
 py-modules = [
