@@ -12,8 +12,12 @@ import json
 import os
 import threading
 import subprocess
+import inspect
+import pkgutil
+import importlib
+import pdf_toolbox
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD  # type: ignore
@@ -36,10 +40,6 @@ from . import (
     optimize,
     repair,
     unlock,
-    jpeg,
-    tiff,
-    docx,
-    pptx,
 )
 
 APPDATA = Path(os.getenv("APPDATA", Path.home() / "AppData" / "Roaming"))
@@ -138,10 +138,10 @@ class DirEntry(ttk.Frame):
 class BaseTab(ttk.Frame, LogMixin):
     TITLE: str = ""
 
-    def __init__(self, master: ttk.Notebook, cfg: dict):
+    def __init__(self, master: ttk.Notebook, cfg: dict, title: str | None = None):
         self.cfg = cfg
         frame = ttk.Frame(master)
-        master.add(frame, text=self.TITLE)
+        master.add(frame, text=title or self.TITLE)
         text = tk.Text(frame, height=8, state="disabled")
         text.pack(side="bottom", fill="both", expand=True)
         LogMixin.__init__(self, text)
@@ -153,16 +153,106 @@ class BaseTab(ttk.Frame, LogMixin):
     def build(self, body: ttk.Frame) -> None:  # pragma: no cover - to override
         pass
 
-    def run_thread(self, func: Callable, *args):
+    def run_thread(self, func: Callable[..., Any], *args, **kwargs) -> None:
         def _target():
             try:
                 self.log("Running...")
-                func(*args)
+                func(*args, **kwargs)
                 self.log("Done")
             except Exception as e:
                 self.log(f"Error: {e}")
 
         threading.Thread(target=_target, daemon=True).start()
+
+
+def _human_title(func_name: str) -> str:
+    if "_to_" in func_name:
+        left, right = func_name.split("_to_", 1)
+        return f"{left.upper()} → {right.replace('_', ' ').upper()}"
+    return func_name.replace("_", " ").title()
+
+
+class FunctionTab(BaseTab):
+    def __init__(self, master: ttk.Notebook, cfg: dict, func: Callable[..., Any]):
+        self.func = func
+        title = _human_title(func.__name__)
+        super().__init__(master, cfg, title)
+
+    def build(self, body: ttk.Frame) -> None:  # pragma: no cover - GUI only
+        sig = inspect.signature(self.func)
+        self._inputs: dict[str, tuple[Callable[[], Any], bool]] = {}
+        row = 0
+        for name, param in sig.parameters.items():
+            ttk.Label(body, text=name).grid(row=row, column=0, sticky="w")
+            getter, persist = self._add_input(body, row, name, param)
+            self._inputs[name] = (getter, persist)
+            row += 1
+        ttk.Button(body, text="Run", command=self.do_run).grid(
+            row=row, column=0, columnspan=2, pady=5
+        )
+        body.columnconfigure(1, weight=1)
+
+    def _add_input(
+        self, body: ttk.Frame, row: int, name: str, param: inspect.Parameter
+    ) -> tuple[Callable[[], Any], bool]:
+        ann = param.annotation
+        default = None if param.default is inspect._empty else param.default
+
+        if "dir" in name:
+            dir_entry = DirEntry(body, self.cfg, "last_save_dir")
+            dir_entry.grid(row=row, column=1, sticky="ew")
+            return dir_entry.get, False
+
+        if any(key in name for key in ("path", "file", "pdf", "pptx", "docx")):
+            file_entry = FileEntry(body, self.cfg, "last_open_dir")
+            file_entry.grid(row=row, column=1, sticky="ew")
+            return file_entry.get, False
+
+        if ann is bool:
+            var = tk.BooleanVar(value=bool(default))
+            chk = ttk.Checkbutton(body, variable=var)
+            chk.grid(row=row, column=1, sticky="w")
+            return var.get, True
+
+        entry = ttk.Entry(body, width=10)
+        if name in self.cfg:
+            entry.insert(0, str(self.cfg[name]))
+        elif default is not None:
+            entry.insert(0, str(default))
+        entry.grid(row=row, column=1, sticky="ew")
+
+        def _get() -> Any:
+            val = entry.get().strip()
+            if val == "":
+                return default
+            if ann is int:
+                return int(val)
+            if ann is float:
+                return float(val)
+            return val
+
+        return _get, True
+
+    def do_run(self) -> None:  # pragma: no cover - GUI only
+        kwargs = {}
+        for name, (getter, persist) in self._inputs.items():
+            val = getter()
+            kwargs[name] = val
+            if persist:
+                self.cfg[name] = val
+        self.run_thread(self.func, **kwargs)
+
+
+def discover_converters() -> list[Callable[..., Any]]:
+    converters: list[Callable[..., Any]] = []
+    for mod_info in pkgutil.iter_modules(pdf_toolbox.__path__):
+        if mod_info.name in {"gui", "rasterize", "utils"}:
+            continue
+        module = importlib.import_module(f"{__package__}.{mod_info.name}")
+        for name, func in inspect.getmembers(module, inspect.isfunction):
+            if "_to_" in name and func.__module__.startswith("pdf_toolbox"):
+                converters.append(func)
+    return converters
 
 
 class ExtractTab(BaseTab):
@@ -290,110 +380,6 @@ class RepairTab(BaseTab):
         )
 
 
-class JPEGTab(BaseTab):
-    TITLE = "PDF → JPEG"
-
-    def build(self, body: ttk.Frame) -> None:
-        self.input = FileEntry(body, self.cfg, "last_open_dir")
-        self.input.pack(fill="x")
-        self.outdir = DirEntry(body, self.cfg, "last_save_dir")
-        ttk.Label(body, text="Output Dir (optional)").pack(anchor="w")
-        self.outdir.pack(fill="x")
-
-        frame = ttk.Frame(body)
-        ttk.Label(frame, text="Start").grid(row=0, column=0)
-        ttk.Label(frame, text="End").grid(row=0, column=2)
-        self.start = ttk.Entry(frame, width=5)
-        self.end = ttk.Entry(frame, width=5)
-        self.start.grid(row=0, column=1)
-        self.end.grid(row=0, column=3)
-        ttk.Label(frame, text="Quality").grid(row=1, column=0)
-        self.quality = ttk.Entry(frame, width=5)
-        self.quality.insert(0, str(self.cfg.get("jpeg_quality", 95)))
-        self.quality.grid(row=1, column=1)
-        ttk.Button(frame, text="Convert", command=self.do_conv).grid(
-            row=1, column=3, padx=5
-        )
-        frame.pack(pady=5)
-
-    def do_conv(self):  # pragma: no cover - GUI only
-        start = int(self.start.get()) if self.start.get() else None
-        end = int(self.end.get()) if self.end.get() else None
-        q = int(self.quality.get())
-        self.cfg["jpeg_quality"] = q
-        self.run_thread(
-            jpeg.pdf_to_jpegs, self.input.get(), start, end, q, self.outdir.get()
-        )
-
-
-class TIFFTab(BaseTab):
-    TITLE = "PDF → TIFF"
-
-    def build(self, body: ttk.Frame) -> None:
-        self.input = FileEntry(body, self.cfg, "last_open_dir")
-        self.input.pack(fill="x")
-        self.outdir = DirEntry(body, self.cfg, "last_save_dir")
-        ttk.Label(body, text="Output Dir (optional)").pack(anchor="w")
-        self.outdir.pack(fill="x")
-        ttk.Button(body, text="Convert", command=self.do_conv).pack(pady=5)
-
-    def do_conv(self):  # pragma: no cover - GUI only
-        self.run_thread(tiff.pdf_to_tiff, self.input.get(), self.outdir.get())
-
-
-class WordTab(BaseTab):
-    TITLE = "PDF → Word"
-
-    def build(self, body: ttk.Frame) -> None:
-        self.input = FileEntry(body, self.cfg, "last_open_dir")
-        self.input.pack(fill="x")
-        self.outdir = DirEntry(body, self.cfg, "last_save_dir")
-        ttk.Label(body, text="Output Dir (optional)").pack(anchor="w")
-        self.outdir.pack(fill="x")
-        ttk.Button(body, text="Convert", command=self.do_conv).pack(pady=5)
-
-    def do_conv(self):  # pragma: no cover - GUI only
-        self.run_thread(docx.pdf_to_docx, self.input.get(), self.outdir.get())
-
-
-class PPTXTab(BaseTab):
-    TITLE = "PPTX → JPEG"
-
-    def build(self, body: ttk.Frame) -> None:
-        self.input = FileEntry(body, self.cfg, "last_open_dir")
-        self.input.pack(fill="x")
-        self.outdir = DirEntry(body, self.cfg, "last_save_dir")
-        ttk.Label(body, text="Output Dir (optional)").pack(anchor="w")
-        self.outdir.pack(fill="x")
-
-        frame = ttk.Frame(body)
-        ttk.Label(frame, text="Width").grid(row=0, column=0)
-        ttk.Label(frame, text="Height").grid(row=0, column=2)
-        self.width = ttk.Entry(frame, width=6)
-        self.height = ttk.Entry(frame, width=6)
-        self.width.insert(0, str(self.cfg.get("pptx_width", 1920)))
-        self.height.insert(0, str(self.cfg.get("pptx_height", 1080)))
-        self.width.grid(row=0, column=1)
-        self.height.grid(row=0, column=3)
-        ttk.Button(frame, text="Convert", command=self.do_conv).grid(
-            row=0, column=4, padx=5
-        )
-        frame.pack(pady=5)
-
-    def do_conv(self):  # pragma: no cover - GUI only
-        w = int(self.width.get())
-        h = int(self.height.get())
-        self.cfg["pptx_width"] = w
-        self.cfg["pptx_height"] = h
-        self.run_thread(
-            pptx.pptx_to_jpegs_via_powerpoint,
-            self.input.get(),
-            w,
-            h,
-            self.outdir.get(),
-        )
-
-
 class BatchTab(BaseTab):
     TITLE = "Batch-Runner"
 
@@ -435,17 +421,10 @@ def main() -> None:  # pragma: no cover - GUI only
     nb = ttk.Notebook(root)
     nb.pack(fill="both", expand=True)
 
-    tabs = [
-        ExtractTab,
-        OptimizeTab,
-        RepairTab,
-        JPEGTab,
-        TIFFTab,
-        WordTab,
-        PPTXTab,
-        BatchTab,
-    ]
-    _instances = [tab(nb, cfg) for tab in tabs]
+    static_tabs = [ExtractTab, OptimizeTab, RepairTab, BatchTab]
+    _instances = [tab(nb, cfg) for tab in static_tabs]
+    for func in discover_converters():
+        FunctionTab(nb, cfg, func)
 
     def on_close():
         save_config(cfg)
