@@ -58,3 +58,15 @@ def test_split_pdf_invalid_pages(tmp_path):
     pdf_path = _create_pdf(tmp_path, 3)
     with pytest.raises(ValueError, match="pages_per_file must be >= 1"):
         split_pdf(str(pdf_path), 0)
+
+
+def test_split_pdf_empty_document(tmp_path):
+    pdf_path = tmp_path / "empty.pdf"
+    pdf_path.write_bytes(
+        b"%PDF-1.1\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+        b"2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+        b"xref\n0 3\n0000000000 65535 f \n0000000010 00000 n \n0000000053 00000 n \n"
+        b"trailer\n<< /Root 1 0 R /Size 3 >>\nstartxref\n96\n%%EOF"
+    )
+    with pytest.raises(ValueError, match="document has no pages"):
+        split_pdf(str(pdf_path), 1)
