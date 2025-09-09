@@ -9,7 +9,9 @@ description = "Utilities for PDF operations"
 requires-python = ">=3.8"
 dependencies = [
   "PySide6>=6.7",
+  "pillow",
   "pymupdf>=1.24",
+  "python-docx",
   "pywin32>=306; sys_platform == 'win32'",
 ]
 
