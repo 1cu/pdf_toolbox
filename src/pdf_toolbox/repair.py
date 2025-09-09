@@ -5,10 +5,13 @@ from pathlib import Path
 
 import fitz  # type: ignore
 
+from .actions import action
 from .utils import sane_output_dir, update_metadata
 
 
+@action(category="PDF")
 def repair_pdf(input_pdf: str, out_dir: str | None = None) -> str:
+    """Repariere ein PDF und bereinige inkonsistente Daten."""
     doc = fitz.open(input_pdf)
     update_metadata(doc, note=" | repaired")
     out_path = sane_output_dir(input_pdf, out_dir) / (
