@@ -5,14 +5,17 @@ from pathlib import Path
 
 import fitz  # type: ignore
 
+from .actions import action
 from .utils import sane_output_dir, update_metadata
 
 
+@action(category="PDF")
 def unlock_pdf(
     input_pdf: str,
     password: str | None = None,
     out_dir: str | None = None,
 ) -> str:
+    """Entferne den Kennwortschutz eines PDFs."""
     doc = fitz.open(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
         raise ValueError("Invalid password")

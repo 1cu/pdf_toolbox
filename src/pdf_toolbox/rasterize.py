@@ -6,9 +6,11 @@ from typing import List, Union
 import fitz  # type: ignore
 from PIL import Image
 
+from .actions import action
 from .utils import sane_output_dir
 
 
+@action(category="PDF")
 def pdf_to_images(
     input_pdf: str,
     start_page: int | None = None,

@@ -6,15 +6,18 @@ from typing import List, cast
 
 from PIL import Image
 
+from .actions import action
 from .rasterize import pdf_to_images
 from .utils import sane_output_dir
 
 
+@action(category="PDF")
 def pdf_to_tiff(
     input_pdf: str,
     dpi: int = 300,
     out_dir: str | None = None,
 ) -> str:
+    """Fasse PDF-Seiten zu einer mehrseitigen TIFF-Datei zusammen."""
     images = cast(List[Image.Image], pdf_to_images(input_pdf, dpi=dpi, as_pil=True))
     out_path = sane_output_dir(input_pdf, out_dir) / f"{Path(input_pdf).stem}_tiff.tiff"
     if images:

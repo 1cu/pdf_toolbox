@@ -3,9 +3,11 @@ from __future__ import annotations
 import argparse
 from typing import List, cast
 
+from .actions import action
 from .rasterize import pdf_to_images
 
 
+@action(category="PDF")
 def pdf_to_pngs(
     input_pdf: str,
     start_page: int | None = None,
@@ -13,6 +15,7 @@ def pdf_to_pngs(
     dpi: int = 300,
     out_dir: str | None = None,
 ) -> List[str]:
+    """Render ein PDF als PNG-Bilder."""
     return cast(
         List[str],
         pdf_to_images(
