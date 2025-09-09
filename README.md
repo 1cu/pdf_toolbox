@@ -65,3 +65,16 @@ pytest
 ```
 
 The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
+
+### Release
+
+The release workflow automatically tags and publishes a release when changes
+are pushed to the `main` branch. The tag is derived from the `version` field in
+`pyproject.toml`.
+
+To cut a new release:
+
+1. Update the version in `pyproject.toml`.
+2. Commit the change and push to `main`.
+
+The workflow will create the corresponding tag and GitHub release.
