@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 import inspect
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, get_args, get_origin
 
 from .actions import Action, list_actions
 from . import utils
 
-APPDATA = Path(os.getenv("APPDATA", Path.home() / "AppData" / "Roaming"))
-CONFIG_PATH = APPDATA / "JensTools" / "pdf_toolbox" / "config.json"
+CONFIG_PATH = Path(tempfile.gettempdir()) / "pdf_toolbox_config.json"
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 DEFAULT_CONFIG = {
     "last_open_dir": str(Path.home()),
@@ -52,12 +51,14 @@ try:  # pragma: no cover - optional import
         QLabel,
         QLineEdit,
         QMainWindow,
+        QMenu,
         QMessageBox,
         QPlainTextEdit,
         QProgressBar,
         QPushButton,
         QSpinBox,
         QSplitter,
+        QToolButton,
         QTreeWidget,
         QTreeWidgetItem,
         QVBoxLayout,
@@ -87,16 +88,19 @@ if QT_AVAILABLE:
                 if path:
                     self.setText(path)
                     self.cfg["last_open_dir"] = path
+                    save_config(self.cfg)
             elif self.multi:
                 paths, _ = QFileDialog.getOpenFileNames(self, "Dateien wählen", initial)
                 if paths:
                     self.setText(";".join(paths))
                     self.cfg["last_open_dir"] = str(Path(paths[0]).parent)
+                    save_config(self.cfg)
             else:
                 path, _ = QFileDialog.getOpenFileName(self, "Datei wählen", initial)
                 if path:
                     self.setText(path)
                     self.cfg["last_open_dir"] = str(Path(path).parent)
+                    save_config(self.cfg)
 
         def dragEnterEvent(self, e):  # pragma: no cover - GUI
             if e.mimeData().hasUrls():
@@ -111,6 +115,7 @@ if QT_AVAILABLE:
             else:
                 self.setText(paths[0])
             self.cfg["last_open_dir"] = str(Path(paths[0]).parent)
+            save_config(self.cfg)
 
     class Worker(QThread):
         finished = Signal(object)
@@ -128,6 +133,13 @@ if QT_AVAILABLE:
             except Exception as exc:  # pragma: no cover - thread
                 self.error.emit(str(exc))
 
+    class ClickableLabel(QLabel):
+        clicked = Signal()
+
+        def mousePressEvent(self, event):  # pragma: no cover - GUI
+            self.clicked.emit()
+            super().mousePressEvent(event)
+
     class MainWindow(QMainWindow):
         def __init__(self) -> None:
             super().__init__()
@@ -136,9 +148,12 @@ if QT_AVAILABLE:
             self.current_action: Action | None = None
             self.current_widgets: Dict[str, QWidget] = {}
             self.resize(900, 480)
+            self.base_height = self.height()
 
             central = QWidget()
             layout = QVBoxLayout(central)
+            top_bar = QHBoxLayout()
+            layout.addLayout(top_bar)
             splitter = QSplitter()
             layout.addWidget(splitter)
             bottom = QHBoxLayout()
@@ -174,19 +189,24 @@ if QT_AVAILABLE:
 
             self.run_btn = QPushButton("Start")
             self.progress = QProgressBar()
-            self.status = QLabel("Bereit")
-            self.status.setTextFormat(Qt.RichText)
-            self.status.setTextInteractionFlags(Qt.TextBrowserInteraction)
-            self.author_btn = QPushButton("Autor")
-            bottom.addWidget(self.run_btn)
-            bottom.addWidget(self.progress)
+            self.status = ClickableLabel("Bereit")
             bottom.addWidget(self.status)
-            bottom.addWidget(self.author_btn)
+            bottom.addWidget(self.progress)
+            bottom.addStretch()
+            bottom.addWidget(self.run_btn)
+
+            self.settings_btn = QToolButton()
+            self.settings_btn.setText("⚙")
+            settings_menu = QMenu(self)
+            settings_menu.addAction("Autor", self.on_author)
+            self.settings_btn.setMenu(settings_menu)
+            self.settings_btn.setPopupMode(QToolButton.InstantPopup)
+            top_bar.addStretch()
+            top_bar.addWidget(self.settings_btn)
 
             self.info_btn.clicked.connect(self.on_info)
             self.run_btn.clicked.connect(self.on_run)
-            self.author_btn.clicked.connect(self.on_author)
-            self.status.linkActivated.connect(lambda _: self.toggle_log())
+            self.status.clicked.connect(self.toggle_log)
             self.tree.itemClicked.connect(self.on_item_clicked)
 
             self._populate_actions()
@@ -299,6 +319,7 @@ if QT_AVAILABLE:
             self.status.setText("Läuft...")
             self.log.clear()
             self.log.setVisible(False)
+            self.resize(self.width(), self.base_height)
             self.worker = Worker(self.current_action.func, kwargs)
             self.worker.finished.connect(self.on_finished)
             self.worker.error.connect(self.on_error)
@@ -311,17 +332,28 @@ if QT_AVAILABLE:
             self.status.setText("Fertig")
             self.run_btn.setEnabled(True)
             self.log.setVisible(False)
+            self.resize(self.width(), self.base_height)
 
         def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
             self.log.setPlainText(msg)
-            self.log.setVisible(True)
+            self.log.setVisible(False)
             self.progress.setRange(0, 1)
             self.progress.setValue(0)
-            self.status.setText("<a href='#'>Fehler</a>")
+            self.status.setText("Fehler")
             self.run_btn.setEnabled(True)
 
         def toggle_log(self) -> None:  # pragma: no cover - GUI
-            self.log.setVisible(not self.log.isVisible())
+            if self.log.isVisible():
+                self.log.setVisible(False)
+                self.resize(self.width(), self.base_height)
+            else:
+                self.log.setVisible(True)
+                self.log.verticalScrollBar().setValue(
+                    self.log.verticalScrollBar().maximum()
+                )
+                self.resize(
+                    self.width(), self.base_height + self.log.sizeHint().height()
+                )
 
         def on_author(self) -> None:  # pragma: no cover - GUI
             dlg = QDialog(self)

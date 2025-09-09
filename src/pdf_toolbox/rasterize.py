@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Literal
 
 import fitz  # type: ignore
 from PIL import Image
@@ -10,20 +10,24 @@ from .actions import action
 from .utils import sane_output_dir
 
 
+SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF"]
+
+
 @action(category="PDF")
 def pdf_to_images(
     input_pdf: str,
     start_page: int | None = None,
     end_page: int | None = None,
     dpi: int = 300,
-    image_format: str = "PNG",
+    image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     quality: int = 95,
     out_dir: str | None = None,
     as_pil: bool = False,
 ) -> List[Union[str, Image.Image]]:
     """Rasterize a PDF into images.
 
-    Each page of ``input_pdf`` is rendered to the chosen image format.
+    Each page of ``input_pdf`` is rendered to the chosen image format. Supported
+    formats are listed in :data:`SUPPORTED_IMAGE_FORMATS`.
     ``dpi`` controls the resolution; higher values yield higher quality
     but also larger files. ``quality`` is only used for JPEG output.
     If ``as_pil`` is ``True`` a list of :class:`PIL.Image.Image` objects
