@@ -19,6 +19,7 @@ dev = [
   "pytest",
   "ruff",
   "mypy",
+  "pre-commit",
 ]
 
 [tool.hatch.envs.default]
@@ -55,3 +56,4 @@ extend-ignore = ["E402"]
 
 [tool.mypy]
 ignore_missing_imports = true
+exclude = ["build/"]
