@@ -54,6 +54,7 @@ def optimize_pdf(
     if quality not in QUALITY_SETTINGS:
         raise ValueError("unknown quality")
 
+    settings = QUALITY_SETTINGS[quality]
     input_path = Path(input_pdf)
     out_dir_path = sane_output_dir(input_path, out_dir)
     out_path = out_dir_path / f"{input_path.stem}_optimized_{quality}.pdf"
@@ -63,9 +64,17 @@ def optimize_pdf(
     update_metadata(doc, note=" | optimized")
 
     if compress_images:
-        _compress_images(doc, QUALITY_SETTINGS[quality]["image_quality"])
+        _compress_images(doc, settings["image_quality"])
 
-    doc.save(out_path, garbage=3, deflate=True, clean=True)
+    pdf_quality = settings["pdf_quality"]
+    compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
+    doc.save(
+        out_path,
+        garbage=3,
+        deflate=True,
+        clean=True,
+        compression_effort=compression_effort,
+    )
     doc.close()
 
     optimized_size = out_path.stat().st_size

@@ -5,6 +5,14 @@ Utilities for manipulating PDF files.
 All Python modules live inside the `pdf_toolbox` package located in the
 `src` directory to provide a clear project structure.
 
+## Optimization
+
+`optimize_pdf` supports several quality presets (e.g. `screen`, `ebook`).
+Each preset now also controls the internal compression level by mapping a
+`pdf_quality` value to the `compression_effort` passed to
+`fitz.Document.save`. Lower quality values therefore result in higher
+compression and smaller output files.
+
 ## Development
 
 ### Create a virtual environment
