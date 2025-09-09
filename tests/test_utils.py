@@ -4,7 +4,9 @@ from pathlib import Path
 import fitz
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-from pdf_toolbox.utils import sane_output_dir, update_metadata
+import pytest
+
+from pdf_toolbox.utils import ensure_libs, sane_output_dir, update_metadata
 
 
 def test_sane_output_dir(tmp_path):
@@ -26,3 +28,16 @@ def test_update_metadata(tmp_path):
     update_metadata(doc, "note")
     meta = doc.metadata
     assert "note" in meta.get("subject", "")
+
+
+def test_ensure_libs_missing(monkeypatch):
+    monkeypatch.setattr(
+        "pdf_toolbox.utils.REQUIRED_LIBS", ["nonexistent_mod"], raising=False
+    )
+    with pytest.raises(RuntimeError):
+        ensure_libs()
+
+
+def test_ensure_libs_ok(monkeypatch):
+    monkeypatch.setattr("pdf_toolbox.utils.REQUIRED_LIBS", ["sys"], raising=False)
+    ensure_libs()
