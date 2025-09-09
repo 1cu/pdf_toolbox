@@ -21,13 +21,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
-      - name: Lint
-        run: hatch run lint
-      - name: Format
-        run: hatch run format
-      - name: Type check
-        run: hatch run typecheck
-      - name: Test
-        run: hatch run test
+      - name: Pre-commit
+        run: hatch run precommit
       - name: Build
         run: hatch run build
