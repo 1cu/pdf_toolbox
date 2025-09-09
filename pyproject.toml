@@ -32,6 +32,7 @@ typecheck = "mypy ."
 test = "pytest"
 build = "python -m compileall ."
 precommit = "pre-commit run --all-files"
+install-hooks = "pre-commit install"
 
 [tool.setuptools]
 py-modules = [
