@@ -39,11 +39,12 @@ compression and smaller output files.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 This installs the development dependencies, including the `build` package
-used to create distributions.
+used to create distributions. The quotes around `.[dev]` ensure compatibility
+across different shells.
 
 ### Build the distribution
 
