@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import List, Union
+import io
 
 import fitz  # type: ignore
 from PIL import Image
@@ -42,8 +43,29 @@ def pdf_to_images(
 
     for page_no in range(start, end):
         page = doc.load_page(page_no)
-        pix = page.get_pixmap(matrix=matrix)
-        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+        pix = page.get_pixmap(matrix=matrix, alpha=True)
+
+        if pix.n == 1 or (pix.n == 2 and pix.alpha):
+            mode = "LA" if pix.alpha else "L"
+        elif pix.n == 3 or (pix.n == 4 and pix.alpha):
+            mode = "RGBA" if pix.alpha else "RGB"
+        else:
+            pix = fitz.Pixmap(fitz.csRGB, pix)
+            mode = "RGBA" if pix.alpha else "RGB"
+
+        if pix.alpha and fmt in {"PNG", "TIFF"}:
+            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            if img.mode != mode:
+                img = img.convert(mode)
+            if img.mode in {"RGBA", "LA"} and img.getchannel("A").getextrema() == (255, 255):
+                img = img.convert(img.mode.replace("A", ""))
+        else:
+            img = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
+            if pix.alpha:
+                alpha = pix.samples[pix.n - 1 :: pix.n]
+                if alpha.count(255) == len(alpha) or fmt not in {"PNG", "TIFF"}:
+                    img = img.convert(mode.replace("A", ""))
+
         save_kwargs = {}
         if fmt == "JPEG":
             save_kwargs["quality"] = quality
