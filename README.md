@@ -2,6 +2,9 @@
 
 Utilities for manipulating PDF files.
 
+All Python modules live inside the `pdf_toolbox` package located in the
+`src` directory to provide a clear project structure.
+
 ## Development
 
 ### Create a virtual environment

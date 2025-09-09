@@ -5,7 +5,7 @@ from pathlib import Path
 
 import fitz  # type: ignore
 
-from common_utils import sane_output_dir, update_metadata
+from .utils import sane_output_dir, update_metadata
 
 
 def repair_pdf(input_pdf: str, out_dir: str | None = None) -> str:

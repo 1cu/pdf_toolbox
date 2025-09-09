@@ -6,8 +6,8 @@ from typing import List, cast
 
 from PIL import Image
 
-from rasterize import pdf_to_images
-from common_utils import sane_output_dir
+from .rasterize import pdf_to_images
+from .utils import sane_output_dir
 
 
 def pdf_to_tiff(
