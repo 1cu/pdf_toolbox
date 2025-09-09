@@ -8,6 +8,22 @@ results, and images are organized in a format-specific subdirectory.
 All Python modules live inside the `pdf_toolbox` package located in the
 `src` directory to provide a clear project structure.
 
+## Configuration
+
+`pdf_toolbox` requires a `pdf_toolbox_config.json` file in
+the project directory that specifies the document author and contact email.
+The toolbox will raise an error if the configuration is missing or incomplete.
+Create the file with the following content:
+
+```json
+{
+  "author": "Your Name",
+  "email": "you@example.com"
+}
+```
+
+The configuration file is ignored by Git so local preferences remain private.
+
 ## Optimization
 
 `optimize_pdf` supports several quality presets (e.g. `screen`, `ebook`).

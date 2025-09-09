@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import importlib
+import json
 from typing import Iterable
 
 import fitz  # type: ignore
@@ -15,6 +16,28 @@ REQUIRED_LIBS: Iterable[str] = (
     "docx",
     "win32com.client",
 )
+
+
+CONFIG_FILE = Path(__file__).resolve().parent.parent / "pdf_toolbox_config.json"
+
+
+def _load_author_info() -> tuple[str, str]:
+    """Return configured author information.
+
+    The configuration must provide ``author`` and ``email`` fields in
+    ``pdf_toolbox_config.json``. A ``RuntimeError`` is raised if the configuration
+    is missing or incomplete.
+    """
+
+    try:
+        data = json.loads(CONFIG_FILE.read_text())
+        author = data["author"]
+        email = data["email"]
+    except Exception as exc:  # pragma: no cover - best effort
+        raise RuntimeError(
+            "pdf_toolbox_config.json must define 'author' and 'email'"
+        ) from exc
+    return author, email
 
 
 def ensure_libs() -> None:
@@ -54,7 +77,8 @@ def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
     if note:
         metadata["subject"] = metadata.get("subject", "") + note
     metadata.setdefault("producer", "pdf_toolbox")
-    metadata.setdefault("author", "Jens B.")
+    author, _email = _load_author_info()
+    metadata["author"] = metadata.get("author") or author
     fitz_doc.set_metadata(metadata)
 
 
