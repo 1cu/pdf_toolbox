@@ -1,4 +1,5 @@
 from __future__ import annotations
+from __future__ import annotations
 
 import inspect
 import importlib
@@ -25,12 +26,14 @@ class Action:
     category: str | None = None
 
 
-_registry: list[Action] = []
+_registry: dict[str, Action] = {}
 
 
 def action(name: str | None = None, category: str | None = None):
     def deco(fn):
-        _registry.append(build_action(fn, name=name, category=category))
+        act = build_action(fn, name=name, category=category)
+        fn.__pdf_toolbox_action__ = True  # type: ignore[attr-defined]
+        _registry[act.fqname] = act
         return fn
 
     return deco
@@ -58,24 +61,37 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
     )
 
 
+_EXCLUDE = {
+    "pdf_toolbox.actions",
+    "pdf_toolbox.gui",
+    "pdf_toolbox.utils",
+    "pdf_toolbox.__init__",
+}
+
+
 def _auto_discover(pkg: str = "pdf_toolbox") -> None:
     pkg_mod = importlib.import_module(pkg)
     for modinfo in pkgutil.walk_packages(pkg_mod.__path__, pkg_mod.__name__ + "."):
+        if modinfo.name in _EXCLUDE:
+            continue
         mod = importlib.import_module(modinfo.name)
         for _, obj in inspect.getmembers(mod, inspect.isfunction):
             if obj.__module__ != modinfo.name:
                 continue
             if obj.__name__.startswith("_"):
                 continue
+            if getattr(obj, "__pdf_toolbox_action__", False):
+                continue
             if not any([obj.__doc__, obj.__annotations__]):
                 continue
-            _registry.append(build_action(obj))
+            act = build_action(obj)
+            _registry.setdefault(act.fqname, act)
 
 
 def list_actions() -> list[Action]:
     if not _registry:
         _auto_discover()
-    return _registry
+    return list(_registry.values())
 
 
 __all__ = ["Param", "Action", "action", "list_actions"]

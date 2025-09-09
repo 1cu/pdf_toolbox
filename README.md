@@ -1,6 +1,9 @@
 # PDF Toolbox
 
-Utilities for manipulating PDF files.
+Utilities for manipulating PDF files. A Qt-based GUI discovers available
+functions dynamically and builds forms from their signatures. Launch it with
+`python -m pdf_toolbox.gui`.
+
 The toolbox can also export PPTX presentations to images (JPEG, PNG, or TIFF)
 using Microsoft PowerPoint. TIFF exports are lossless for higher-quality
 results, and images are organized in a format-specific subdirectory.
