@@ -20,6 +20,11 @@ def test_pdf_to_tiff(sample_pdf, tmp_path):
     assert Path(out).exists()
 
 
+def test_pdf_to_tiff_default_dpi(sample_pdf, tmp_path):
+    out = pdf_to_tiff(sample_pdf, out_dir=str(tmp_path))
+    assert Path(out).exists()
+
+
 def test_pdf_to_pngs(sample_pdf, tmp_path):
     outputs = pdf_to_pngs(sample_pdf, dpi=72, out_dir=str(tmp_path))
     assert len(outputs) == 3
