@@ -19,6 +19,7 @@ dev = [
   "ruff",
   "mypy",
   "pre-commit",
+  "build",
 ]
 
 [tool.setuptools]
