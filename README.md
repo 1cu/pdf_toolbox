@@ -1,6 +1,9 @@
 # PDF Toolbox
 
 Utilities for manipulating PDF files.
+The toolbox can also export PPTX presentations to images (JPEG, PNG, or TIFF)
+using Microsoft PowerPoint. TIFF exports are lossless for higher-quality
+results, and images are organized in a format-specific subdirectory.
 
 All Python modules live inside the `pdf_toolbox` package located in the
 `src` directory to provide a clear project structure.
