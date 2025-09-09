@@ -28,11 +28,7 @@ jobs:
       - name: Create tag
         id: tag
         run: |
-          version=$(python - <<'PY'
-import pathlib, tomllib
-print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])
-PY
-)
+          version=$(python scripts/get_version.py)
           tag="v${version}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
