@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "main"
+    paths:
+      - "pyproject.toml"
 
 permissions:
   contents: write
@@ -26,13 +28,25 @@ jobs:
       - name: Create tag
         id: tag
         run: |
-          tag="v${{ github.run_number }}"
+          version=$(python - <<'PY'
+import pathlib, tomllib
+print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])
+PY
+)
+          tag="v${version}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "$tag"
-          git push origin "$tag"
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            git tag "$tag"
+            git push origin "$tag"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Create GitHub release
+        if: steps.tag.outputs.created == 'true'
         uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1
         with:
           tag: ${{ steps.tag.outputs.tag }}
