@@ -1,0 +1,5 @@
+"""PDF toolbox package providing various PDF utilities."""
+
+from .utils import ensure_libs, sane_output_dir, update_metadata
+
+__all__ = ["ensure_libs", "sane_output_dir", "update_metadata"]

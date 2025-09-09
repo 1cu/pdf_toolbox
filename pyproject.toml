@@ -22,20 +22,10 @@ dev = [
 ]
 
 [tool.setuptools]
-py-modules = [
-  "common_utils",
-  "optimize",
-  "pdf_toolbox_gui",
-  "page_extract",
-  "pptx_export",
-  "rasterize",
-  "repair",
-  "unlock",
-  "to_jpegs",
-  "to_pngs",
-  "to_tiff",
-  "to_word",
-]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.ruff]
 line-length = 88

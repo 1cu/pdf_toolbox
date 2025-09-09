@@ -4,7 +4,7 @@ from __future__ import annotations
 Setup:
 py -m pip install pymupdf pillow python-docx pywin32 tkinterdnd2
 # Start:
-py pdf_toolbox_gui.py
+py gui.py
 """
 
 
@@ -30,15 +30,17 @@ except Exception:  # pragma: no cover - optional
 import tkinter as tk  # type: ignore
 from tkinter import ttk, filedialog, messagebox
 
-from common_utils import ensure_libs
-import page_extract
-import optimize
-import repair
-import unlock
-import to_jpegs
-import to_tiff
-import to_word
-import pptx_export
+from .utils import ensure_libs
+from . import (
+    extract,
+    optimize,
+    repair,
+    unlock,
+    jpeg,
+    tiff,
+    docx,
+    pptx,
+)
 
 APPDATA = Path(os.getenv("APPDATA", Path.home() / "AppData" / "Roaming"))
 CONFIG_PATH = APPDATA / "JensTools" / "pdf_toolbox" / "config.json"
@@ -204,7 +206,7 @@ class ExtractTab(BaseTab):
             messagebox.showerror("Error", "Invalid page numbers")
             return
         self.run_thread(
-            page_extract.extract_range, self.input.get(), s, e, self.outdir.get()
+            extract.extract_range, self.input.get(), s, e, self.outdir.get()
         )
 
     def do_split(self):  # pragma: no cover - GUI only
@@ -214,9 +216,7 @@ class ExtractTab(BaseTab):
         except ValueError:
             messagebox.showerror("Error", "Invalid pages per file")
             return
-        self.run_thread(
-            page_extract.split_pdf, self.input.get(), pages, self.outdir.get()
-        )
+        self.run_thread(extract.split_pdf, self.input.get(), pages, self.outdir.get())
 
 
 class OptimizeTab(BaseTab):
@@ -322,7 +322,7 @@ class JPEGTab(BaseTab):
         q = int(self.quality.get())
         self.cfg["jpeg_quality"] = q
         self.run_thread(
-            to_jpegs.pdf_to_jpegs, self.input.get(), start, end, q, self.outdir.get()
+            jpeg.pdf_to_jpegs, self.input.get(), start, end, q, self.outdir.get()
         )
 
 
@@ -338,7 +338,7 @@ class TIFFTab(BaseTab):
         ttk.Button(body, text="Convert", command=self.do_conv).pack(pady=5)
 
     def do_conv(self):  # pragma: no cover - GUI only
-        self.run_thread(to_tiff.pdf_to_tiff, self.input.get(), self.outdir.get())
+        self.run_thread(tiff.pdf_to_tiff, self.input.get(), self.outdir.get())
 
 
 class WordTab(BaseTab):
@@ -353,7 +353,7 @@ class WordTab(BaseTab):
         ttk.Button(body, text="Convert", command=self.do_conv).pack(pady=5)
 
     def do_conv(self):  # pragma: no cover - GUI only
-        self.run_thread(to_word.pdf_to_docx, self.input.get(), self.outdir.get())
+        self.run_thread(docx.pdf_to_docx, self.input.get(), self.outdir.get())
 
 
 class PPTXTab(BaseTab):
@@ -386,7 +386,7 @@ class PPTXTab(BaseTab):
         self.cfg["pptx_width"] = w
         self.cfg["pptx_height"] = h
         self.run_thread(
-            pptx_export.pptx_to_jpegs_via_powerpoint,
+            pptx.pptx_to_jpegs_via_powerpoint,
             self.input.get(),
             w,
             h,

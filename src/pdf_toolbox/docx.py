@@ -8,7 +8,7 @@ import fitz  # type: ignore
 from PIL import Image
 from docx import Document
 
-from common_utils import sane_output_dir
+from .utils import sane_output_dir
 
 
 def pdf_to_docx(input_pdf: str, out_dir: str | None = None) -> str:
