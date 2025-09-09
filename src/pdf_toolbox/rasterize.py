@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, cast
 import io
 
 import fitz  # type: ignore
 from PIL import Image
+from PIL.Image import Image as PILImage
 
 from .utils import sane_output_dir
 
@@ -54,7 +55,7 @@ def pdf_to_images(
             mode = "RGBA" if pix.alpha else "RGB"
 
         if pix.alpha and fmt in {"PNG", "TIFF"}:
-            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            img = cast(PILImage, Image.open(io.BytesIO(pix.tobytes("png"))))
             if img.mode != mode:
                 img = img.convert(mode)
             if img.mode in {"RGBA", "LA"} and img.getchannel("A").getextrema() == (255, 255):
