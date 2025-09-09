@@ -3,14 +3,21 @@ from __future__ import annotations
 import argparse
 import io
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, TypedDict
 
 import fitz  # type: ignore
 from PIL import Image
 
 from common_utils import sane_output_dir, update_metadata
 
-QUALITY_SETTINGS = {
+
+class QualitySetting(TypedDict):
+    pdf_quality: int
+    image_quality: int
+    min_reduction: float
+
+
+QUALITY_SETTINGS: dict[str, QualitySetting] = {
     "screen": {"pdf_quality": 50, "image_quality": 40, "min_reduction": 0.3},
     "ebook": {"pdf_quality": 75, "image_quality": 60, "min_reduction": 0.2},
     "printer": {"pdf_quality": 90, "image_quality": 85, "min_reduction": 0.1},
@@ -73,9 +80,13 @@ def optimize_pdf(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Optimize PDF")
     parser.add_argument("input_pdf")
-    parser.add_argument("quality", nargs="?", default="default", choices=QUALITY_SETTINGS.keys())
+    parser.add_argument(
+        "quality", nargs="?", default="default", choices=QUALITY_SETTINGS.keys()
+    )
     parser.add_argument("--compress-images", action="store_true")
     parser.add_argument("--keep", action="store_true")
     parser.add_argument("--out-dir")
     args = parser.parse_args()
-    optimize_pdf(args.input_pdf, args.quality, args.compress_images, args.keep, args.out_dir)
+    optimize_pdf(
+        args.input_pdf, args.quality, args.compress_images, args.keep, args.out_dir
+    )
