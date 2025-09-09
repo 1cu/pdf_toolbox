@@ -28,10 +28,6 @@ def pdf_to_images(
     is returned instead of file paths.
     """
 
-    doc = fitz.open(input_pdf)
-    start = (start_page - 1) if start_page else 0
-    end = end_page if end_page else doc.page_count
-    out_base = None if as_pil else sane_output_dir(input_pdf, out_dir)
     outputs: List[Union[str, Image.Image]] = []
 
     zoom = dpi / 72  # default PDF resolution is 72 dpi
@@ -40,23 +36,30 @@ def pdf_to_images(
     fmt = image_format.upper()
     ext = fmt.lower()
 
-    for page_no in range(start, end):
-        page = doc.load_page(page_no)
-        pix = page.get_pixmap(matrix=matrix)
-        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-        save_kwargs = {}
-        if fmt == "JPEG":
-            save_kwargs["quality"] = quality
-        elif fmt == "PNG":  # lossless; avoid heavy compression for speed
-            save_kwargs["compress_level"] = 0
+    with fitz.open(input_pdf) as doc:
+        start = (start_page - 1) if start_page else 0
+        end = end_page if end_page else doc.page_count
+        out_base = None if as_pil else sane_output_dir(input_pdf, out_dir)
 
-        if as_pil:
-            outputs.append(img)
-        else:
-            assert out_base is not None
-            out_path = out_base / f"{Path(input_pdf).stem}_Seite_{page_no + 1}.{ext}"
-            img.save(out_path, format=fmt, **save_kwargs)
-            outputs.append(str(out_path))
+        for page_no in range(start, end):
+            page = doc.load_page(page_no)
+            pix = page.get_pixmap(matrix=matrix)
+            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            save_kwargs = {}
+            if fmt == "JPEG":
+                save_kwargs["quality"] = quality
+            elif fmt == "PNG":  # lossless; avoid heavy compression for speed
+                save_kwargs["compress_level"] = 0
+
+            if as_pil:
+                outputs.append(img)
+            else:
+                assert out_base is not None
+                out_path = (
+                    out_base / f"{Path(input_pdf).stem}_Seite_{page_no + 1}.{ext}"
+                )
+                img.save(out_path, format=fmt, **save_kwargs)
+                outputs.append(str(out_path))
     return outputs
 
 
