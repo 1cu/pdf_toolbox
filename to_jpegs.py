@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from typing import List
+from typing import List, cast
 
 from rasterize import pdf_to_images
 
@@ -14,14 +14,17 @@ def pdf_to_jpegs(
     quality: int = 95,
     out_dir: str | None = None,
 ) -> List[str]:
-    return pdf_to_images(
-        input_pdf,
-        start_page=start_page,
-        end_page=end_page,
-        dpi=dpi,
-        image_format="JPEG",
-        quality=quality,
-        out_dir=out_dir,
+    return cast(
+        List[str],
+        pdf_to_images(
+            input_pdf,
+            start_page=start_page,
+            end_page=end_page,
+            dpi=dpi,
+            image_format="JPEG",
+            quality=quality,
+            out_dir=out_dir,
+        ),
     )
 
 
