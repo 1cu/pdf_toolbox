@@ -13,7 +13,9 @@ def unlock_pdf(
     password: str | None = None,
     out_dir: str | None = None,
 ) -> str:
-    doc = fitz.open(input_pdf, password=password or "")
+    doc = fitz.open(input_pdf)
+    if doc.needs_pass and not doc.authenticate(password or ""):
+        raise ValueError("Invalid password")
     update_metadata(doc, note=" | unlocked")
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_unlocked.pdf"
