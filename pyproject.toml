@@ -1,3 +1,52 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-toolbox"
+version = "0.1.0"
+description = "Utilities for PDF operations"
+requires-python = ">=3.8"
+dependencies = [
+  "pymupdf",
+  "pillow",
+  "python-docx",
+]
+
+[project.optional-dependencies]
+dev = [
+  "hatch",
+  "pytest",
+  "ruff",
+  "mypy",
+]
+
+[tool.hatch.envs.default]
+skip-install = true
+
+[tool.hatch.envs.default.scripts]
+lint = "ruff check ."
+format = "ruff format --check ."
+typecheck = "mypy ."
+test = "pytest"
+build = "python -m compileall ."
+
+[tool.setuptools]
+py-modules = [
+  "common_utils",
+  "optimize",
+  "pdf_toolbox_gui",
+  "page_extract",
+  "pptx_export",
+  "rasterize",
+  "repair",
+  "unlock",
+  "to_jpegs",
+  "to_pngs",
+  "to_tiff",
+  "to_word",
+]
+
 [tool.ruff]
 line-length = 88
 

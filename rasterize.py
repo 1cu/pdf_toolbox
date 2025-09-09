@@ -43,7 +43,7 @@ def pdf_to_images(
     for page_no in range(start, end):
         page = doc.load_page(page_no)
         pix = page.get_pixmap(matrix=matrix)
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
         save_kwargs = {}
         if fmt == "JPEG":
             save_kwargs["quality"] = quality
