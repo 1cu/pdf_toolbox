@@ -1,6 +1,9 @@
 # PDF Toolbox
 
-Utilities for manipulating PDF files.
+Utilities for manipulating PDF files. A Qt-based GUI discovers available
+functions dynamically and builds forms from their signatures. Launch it with
+`python -m pdf_toolbox.gui`.
+
 The toolbox can also export PPTX presentations to images (JPEG, PNG, or TIFF)
 using Microsoft PowerPoint. TIFF exports are lossless for higher-quality
 results, and images are organized in a format-specific subdirectory.
@@ -12,8 +15,9 @@ All Python modules live inside the `pdf_toolbox` package located in the
 
 `pdf_toolbox` requires a `pdf_toolbox_config.json` file in
 the project directory that specifies the document author and contact email.
-The toolbox will raise an error if the configuration is missing or incomplete.
-Create the file with the following content:
+The Qt GUI warns on startup if the information is missing and lets you
+set it via the **Autor** button. Create the file manually with the
+following content:
 
 ```json
 {

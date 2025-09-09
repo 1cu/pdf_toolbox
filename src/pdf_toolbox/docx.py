@@ -8,10 +8,13 @@ import fitz  # type: ignore
 from PIL import Image
 from docx import Document
 
+from .actions import action
 from .utils import sane_output_dir
 
 
+@action(category="Office")
 def pdf_to_docx(input_pdf: str, out_dir: str | None = None) -> str:
+    """Wandle ein PDF in eine DOCX-Datei um."""
     docx_doc = Document()
     with fitz.open(input_pdf) as pdf:
         for page in pdf:

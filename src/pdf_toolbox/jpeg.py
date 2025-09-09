@@ -3,9 +3,11 @@ from __future__ import annotations
 import argparse
 from typing import List, cast
 
+from .actions import action
 from .rasterize import pdf_to_images
 
 
+@action(category="PDF")
 def pdf_to_jpegs(
     input_pdf: str,
     start_page: int | None = None,
@@ -14,6 +16,7 @@ def pdf_to_jpegs(
     quality: int = 95,
     out_dir: str | None = None,
 ) -> List[str]:
+    """Render a PDF to a sequence of JPEG files."""
     return cast(
         List[str],
         pdf_to_images(
