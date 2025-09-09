@@ -43,7 +43,7 @@ def pdf_to_images(
     for page_no in range(start, end):
         page = doc.load_page(page_no)
         pix = page.get_pixmap(matrix=matrix)
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
         save_kwargs = {}
         if fmt == "JPEG":
             save_kwargs["quality"] = quality
@@ -53,6 +53,7 @@ def pdf_to_images(
         if as_pil:
             outputs.append(img)
         else:
+            assert out_base is not None
             out_path = out_base / f"{Path(input_pdf).stem}_Seite_{page_no + 1}.{ext}"
             img.save(out_path, format=fmt, **save_kwargs)
             outputs.append(str(out_path))
