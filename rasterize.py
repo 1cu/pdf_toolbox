@@ -53,6 +53,7 @@ def pdf_to_images(
         if as_pil:
             outputs.append(img)
         else:
+            assert out_base is not None
             out_path = out_base / f"{Path(input_pdf).stem}_Seite_{page_no + 1}.{ext}"
             img.save(out_path, format=fmt, **save_kwargs)
             outputs.append(str(out_path))

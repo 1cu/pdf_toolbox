@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 import importlib
-import logging
 from typing import Iterable
 
 import fitz  # type: ignore
@@ -32,9 +31,7 @@ def ensure_libs() -> None:
         except Exception:  # pragma: no cover - best effort
             missing.append(mod)
     if missing:
-        raise RuntimeError(
-            "Missing required libraries: " + ", ".join(missing)
-        )
+        raise RuntimeError("Missing required libraries: " + ", ".join(missing))
 
 
 def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:

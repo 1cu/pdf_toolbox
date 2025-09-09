@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 """
 Setup:
 py -m pip install pymupdf pillow python-docx pywin32 tkinterdnd2
@@ -16,10 +17,12 @@ from typing import Callable, Optional
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD  # type: ignore
+
     BaseTk = TkinterDnD.Tk
     DND_AVAILABLE = True
 except Exception:  # pragma: no cover - optional
     import tkinter as tk  # type: ignore
+
     BaseTk = tk.Tk
     DND_FILES = None
     DND_AVAILABLE = False
@@ -87,8 +90,8 @@ class FileEntry(ttk.Frame):
         btn.grid(row=0, column=1)
         self.columnconfigure(0, weight=1)
         if DND_AVAILABLE:
-            self.entry.drop_target_register(DND_FILES)
-            self.entry.dnd_bind("<<Drop>>", self._drop)
+            self.entry.drop_target_register(DND_FILES)  # type: ignore[attr-defined]
+            self.entry.dnd_bind("<<Drop>>", self._drop)  # type: ignore[attr-defined]
 
     def _drop(self, event):  # pragma: no cover - GUI only
         self.entry.delete(0, "end")
@@ -131,6 +134,8 @@ class DirEntry(ttk.Frame):
 
 
 class BaseTab(ttk.Frame, LogMixin):
+    TITLE: str = ""
+
     def __init__(self, master: ttk.Notebook, cfg: dict):
         self.cfg = cfg
         frame = ttk.Frame(master)
@@ -154,6 +159,7 @@ class BaseTab(ttk.Frame, LogMixin):
                 self.log("Done")
             except Exception as e:
                 self.log(f"Error: {e}")
+
         threading.Thread(target=_target, daemon=True).start()
 
 
@@ -175,7 +181,9 @@ class ExtractTab(BaseTab):
         self.end = ttk.Entry(ex_frame, width=5)
         self.start.grid(row=0, column=1)
         self.end.grid(row=0, column=3)
-        ttk.Button(ex_frame, text="Extract", command=self.do_extract).grid(row=0, column=4, padx=5)
+        ttk.Button(ex_frame, text="Extract", command=self.do_extract).grid(
+            row=0, column=4, padx=5
+        )
         ex_frame.pack(pady=5)
 
         split_frame = ttk.Frame(body)
@@ -183,7 +191,9 @@ class ExtractTab(BaseTab):
         self.pages = ttk.Entry(split_frame, width=5)
         self.pages.insert(0, str(self.cfg.get("split_pages", 1)))
         self.pages.grid(row=0, column=1)
-        ttk.Button(split_frame, text="Split", command=self.do_split).grid(row=0, column=2, padx=5)
+        ttk.Button(split_frame, text="Split", command=self.do_split).grid(
+            row=0, column=2, padx=5
+        )
         split_frame.pack(pady=5)
 
     def do_extract(self):  # pragma: no cover - GUI only
@@ -193,7 +203,9 @@ class ExtractTab(BaseTab):
         except ValueError:
             messagebox.showerror("Error", "Invalid page numbers")
             return
-        self.run_thread(page_extract.extract_range, self.input.get(), s, e, self.outdir.get())
+        self.run_thread(
+            page_extract.extract_range, self.input.get(), s, e, self.outdir.get()
+        )
 
     def do_split(self):  # pragma: no cover - GUI only
         try:
@@ -202,7 +214,9 @@ class ExtractTab(BaseTab):
         except ValueError:
             messagebox.showerror("Error", "Invalid pages per file")
             return
-        self.run_thread(page_extract.split_pdf, self.input.get(), pages, self.outdir.get())
+        self.run_thread(
+            page_extract.split_pdf, self.input.get(), pages, self.outdir.get()
+        )
 
 
 class OptimizeTab(BaseTab):
@@ -217,12 +231,18 @@ class OptimizeTab(BaseTab):
 
         opt_frame = ttk.Frame(body)
         ttk.Label(opt_frame, text="Quality").grid(row=0, column=0)
-        self.quality = ttk.Combobox(opt_frame, values=list(optimize.QUALITY_SETTINGS.keys()))
+        self.quality = ttk.Combobox(
+            opt_frame, values=list(optimize.QUALITY_SETTINGS.keys())
+        )
         self.quality.set(self.cfg.get("opt_quality", "default"))
         self.quality.grid(row=0, column=1)
         self.compress = tk.BooleanVar(value=self.cfg.get("opt_compress_images", False))
-        ttk.Checkbutton(opt_frame, text="Compress images", variable=self.compress).grid(row=0, column=2)
-        ttk.Button(opt_frame, text="Optimize", command=self.do_opt).grid(row=0, column=3, padx=5)
+        ttk.Checkbutton(opt_frame, text="Compress images", variable=self.compress).grid(
+            row=0, column=2
+        )
+        ttk.Button(opt_frame, text="Optimize", command=self.do_opt).grid(
+            row=0, column=3, padx=5
+        )
         opt_frame.pack(pady=5)
 
     def do_opt(self):  # pragma: no cover - GUI only
@@ -248,17 +268,26 @@ class RepairTab(BaseTab):
         ttk.Label(body, text="Output Dir (optional)").pack(anchor="w")
         self.outdir.pack(fill="x")
         btn_frame = ttk.Frame(body)
-        ttk.Button(btn_frame, text="Repair", command=self.do_repair).grid(row=0, column=0, padx=5)
+        ttk.Button(btn_frame, text="Repair", command=self.do_repair).grid(
+            row=0, column=0, padx=5
+        )
         self.pw = ttk.Entry(btn_frame, show="*")
         self.pw.grid(row=0, column=1)
-        ttk.Button(btn_frame, text="Unlock", command=self.do_unlock).grid(row=0, column=2, padx=5)
+        ttk.Button(btn_frame, text="Unlock", command=self.do_unlock).grid(
+            row=0, column=2, padx=5
+        )
         btn_frame.pack(pady=5)
 
     def do_repair(self):  # pragma: no cover - GUI only
         self.run_thread(repair.repair_pdf, self.input.get(), self.outdir.get())
 
     def do_unlock(self):  # pragma: no cover - GUI only
-        self.run_thread(unlock.unlock_pdf, self.input.get(), self.pw.get() or None, self.outdir.get())
+        self.run_thread(
+            unlock.unlock_pdf,
+            self.input.get(),
+            self.pw.get() or None,
+            self.outdir.get(),
+        )
 
 
 class JPEGTab(BaseTab):
@@ -282,7 +311,9 @@ class JPEGTab(BaseTab):
         self.quality = ttk.Entry(frame, width=5)
         self.quality.insert(0, str(self.cfg.get("jpeg_quality", 95)))
         self.quality.grid(row=1, column=1)
-        ttk.Button(frame, text="Convert", command=self.do_conv).grid(row=1, column=3, padx=5)
+        ttk.Button(frame, text="Convert", command=self.do_conv).grid(
+            row=1, column=3, padx=5
+        )
         frame.pack(pady=5)
 
     def do_conv(self):  # pragma: no cover - GUI only
@@ -290,7 +321,9 @@ class JPEGTab(BaseTab):
         end = int(self.end.get()) if self.end.get() else None
         q = int(self.quality.get())
         self.cfg["jpeg_quality"] = q
-        self.run_thread(to_jpegs.pdf_to_jpegs, self.input.get(), start, end, q, self.outdir.get())
+        self.run_thread(
+            to_jpegs.pdf_to_jpegs, self.input.get(), start, end, q, self.outdir.get()
+        )
 
 
 class TIFFTab(BaseTab):
@@ -342,7 +375,9 @@ class PPTXTab(BaseTab):
         self.height.insert(0, str(self.cfg.get("pptx_height", 1080)))
         self.width.grid(row=0, column=1)
         self.height.grid(row=0, column=3)
-        ttk.Button(frame, text="Convert", command=self.do_conv).grid(row=0, column=4, padx=5)
+        ttk.Button(frame, text="Convert", command=self.do_conv).grid(
+            row=0, column=4, padx=5
+        )
         frame.pack(pady=5)
 
     def do_conv(self):  # pragma: no cover - GUI only
@@ -350,7 +385,13 @@ class PPTXTab(BaseTab):
         h = int(self.height.get())
         self.cfg["pptx_width"] = w
         self.cfg["pptx_height"] = h
-        self.run_thread(pptx_export.pptx_to_jpegs_via_powerpoint, self.input.get(), w, h, self.outdir.get())
+        self.run_thread(
+            pptx_export.pptx_to_jpegs_via_powerpoint,
+            self.input.get(),
+            w,
+            h,
+            self.outdir.get(),
+        )
 
 
 class BatchTab(BaseTab):
@@ -371,14 +412,18 @@ class BatchTab(BaseTab):
         script = self.script.get()
         argv = self.args.get().split()
         python = self.python.get() or "python"
+
         def _run():
             try:
-                proc = subprocess.run([python, script, *argv], capture_output=True, text=True)
+                proc = subprocess.run(
+                    [python, script, *argv], capture_output=True, text=True
+                )
                 self.log(proc.stdout)
                 if proc.stderr:
                     self.log(proc.stderr)
             except Exception as e:
                 self.log(str(e))
+
         threading.Thread(target=_run, daemon=True).start()
 
 
@@ -390,8 +435,17 @@ def main() -> None:  # pragma: no cover - GUI only
     nb = ttk.Notebook(root)
     nb.pack(fill="both", expand=True)
 
-    tabs = [ExtractTab, OptimizeTab, RepairTab, JPEGTab, TIFFTab, WordTab, PPTXTab, BatchTab]
-    instances = [tab(nb, cfg) for tab in tabs]
+    tabs = [
+        ExtractTab,
+        OptimizeTab,
+        RepairTab,
+        JPEGTab,
+        TIFFTab,
+        WordTab,
+        PPTXTab,
+        BatchTab,
+    ]
+    _instances = [tab(nb, cfg) for tab in tabs]
 
     def on_close():
         save_config(cfg)

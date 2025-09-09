@@ -1,0 +1,8 @@
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+extend-ignore = ["E402"]
+
+[tool.mypy]
+ignore_missing_imports = true
