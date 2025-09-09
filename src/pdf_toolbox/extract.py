@@ -19,8 +19,9 @@ def extract_range(
 
     Returns the path of the created PDF.
     """
-
     with fitz.open(input_pdf) as doc:
+        if start_page < 1 or end_page < start_page or end_page > doc.page_count:
+            raise ValueError("Invalid page range")
         new_doc = fitz.open()
         new_doc.insert_pdf(doc, from_page=start_page - 1, to_page=end_page - 1)
         update_metadata(new_doc, note=" | extract_range")
