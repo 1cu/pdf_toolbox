@@ -20,14 +20,15 @@ def extract_range(
     Returns the path of the created PDF.
     """
 
-    doc = fitz.open(input_pdf)
-    new_doc = fitz.open()
-    new_doc.insert_pdf(doc, from_page=start_page - 1, to_page=end_page - 1)
-    update_metadata(new_doc, note=" | extract_range")
-    out_path = sane_output_dir(input_pdf, out_dir) / (
-        f"{Path(input_pdf).stem}_Auszug_{start_page}_{end_page}.pdf"
-    )
-    new_doc.save(out_path)
+    with fitz.open(input_pdf) as doc:
+        new_doc = fitz.open()
+        new_doc.insert_pdf(doc, from_page=start_page - 1, to_page=end_page - 1)
+        update_metadata(new_doc, note=" | extract_range")
+        out_path = sane_output_dir(input_pdf, out_dir) / (
+            f"{Path(input_pdf).stem}_Auszug_{start_page}_{end_page}.pdf"
+        )
+        new_doc.save(out_path)
+        new_doc.close()
     return str(out_path)
 
 
@@ -38,18 +39,19 @@ def split_pdf(
 ) -> List[str]:
     """Split a PDF into parts of ``pages_per_file`` pages."""
 
-    doc = fitz.open(input_pdf)
     outputs: List[str] = []
-    for start in range(0, doc.page_count, pages_per_file):
-        end = min(start + pages_per_file, doc.page_count)
-        new_doc = fitz.open()
-        new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
-        update_metadata(new_doc, note=" | split_pdf")
-        out_path = sane_output_dir(input_pdf, out_dir) / (
-            f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
-        )
-        new_doc.save(out_path)
-        outputs.append(str(out_path))
+    with fitz.open(input_pdf) as doc:
+        for start in range(0, doc.page_count, pages_per_file):
+            end = min(start + pages_per_file, doc.page_count)
+            new_doc = fitz.open()
+            new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
+            update_metadata(new_doc, note=" | split_pdf")
+            out_path = sane_output_dir(input_pdf, out_dir) / (
+                f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
+            )
+            new_doc.save(out_path)
+            new_doc.close()
+            outputs.append(str(out_path))
     return outputs
 
 
