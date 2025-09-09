@@ -8,7 +8,7 @@ from typing import Tuple, TypedDict
 import fitz  # type: ignore
 from PIL import Image
 
-from common_utils import sane_output_dir, update_metadata
+from .utils import sane_output_dir, update_metadata
 
 
 class QualitySetting(TypedDict):

@@ -6,7 +6,7 @@ from typing import List
 
 import fitz  # type: ignore
 
-from common_utils import sane_output_dir, update_metadata
+from .utils import sane_output_dir, update_metadata
 
 
 def extract_range(

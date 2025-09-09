@@ -6,7 +6,7 @@ from typing import List, Union
 import fitz  # type: ignore
 from PIL import Image
 
-from common_utils import sane_output_dir
+from .utils import sane_output_dir
 
 
 def pdf_to_images(
