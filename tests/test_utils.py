@@ -3,8 +3,8 @@ from pathlib import Path
 
 import fitz
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-from common_utils import sane_output_dir, update_metadata
+sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
+from pdf_toolbox.utils import sane_output_dir, update_metadata
 
 
 def test_sane_output_dir(tmp_path):

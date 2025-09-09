@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-from common_utils import sane_output_dir
+from .utils import sane_output_dir
 
 
 def pptx_to_jpegs_via_powerpoint(
