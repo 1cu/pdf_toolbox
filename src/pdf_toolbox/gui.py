@@ -4,6 +4,7 @@ import json
 import sys
 import inspect
 import html
+import types
 from pathlib import Path
 from typing import Any, Dict, Literal, Union, get_args, get_origin
 
@@ -246,7 +247,7 @@ if QT_AVAILABLE:
                 origin = get_origin(ann)
                 lower = param.name.lower()
 
-                if origin is Union and int in get_args(ann):
+                if origin in (Union, types.UnionType) and int in get_args(ann):
                     lit = next(
                         (a for a in get_args(ann) if get_origin(a) is Literal), None
                     )
