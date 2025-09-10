@@ -36,7 +36,7 @@ jobs:
           else
             zip -j pdf_toolbox-macos.zip dist/pdf_toolbox
           fi
-      - uses: actions/upload-artifact@1df5031b5de2fbba57937d38405b5a228cbf43f9 # v4
+      - uses: actions/upload-artifact@v4
         with:
           name: pdf_toolbox-${{ runner.os }}
           path: pdf_toolbox-*.zip
