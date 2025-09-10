@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 import importlib
 import json
+import sys
 from typing import Iterable
 
 import fitz  # type: ignore
@@ -49,6 +50,8 @@ def ensure_libs() -> None:
 
     missing: list[str] = []
     for mod in REQUIRED_LIBS:
+        if mod == "win32com.client" and sys.platform != "win32":
+            continue
         try:
             importlib.import_module(mod)
         except Exception:  # pragma: no cover - best effort
@@ -75,7 +78,8 @@ def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
 
     metadata = dict(fitz_doc.metadata or {})
     if note:
-        metadata["subject"] = metadata.get("subject", "") + note
+        existing_subject = metadata.get("subject") or ""
+        metadata["subject"] = existing_subject + note
     metadata.setdefault("producer", "pdf_toolbox")
     author, _email = _load_author_info()
     metadata["author"] = metadata.get("author") or author

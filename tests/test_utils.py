@@ -42,3 +42,11 @@ def test_ensure_libs_missing(monkeypatch):
 def test_ensure_libs_ok(monkeypatch):
     monkeypatch.setattr("pdf_toolbox.utils.REQUIRED_LIBS", ["sys"], raising=False)
     ensure_libs()
+
+
+def test_ensure_libs_skips_win32(monkeypatch):
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.setattr(
+        "pdf_toolbox.utils.REQUIRED_LIBS", ["win32com.client"], raising=False
+    )
+    ensure_libs()
