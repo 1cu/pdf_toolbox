@@ -59,6 +59,7 @@ jobs:
         uses: actions/download-artifact@9d99cedd4c308d4558c0772306f4ac41e4e3f6b9 # v4
         with:
           path: artifacts
+          merge-multiple: true
       - name: Create tag
         id: tag
         run: |
