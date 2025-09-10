@@ -49,7 +49,16 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
     return outputs
 
 
-@action(category="Office")
+if sys.platform == "win32":
+    _register_action = action(category="Office")
+else:
+
+    def _register_action(fn):
+        fn.__pdf_toolbox_action__ = True
+        return fn
+
+
+@_register_action
 def pptx_to_images_via_powerpoint(
     pptx_path: str,
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
