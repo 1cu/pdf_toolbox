@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   build:
@@ -21,19 +20,5 @@ jobs:
           pip install .[dev]
       - name: Pre-commit
         run: pre-commit run --all-files
-      - name: Generate coverage report
-        id: coverage
-        run: |
-          echo "report<<EOF" >> $GITHUB_OUTPUT
-          python -m coverage report >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-      - name: Comment coverage
-        uses: peter-evans/create-or-update-comment@23ff15729ef2fc348714a3bb66d2f655ca9066f2 # v3
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ```text
-            ${{ steps.coverage.outputs.report }}
-            ```
       - name: Build
         run: python -m compileall .
