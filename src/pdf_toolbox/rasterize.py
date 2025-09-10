@@ -36,7 +36,7 @@ def pdf_to_images(
     input_pdf: str,
     start_page: int | None = None,
     end_page: int | None = None,
-    dpi: DpiChoice = "High (300 dpi)",
+    dpi: int | DpiChoice = "High (300 dpi)",
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     quality: int = 95,
     out_dir: str | None = None,
@@ -46,15 +46,21 @@ def pdf_to_images(
 
     Each page of ``input_pdf`` is rendered to the chosen image format. Supported
     formats are listed in :data:`SUPPORTED_IMAGE_FORMATS`.
-    ``dpi`` selects one of the predefined resolutions from
-    :data:`DPI_PRESETS`; higher values yield higher quality but also larger
-    files. ``quality`` is only used for JPEG output. If ``as_pil`` is ``True``
-    a list of :class:`PIL.Image.Image` objects is returned instead of file paths.
+    ``dpi`` may be one of the labels defined in :data:`DPI_PRESETS` or any
+    integer DPI value; higher values yield higher quality but also larger files.
+    ``quality`` is only used for JPEG output. If ``as_pil`` is ``True`` a list
+    of :class:`PIL.Image.Image` objects is returned instead of file paths.
     """
 
     outputs: List[Union[str, Image.Image]] = []
 
-    dpi_value = DPI_PRESETS[dpi]
+    if isinstance(dpi, str):
+        try:
+            dpi_value = DPI_PRESETS[dpi]
+        except KeyError as exc:
+            raise ValueError(f"Unknown DPI preset '{dpi}'") from exc
+    else:
+        dpi_value = int(dpi)
     zoom = dpi_value / 72  # default PDF resolution is 72 dpi
     matrix = fitz.Matrix(zoom, zoom)
 
