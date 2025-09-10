@@ -30,6 +30,17 @@ DpiChoice = Literal[
     "Ultra (1200 dpi)",
 ]
 
+# Preset JPEG quality options similar to DPI presets. These are only used when
+# ``image_format`` is ``"JPEG"``. The GUI presents the human readable key while
+# the value is the numeric quality passed to :func:`PIL.Image.Image.save`.
+JPEG_QUALITY_PRESETS: Dict[str, int] = {
+    "Low (70)": 70,
+    "Medium (85)": 85,
+    "High (95)": 95,
+}
+
+QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
+
 
 @action(category="PDF")
 def pdf_to_images(
@@ -37,7 +48,7 @@ def pdf_to_images(
     pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
-    quality: int = 95,
+    quality: int | QualityChoice = "High (95)",
     out_dir: str | None = None,
     as_pil: bool = False,
 ) -> List[Union[str, Image.Image]]:
@@ -49,8 +60,11 @@ def pdf_to_images(
     :data:`SUPPORTED_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
     :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
     quality but also larger files. ``quality`` is only used for JPEG output. If
-    ``as_pil`` is ``True`` a list of :class:`PIL.Image.Image` objects is
-    returned instead of file paths.
+    ``as_pil`` is ``True`` the rendered pages are returned as
+    :class:`PIL.Image.Image` objects instead of file paths. This allows further
+    in-memory processing without touching the filesystem, but it keeps all
+    images in RAM. Large PDFs or high ``dpi`` values can therefore consume a
+    significant amount of memory and may be impractical.
     """
 
     outputs: List[Union[str, Image.Image]] = []
@@ -91,7 +105,16 @@ def pdf_to_images(
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             save_kwargs = {}
             if fmt == "JPEG":
-                save_kwargs["quality"] = quality
+                if isinstance(quality, str):
+                    try:
+                        quality_val = JPEG_QUALITY_PRESETS[quality]
+                    except KeyError as exc:
+                        raise ValueError(
+                            f"Unknown JPEG quality preset '{quality}'"
+                        ) from exc
+                else:
+                    quality_val = int(quality)
+                save_kwargs["quality"] = quality_val
             elif fmt == "PNG":  # lossless; avoid heavy compression for speed
                 save_kwargs["compress_level"] = 0
 
@@ -105,4 +128,8 @@ def pdf_to_images(
     return outputs
 
 
-__all__ = ["pdf_to_images", "DPI_PRESETS"]
+__all__ = [
+    "pdf_to_images",
+    "DPI_PRESETS",
+    "JPEG_QUALITY_PRESETS",
+]
