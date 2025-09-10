@@ -13,8 +13,10 @@ All Python modules live inside the `pdf_toolbox` package located in the
 
 ## Configuration
 
-`pdf_toolbox` requires a `pdf_toolbox_config.json` file in
-the project directory that specifies the document author and contact email.
+`pdf_toolbox` requires a `pdf_toolbox_config.json` file in the user's
+platform-specific configuration directory (e.g. `~/.config/pdf_toolbox/` on
+Linux or `%APPDATA%\pdf_toolbox\` on Windows) determined via the
+`platformdirs` library that specifies the document author and contact email.
 The Qt GUI warns on startup if the information is missing and lets you
 set it via the **Autor** button. Create the file manually with the
 following content:
@@ -26,7 +28,8 @@ following content:
 }
 ```
 
-The configuration file is ignored by Git so local preferences remain private.
+Since the file resides outside the repository it remains private and is not
+tracked by Git.
 
 ## Optimization
 
