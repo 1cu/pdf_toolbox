@@ -24,7 +24,7 @@ jobs:
       - name: Generate coverage report
         id: coverage
         run: |
-          echo "report<<'EOF'" >> $GITHUB_OUTPUT
+          echo "report<<EOF" >> $GITHUB_OUTPUT
           python -m coverage report >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Comment coverage
