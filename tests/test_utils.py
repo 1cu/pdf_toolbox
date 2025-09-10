@@ -6,7 +6,12 @@ import fitz
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
 
-from pdf_toolbox.utils import ensure_libs, sane_output_dir, update_metadata
+from pdf_toolbox.utils import (
+    ensure_libs,
+    parse_page_spec,
+    sane_output_dir,
+    update_metadata,
+)
 
 
 def test_sane_output_dir(tmp_path):
@@ -58,3 +63,21 @@ def test_ensure_libs_skips_win32(monkeypatch):
         "pdf_toolbox.utils.REQUIRED_LIBS", ["win32com.client"], raising=False
     )
     ensure_libs()
+
+
+def test_parse_page_spec_examples():
+    assert parse_page_spec(None, 6) == [1, 2, 3, 4, 5, 6]
+    assert parse_page_spec("1-2", 6) == [1, 2]
+    assert parse_page_spec("1", 6) == [1]
+    assert parse_page_spec("-2", 6) == [1, 2]
+    assert parse_page_spec("1,5,6", 6) == [1, 5, 6]
+    assert parse_page_spec("1-", 3) == [1, 2, 3]
+
+
+def test_parse_page_spec_invalid():
+    with pytest.raises(ValueError):
+        parse_page_spec("2-1", 5)
+    with pytest.raises(ValueError):
+        parse_page_spec("0", 5)
+    with pytest.raises(ValueError):
+        parse_page_spec("a", 5)

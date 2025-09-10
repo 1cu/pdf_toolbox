@@ -14,8 +14,8 @@ def test_pdf_to_images_returns_pil(sample_pdf):
 
 
 def test_pdf_to_images_invalid_page(sample_pdf):
-    with pytest.raises(ValueError, match="start_page 5 out of range"):
-        pdf_to_images(sample_pdf, start_page=5)
+    with pytest.raises(ValueError, match="page 5 out of range"):
+        pdf_to_images(sample_pdf, pages="5")
 
 
 def test_pdf_to_images_missing_file(tmp_path):
@@ -29,11 +29,10 @@ def test_pdf_to_images_unsupported_format(sample_pdf):
         pdf_to_images(sample_pdf, image_format="BMP")
 
 
-def test_pdf_to_images_str_page_numbers(sample_pdf):
+def test_pdf_to_images_selected_pages(sample_pdf):
     images = pdf_to_images(
         sample_pdf,
-        start_page="1",
-        end_page="2",
+        pages="1,2",
         as_pil=True,
         dpi="Low (72 dpi)",
     )
@@ -41,8 +40,8 @@ def test_pdf_to_images_str_page_numbers(sample_pdf):
 
 
 def test_pdf_to_images_invalid_page_type(sample_pdf):
-    with pytest.raises(ValueError, match="start_page must be an integer"):
-        pdf_to_images(sample_pdf, start_page="x")
+    with pytest.raises(ValueError, match="Invalid page specification"):
+        pdf_to_images(sample_pdf, pages="x")
 
 
 @pytest.mark.parametrize(
@@ -92,10 +91,8 @@ def test_pdf_to_images_custom_dpi(sample_pdf):
 
 
 def test_pdf_to_images_invalid_page_range(sample_pdf):
-    with pytest.raises(
-        ValueError, match="end_page must be greater than or equal to start_page"
-    ):
-        pdf_to_images(sample_pdf, start_page=3, end_page=2)
+    with pytest.raises(ValueError, match="end must be greater than or equal to start"):
+        pdf_to_images(sample_pdf, pages="3-2")
 
 
 def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
