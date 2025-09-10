@@ -38,11 +38,15 @@ def test_literal_parameters_resolved():
 
     pdf_fmt = next(p for p in pdf_act.params if p.name == "image_format").annotation
     pptx_fmt = next(p for p in pptx_act.params if p.name == "image_format").annotation
+    pdf_dpi = next(p for p in pdf_act.params if p.name == "dpi").annotation
 
     from typing import Literal, get_args, get_origin
+    from pdf_toolbox.rasterize import DPI_PRESETS
 
     assert get_origin(pdf_fmt) is Literal
     assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF"}
+    assert get_origin(pdf_dpi) is Literal
+    assert set(get_args(pdf_dpi)) == set(DPI_PRESETS.keys())
     assert get_origin(pptx_fmt) is Literal
     assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF"}
 

@@ -21,6 +21,14 @@ def test_sane_output_dir(tmp_path):
     assert custom.exists()
 
 
+def test_sane_output_dir_rejects_file(tmp_path):
+    base = tmp_path / "input.pdf"
+    base.write_text("data")
+    file_target = tmp_path / "out.png"
+    with pytest.raises(ValueError, match="directory, not a file"):
+        sane_output_dir(base, file_target)
+
+
 def test_update_metadata(tmp_path):
     doc = fitz.open()
     doc.new_page()

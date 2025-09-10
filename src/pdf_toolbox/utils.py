@@ -69,6 +69,8 @@ def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
 
     base = Path(base_path)
     target = Path(out_dir) if out_dir else base.parent
+    if target.suffix:
+        raise ValueError(f"Output directory must be a directory, not a file: {out_dir}")
     target.mkdir(parents=True, exist_ok=True)
     return target
 

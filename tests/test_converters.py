@@ -11,7 +11,7 @@ from pdf_toolbox.unlock import unlock_pdf
 
 def test_pdf_to_images_png(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi=72, image_format="PNG", out_dir=str(tmp_path)
+        sample_pdf, dpi="Low (72 dpi)", image_format="PNG", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
     assert all(Path(p).exists() for p in outputs)
@@ -19,7 +19,7 @@ def test_pdf_to_images_png(sample_pdf, tmp_path):
 
 def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi=72, image_format="JPEG", out_dir=str(tmp_path)
+        sample_pdf, dpi="Low (72 dpi)", image_format="JPEG", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
     assert all(Path(p).exists() for p in outputs)
@@ -27,14 +27,14 @@ def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
 
 def test_pdf_to_images_tiff(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi=72, image_format="TIFF", out_dir=str(tmp_path)
+        sample_pdf, dpi="Low (72 dpi)", image_format="TIFF", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
     assert all(Path(p).exists() for p in outputs)
 
 
 def test_pdf_to_images_default_outdir(sample_pdf):
-    outputs = pdf_to_images(sample_pdf, dpi=72)
+    outputs = pdf_to_images(sample_pdf, dpi="Low (72 dpi)")
     assert all(Path(p).parent == Path(sample_pdf).parent for p in outputs)
 
 
