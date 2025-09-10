@@ -1,6 +1,22 @@
 import json
+import os
 
-from pdf_toolbox import gui
+import pytest
+
+try:
+    from PySide6.QtWidgets import QApplication
+except Exception:  # pragma: no cover - optional GUI deps
+    pytest.skip("PySide6.QtWidgets not available", allow_module_level=True)
+
+from pdf_toolbox import actions, gui
+
+
+@pytest.fixture(scope="module")
+def app():
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    app = QApplication.instance() or QApplication([])
+    yield app
+    app.quit()
 
 
 def test_load_config_default(tmp_path, monkeypatch):
@@ -18,3 +34,28 @@ def test_save_config_roundtrip(tmp_path, monkeypatch):
     gui.save_config(data)
     loaded = json.loads(cfg_path.read_text())
     assert loaded == data
+
+
+def test_mainwindow_collect_args(app, monkeypatch):
+    def sample(name: str, flag: bool = False) -> None:
+        pass
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    win = gui.MainWindow()
+    try:
+        item = win.tree.topLevelItem(0).child(0)
+        win.on_item_clicked(item)
+        win.current_widgets["name"].setText("foo")
+        win.current_widgets["flag"].setChecked(True)
+        kwargs = win.collect_args()
+        assert kwargs == {"name": "foo", "flag": True}
+    finally:
+        win.close()
+
+
+def test_main_raises_without_qt(monkeypatch):
+    monkeypatch.setattr(gui, "QT_AVAILABLE", False)
+    monkeypatch.setattr(gui, "QT_IMPORT_ERROR", RuntimeError("missing"))
+    with pytest.raises(RuntimeError):
+        gui.main()
