@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.2.6"
+version = "0.2.8"
 description = "Utilities for PDF operations"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,10 +18,12 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "pytest-cov",
   "ruff",
   "mypy",
   "pre-commit",
   "build",
+  "coverage",
 ]
 
 [tool.setuptools]
@@ -39,3 +41,11 @@ extend-ignore = ["E402"]
 [tool.mypy]
 ignore_missing_imports = true
 exclude = ["build/"]
+
+[tool.coverage.run]
+source = ["pdf_toolbox"]
+omit = ["*/pdf_toolbox/gui.py"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 50

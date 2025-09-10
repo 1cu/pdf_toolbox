@@ -13,7 +13,7 @@ repos:
   - repo: local
     hooks:
       - id: pytest
-        name: pytest
-        entry: pytest
+        name: pytest with coverage
+        entry: pytest --cov=pdf_toolbox --cov-report=term-missing --cov-fail-under=50
         language: system
         pass_filenames: false
