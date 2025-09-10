@@ -67,7 +67,10 @@ python -m pdf_toolbox.gui
 ```
 
 ### Pre-commit hooks
-Install the git hooks so formatting, linting, type checks, and tests run automatically on each `git commit`:
+The configuration uses `language: system` so hooks run in the active virtual
+environment. Hooks lint, format, type-check, and run tests on every commit,
+even if you only edit documentation. Activate the `.venv` before installing or
+running them:
 
 ```bash
 pre-commit install
