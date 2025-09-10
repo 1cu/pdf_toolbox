@@ -5,6 +5,7 @@ import sys
 import inspect
 import html
 import types
+from threading import Event
 from pathlib import Path
 from typing import Any, Dict, Literal, Union, get_args, get_origin
 
@@ -121,6 +122,8 @@ if QT_AVAILABLE:
             save_config(self.cfg)
 
     class Worker(QThread):
+        """Run an action in a background thread with cooperative cancellation."""
+
         finished = Signal(object)
         error = Signal(str)
 
@@ -128,13 +131,22 @@ if QT_AVAILABLE:
             super().__init__()
             self.func = func
             self.kwargs = kwargs
+            self._cancel = Event()
+
+        def cancel(self) -> None:
+            """Request the worker to stop as soon as possible."""
+            self._cancel.set()
 
         def run(self) -> None:  # pragma: no cover - thread
             try:
+                if "cancel" in inspect.signature(self.func).parameters:
+                    self.kwargs.setdefault("cancel", self._cancel)
                 result = self.func(**self.kwargs)
-                self.finished.emit(result)
+                if not self._cancel.is_set():
+                    self.finished.emit(result)
             except Exception as exc:  # pragma: no cover - thread
-                self.error.emit(str(exc))
+                if not self._cancel.is_set():
+                    self.error.emit(str(exc))
 
     class ClickableLabel(QLabel):
         clicked = Signal()
@@ -333,8 +345,21 @@ if QT_AVAILABLE:
                 self.current_widgets[param.name] = widget
 
         def collect_args(self) -> Dict[str, Any]:
+            if not self.current_action:
+                return {}
+            params = {p.name: p for p in self.current_action.params}
             kwargs: Dict[str, Any] = {}
             for name, widget in self.current_widgets.items():
+                param = params.get(name)
+                optional = False
+                if param is not None:
+                    optional = param.default is not inspect._empty
+                    if not optional:
+                        origin = get_origin(param.annotation)
+                        if origin in (Union, types.UnionType) and type(
+                            None
+                        ) in get_args(param.annotation):
+                            optional = True
                 if isinstance(widget, tuple):
                     combo, spin = widget
                     val = combo.currentText()
@@ -342,12 +367,19 @@ if QT_AVAILABLE:
                 elif isinstance(widget, FileEdit):
                     text = widget.text().strip()
                     if widget.multi:
-                        kwargs[name] = [p for p in text.split(";") if p]
+                        paths = [p for p in text.split(";") if p]
+                        if not paths and not optional:
+                            raise ValueError(f"Feld '{name}' darf nicht leer sein.")
+                        kwargs[name] = paths
                     else:
-                        kwargs[name] = text
+                        if not text and not optional:
+                            raise ValueError(f"Feld '{name}' darf nicht leer sein.")
+                        kwargs[name] = text or None
                 elif isinstance(widget, QLineEdit):
                     val = widget.text().strip()
-                    kwargs[name] = val if val else None
+                    if not val and not optional:
+                        raise ValueError(f"Feld '{name}' darf nicht leer sein.")
+                    kwargs[name] = val or None
                 elif isinstance(widget, QComboBox):
                     kwargs[name] = widget.currentText()
                 elif isinstance(widget, QCheckBox):
@@ -379,10 +411,16 @@ if QT_AVAILABLE:
         def on_run(self) -> None:  # pragma: no cover - GUI
             if not self.current_action:
                 return
-            kwargs = self.collect_args()
+            try:
+                kwargs = self.collect_args()
+            except ValueError as exc:
+                QMessageBox.critical(self, "Fehler", str(exc))
+                return
             if self.worker and self.worker.isRunning():
-                self.worker.terminate()
-                self.worker.wait()
+                self.worker.cancel()
+                if not self.worker.wait(100):
+                    self.worker.terminate()
+                    self.worker.wait()
                 self.worker = None
                 self.progress.setRange(0, 1)
                 self.progress.setValue(0)
