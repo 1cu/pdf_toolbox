@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from threading import Event
 
 import fitz  # type: ignore
 
@@ -10,13 +11,20 @@ from .utils import sane_output_dir, update_metadata
 
 
 @action(category="PDF")
-def repair_pdf(input_pdf: str, out_dir: str | None = None) -> str:
+def repair_pdf(
+    input_pdf: str, out_dir: str | None = None, cancel: Event | None = None
+) -> str:
     """Repariere ein PDF und bereinige inkonsistente Daten."""
+    if cancel and cancel.is_set():  # pragma: no cover
+        raise RuntimeError("cancelled")  # pragma: no cover
     doc = fitz.open(input_pdf)
     update_metadata(doc, note=" | repaired")
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_repaired.pdf"
     )
+    if cancel and cancel.is_set():  # pragma: no cover
+        doc.close()
+        raise RuntimeError("cancelled")  # pragma: no cover
     doc.save(out_path, clean=True, deflate=True, garbage=4)
     doc.close()
     return str(out_path)
