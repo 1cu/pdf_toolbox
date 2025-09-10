@@ -5,6 +5,7 @@ import sys
 import inspect
 import html
 import types
+from threading import Event
 from pathlib import Path
 from typing import Any, Dict, Literal, Union, get_args, get_origin
 
@@ -121,6 +122,8 @@ if QT_AVAILABLE:
             save_config(self.cfg)
 
     class Worker(QThread):
+        """Run an action in a background thread with cooperative cancellation."""
+
         finished = Signal(object)
         error = Signal(str)
 
@@ -128,13 +131,22 @@ if QT_AVAILABLE:
             super().__init__()
             self.func = func
             self.kwargs = kwargs
+            self._cancel = Event()
+
+        def cancel(self) -> None:
+            """Request the worker to stop as soon as possible."""
+            self._cancel.set()
 
         def run(self) -> None:  # pragma: no cover - thread
             try:
+                if "cancel" in inspect.signature(self.func).parameters:
+                    self.kwargs.setdefault("cancel", self._cancel)
                 result = self.func(**self.kwargs)
-                self.finished.emit(result)
+                if not self._cancel.is_set():
+                    self.finished.emit(result)
             except Exception as exc:  # pragma: no cover - thread
-                self.error.emit(str(exc))
+                if not self._cancel.is_set():
+                    self.error.emit(str(exc))
 
     class ClickableLabel(QLabel):
         clicked = Signal()
@@ -381,8 +393,10 @@ if QT_AVAILABLE:
                 return
             kwargs = self.collect_args()
             if self.worker and self.worker.isRunning():
-                self.worker.terminate()
-                self.worker.wait()
+                self.worker.cancel()
+                if not self.worker.wait(100):
+                    self.worker.terminate()
+                    self.worker.wait()
                 self.worker = None
                 self.progress.setRange(0, 1)
                 self.progress.setValue(0)
