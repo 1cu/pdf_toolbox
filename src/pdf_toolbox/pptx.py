@@ -8,7 +8,7 @@ from .actions import action
 from .utils import sane_output_dir
 
 
-def _pptx_to_images_via_powerpoint(
+def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + PowerPoint
     pptx_path: str,
     image_format: Literal["PNG", "JPEG", "TIFF"],
     width: int = 1920,
