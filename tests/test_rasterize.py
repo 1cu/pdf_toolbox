@@ -24,3 +24,15 @@ def test_pdf_to_images_missing_file(tmp_path):
 def test_pdf_to_images_unsupported_format(sample_pdf):
     with pytest.raises(ValueError, match="Unsupported image format"):
         pdf_to_images(sample_pdf, image_format="BMP")
+
+
+def test_pdf_to_images_str_page_numbers(sample_pdf):
+    images = pdf_to_images(
+        sample_pdf, start_page="1", end_page="2", as_pil=True, dpi=72
+    )
+    assert len(images) == 2
+
+
+def test_pdf_to_images_invalid_page_type(sample_pdf):
+    with pytest.raises(ValueError, match="start_page must be an integer"):
+        pdf_to_images(sample_pdf, start_page="x")

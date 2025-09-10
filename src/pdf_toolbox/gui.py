@@ -16,8 +16,8 @@ DEFAULT_CONFIG = {
     "last_open_dir": str(Path.home()),
     "last_save_dir": str(Path.home()),
     "jpeg_quality": 95,
-    "pptx_width": 1920,
-    "pptx_height": 1080,
+    "pptx_width": 3840,
+    "pptx_height": 2160,
     "opt_quality": "default",
     "opt_compress_images": False,
     "split_pages": 1,
@@ -250,6 +250,7 @@ if QT_AVAILABLE:
                         widget.setChecked(True)
                 elif ann is int:
                     widget = QSpinBox()
+                    widget.setMaximum(10000)
                     if param.default not in (inspect._empty, None):
                         widget.setValue(int(param.default))
                 elif ann is float:
