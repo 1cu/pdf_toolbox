@@ -42,10 +42,10 @@ def pdf_to_docx(
                 if pix.n > 3:  # pragma: no cover - rare branch
                     pix = fitz.Pixmap(fitz.csRGB, pix)  # pragma: no cover
                 pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-                buf = io.BytesIO()
-                pil.save(buf, format="PNG")
-                buf.seek(0)
-                docx_doc.add_picture(buf)
+                with io.BytesIO() as buf:
+                    pil.save(buf, format="PNG")
+                    buf.seek(0)
+                    docx_doc.add_picture(buf)
     out_path = sane_output_dir(input_pdf, out_dir) / f"{Path(input_pdf).stem}.docx"
     docx_doc.save(str(out_path))
     return str(out_path)
