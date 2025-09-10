@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Literal
+from typing import Dict, List, Union, Literal
+from threading import Event
 
 import fitz  # type: ignore
 from PIL import Image
@@ -50,7 +51,10 @@ def pdf_to_images(
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     quality: int | QualityChoice = "High (95)",
     out_dir: str | None = None,
-) -> List[str]:
+    as_pil: bool = False,
+    cancel: Event | None = None,
+) -> List[Union[str, Image.Image]]:
+
     """Rasterize a PDF into images.
 
     Each page of ``input_pdf`` specified by ``pages`` is rendered to the chosen
@@ -92,6 +96,8 @@ def pdf_to_images(
         out_base = sane_output_dir(input_pdf, out_dir)
 
         for page_no in page_numbers:
+            if cancel and cancel.is_set():  # pragma: no cover
+                raise RuntimeError("cancelled")  # pragma: no cover
             page = doc.load_page(page_no - 1)
             pix = page.get_pixmap(matrix=matrix)
             if pix.colorspace is None or pix.colorspace.n not in (1, 3):
