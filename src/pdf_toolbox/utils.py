@@ -6,7 +6,7 @@ from pathlib import Path
 import importlib
 import json
 import sys
-from typing import Iterable
+from typing import Iterable, List
 
 import fitz  # type: ignore
 
@@ -60,6 +60,49 @@ def ensure_libs() -> None:
         raise RuntimeError("Missing required libraries: " + ", ".join(missing))
 
 
+def parse_page_spec(spec: str | None, total: int) -> List[int]:
+    """Parse a page/slide specification into a list of 1-based numbers.
+
+    ``spec`` follows a simple syntax with comma-separated parts. Each part may
+    be a single number (``"5"``), a range like ``"3-7"``, an open-ended range
+    such as ``"2-"`` or ``"-4"``, or any combination thereof
+    (e.g. ``"1,5,6"``). ``None`` or an empty string selects all pages.
+
+    A ``ValueError`` is raised if the specification is invalid or references
+    pages outside ``1..total``.
+    """
+
+    if not spec:
+        return list(range(1, total + 1))
+
+    pages: set[int] = set()
+    for part in spec.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            start_s, end_s = part.split("-", 1)
+            try:
+                start = int(start_s) if start_s else 1
+                end = int(end_s) if end_s else total
+            except ValueError as exc:
+                raise ValueError("Invalid page specification") from exc
+            if start < 1 or end > total:
+                raise ValueError(f"page {start}-{end} out of range 1..{total}")
+            if end < start:
+                raise ValueError("end must be greater than or equal to start")
+            pages.update(range(start, end + 1))
+        else:
+            try:
+                page = int(part)
+            except ValueError as exc:
+                raise ValueError("Invalid page specification") from exc
+            if page < 1 or page > total:
+                raise ValueError(f"page {page} out of range 1..{total}")
+            pages.add(page)
+    return sorted(pages)
+
+
 def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
     """Return a Path for output files.
 
@@ -88,4 +131,4 @@ def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
     fitz_doc.set_metadata(metadata)
 
 
-__all__ = ["ensure_libs", "sane_output_dir", "update_metadata"]
+__all__ = ["ensure_libs", "sane_output_dir", "update_metadata", "parse_page_spec"]
