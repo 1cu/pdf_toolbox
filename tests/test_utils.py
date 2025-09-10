@@ -48,7 +48,24 @@ def test_ensure_libs_missing(monkeypatch):
     monkeypatch.setattr(
         "pdf_toolbox.utils.REQUIRED_LIBS", ["nonexistent_mod"], raising=False
     )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="see documentation"):
+        ensure_libs()
+
+
+def test_ensure_libs_missing_hint(monkeypatch):
+    import importlib
+
+    original = importlib.import_module
+
+    def fake_import(name, *args, **kwargs):
+        if name == "PIL.Image":
+            raise ImportError
+        return original(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib, "import_module", fake_import)
+    monkeypatch.setattr("pdf_toolbox.utils.REQUIRED_LIBS", ["PIL.Image"], raising=False)
+
+    with pytest.raises(RuntimeError, match="pip install pillow"):
         ensure_libs()
 
 

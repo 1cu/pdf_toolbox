@@ -18,6 +18,13 @@ REQUIRED_LIBS: Iterable[str] = (
     "docx",
     "win32com.client",
 )
+# suggestions for installing optional runtime libraries
+LIB_HINTS: dict[str, str] = {
+    "fitz": "pip install pymupdf",
+    "PIL.Image": "pip install pillow",
+    "docx": "pip install python-docx",
+    "win32com.client": "pip install pywin32",
+}
 # store configuration in a platform-specific user config directory
 CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
 
@@ -57,7 +64,11 @@ def ensure_libs() -> None:
         except Exception:  # pragma: no cover - best effort
             missing.append(mod)
     if missing:
-        raise RuntimeError("Missing required libraries: " + ", ".join(missing))
+        parts = []
+        for mod in missing:
+            hint = LIB_HINTS.get(mod, "see documentation")
+            parts.append(f"{mod} ({hint})")
+        raise RuntimeError("Missing required libraries: " + ", ".join(parts))
 
 
 def parse_page_spec(spec: str | None, total: int) -> List[int]:
