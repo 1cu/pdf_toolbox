@@ -16,7 +16,7 @@ CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 DEFAULT_CONFIG = {
     "last_open_dir": str(Path.home()),
     "last_save_dir": str(Path.home()),
-    "jpeg_quality": 95,
+    "jpeg_quality": "High (95)",
     "pptx_width": 3840,
     "pptx_height": 2160,
     "opt_quality": "default",
@@ -150,6 +150,7 @@ if QT_AVAILABLE:
             self.cfg = load_config()
             self.current_action: Action | None = None
             self.current_widgets: Dict[str, Any] = {}
+            self.worker: Worker | None = None
             self.resize(900, 480)
             self.base_height = self.height()
 
@@ -164,6 +165,8 @@ if QT_AVAILABLE:
             self.log = QPlainTextEdit()
             self.log.setReadOnly(True)
             self.log.setVisible(False)
+            self.log.setMaximumBlockCount(10)
+            self.log.setFixedHeight(self.log.fontMetrics().height() * 10 + 10)
             layout.addWidget(self.log)
             self.setCentralWidget(central)
 
@@ -191,10 +194,12 @@ if QT_AVAILABLE:
 
             self.run_btn = QPushButton("Start")
             self.progress = QProgressBar()
-            self.status = ClickableLabel("Bereit")
+            self.status = ClickableLabel("")
+            self.status_text = "Bereit"
             bottom.addWidget(self.status)
             bottom.addWidget(self.progress, 1)
             bottom.addWidget(self.run_btn)
+            self.update_status(self.status_text)
 
             self.settings_btn = QToolButton()
             self.settings_btn.setText("⚙")
@@ -212,6 +217,11 @@ if QT_AVAILABLE:
 
             self._populate_actions()
             self.check_author()
+
+        def update_status(self, text: str) -> None:
+            self.status_text = text
+            arrow = "▼" if self.log.isVisible() else "▶"
+            self.status.setText(f"{text} {arrow}")
 
         def _populate_actions(self) -> None:
             cats: dict[str, QTreeWidgetItem] = {}
@@ -370,9 +380,18 @@ if QT_AVAILABLE:
             if not self.current_action:
                 return
             kwargs = self.collect_args()
-            self.run_btn.setEnabled(False)
+            if self.worker and self.worker.isRunning():
+                self.worker.terminate()
+                self.worker.wait()
+                self.worker = None
+                self.progress.setRange(0, 1)
+                self.progress.setValue(0)
+                self.update_status("Abgebrochen")
+                self.run_btn.setText("Start")
+                return
+
             self.progress.setRange(0, 0)
-            self.status.setText("Läuft...")
+            self.update_status("Läuft...")
             self.log.clear()
             self.log.setVisible(False)
             self.resize(self.width(), self.base_height)
@@ -380,35 +399,31 @@ if QT_AVAILABLE:
             self.worker.finished.connect(self.on_finished)
             self.worker.error.connect(self.on_error)
             self.worker.start()
+            self.run_btn.setText("Stop ❌")
 
         def on_finished(self, result: object) -> None:  # pragma: no cover - GUI
             save_config(self.cfg)
             self.progress.setRange(0, 1)
             self.progress.setValue(1)
-            self.status.setText("Fertig")
-            self.run_btn.setEnabled(True)
+            self.run_btn.setText("Start")
+            self.update_status("Fertig")
             if result:
                 if isinstance(result, (list, tuple)):
                     text = "\n".join(map(str, result))
                 else:
                     text = str(result)
                 self.log.setPlainText(text)
-                self.log.setVisible(True)
-                self.resize(
-                    self.width(), self.base_height + self.log.sizeHint().height()
-                )
-            else:
-                self.log.setVisible(False)
-                self.resize(self.width(), self.base_height)
+            self.worker = None
 
         def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
             self.log.setPlainText(msg)
             self.log.setVisible(True)
             self.progress.setRange(0, 1)
             self.progress.setValue(0)
-            self.status.setText("Fehler")
-            self.run_btn.setEnabled(True)
-            self.resize(self.width(), self.base_height + self.log.sizeHint().height())
+            self.run_btn.setText("Start")
+            self.update_status("Fehler")
+            self.resize(self.width(), self.base_height + self.log.height())
+            self.worker = None
 
         def toggle_log(self) -> None:  # pragma: no cover - GUI
             if self.log.isVisible():
@@ -419,9 +434,8 @@ if QT_AVAILABLE:
                 self.log.verticalScrollBar().setValue(
                     self.log.verticalScrollBar().maximum()
                 )
-                self.resize(
-                    self.width(), self.base_height + self.log.sizeHint().height()
-                )
+                self.resize(self.width(), self.base_height + self.log.height())
+            self.update_status(self.status_text)
 
         def on_author(self) -> None:  # pragma: no cover - GUI
             dlg = QDialog(self)
