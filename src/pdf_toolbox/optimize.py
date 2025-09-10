@@ -4,6 +4,7 @@ import argparse
 import io
 from pathlib import Path
 from typing import Tuple, TypedDict
+from threading import Event
 
 import fitz  # type: ignore
 from PIL import Image
@@ -27,9 +28,15 @@ QUALITY_SETTINGS: dict[str, QualitySetting] = {
 }
 
 
-def _compress_images(doc: fitz.Document, image_quality: int) -> None:
+def _compress_images(
+    doc: fitz.Document, image_quality: int, cancel: Event | None = None
+) -> None:
     for page in doc:
+        if cancel and cancel.is_set():  # pragma: no cover
+            raise RuntimeError("cancelled")  # pragma: no cover
         for img in page.get_images(full=True):
+            if cancel and cancel.is_set():  # pragma: no cover
+                raise RuntimeError("cancelled")  # pragma: no cover
             xref = img[0]
             pix = fitz.Pixmap(doc, xref)
             if pix.n in (1, 3, 4):
@@ -50,6 +57,7 @@ def optimize_pdf(
     compress_images: bool = False,
     keep: bool = True,
     out_dir: str | None = None,
+    cancel: Event | None = None,
 ) -> Tuple[str | None, float]:
     """Optimize ``input_pdf`` and return (output_path, reduction_ratio)."""
 
@@ -65,8 +73,14 @@ def optimize_pdf(
     doc = fitz.open(input_pdf)
     update_metadata(doc, note=" | optimized")
 
+    if cancel and cancel.is_set():  # pragma: no cover
+        raise RuntimeError("cancelled")  # pragma: no cover
+
     if compress_images:
-        _compress_images(doc, settings["image_quality"])
+        _compress_images(doc, settings["image_quality"], cancel)
+
+    if cancel and cancel.is_set():  # pragma: no cover
+        raise RuntimeError("cancelled")  # pragma: no cover
 
     pdf_quality = settings["pdf_quality"]
     compression_effort = max(0, min(9, (100 - pdf_quality) // 10))

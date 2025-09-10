@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from threading import Event
 
 import fitz  # type: ignore
 
@@ -14,8 +15,11 @@ def unlock_pdf(
     input_pdf: str,
     password: str | None = None,
     out_dir: str | None = None,
+    cancel: Event | None = None,
 ) -> str:
     """Entferne den Kennwortschutz eines PDFs."""
+    if cancel and cancel.is_set():  # pragma: no cover
+        raise RuntimeError("cancelled")  # pragma: no cover
     doc = fitz.open(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
         raise ValueError("Invalid password")
@@ -23,6 +27,9 @@ def unlock_pdf(
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_unlocked.pdf"
     )
+    if cancel and cancel.is_set():  # pragma: no cover
+        doc.close()
+        raise RuntimeError("cancelled")  # pragma: no cover
     doc.save(out_path, encryption=fitz.PDF_ENCRYPT_NONE)
     doc.close()
     return str(out_path)

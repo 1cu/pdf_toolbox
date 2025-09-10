@@ -394,7 +394,9 @@ if QT_AVAILABLE:
             kwargs = self.collect_args()
             if self.worker and self.worker.isRunning():
                 self.worker.cancel()
-                self.worker.wait()
+                if not self.worker.wait(100):
+                    self.worker.terminate()
+                    self.worker.wait()
                 self.worker = None
                 self.progress.setRange(0, 1)
                 self.progress.setValue(0)
