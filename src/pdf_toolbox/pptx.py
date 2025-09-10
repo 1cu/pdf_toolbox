@@ -54,7 +54,15 @@ def pptx_to_images_via_powerpoint(
     slides: str | None = None,
     out_dir: str | None = None,
 ) -> List[str]:
-    """Exportiere Folien eines PPTX als Bilder über PowerPoint."""
+    """Export slides of a PPTX presentation as images via PowerPoint.
+
+    Microsoft PowerPoint renders the selected ``slides`` of ``pptx_path`` and
+    exports them to ``image_format`` files. ``width`` and ``height`` define the
+    resolution in pixels. ``slides`` accepts comma-separated ranges like
+    ``"1,3-5"``; ``None`` exports all slides. The returned list contains the
+    paths to the generated image files. The function only works on Windows
+    systems with PowerPoint installed.
+    """
     if sys.platform != "win32":
         raise RuntimeError("PPTX→Bilder erfordert Windows + PowerPoint.")
     return _pptx_to_images_via_powerpoint(

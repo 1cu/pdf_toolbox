@@ -59,3 +59,23 @@ def test_main_raises_without_qt(monkeypatch):
     monkeypatch.setattr(gui, "QT_IMPORT_ERROR", RuntimeError("missing"))
     with pytest.raises(RuntimeError):
         gui.main()
+
+
+def test_build_form_handles_pep604_union(app, monkeypatch):
+    from typing import Literal
+
+    def sample(dpi: int | Literal["Low", "High"] = "High") -> None:
+        pass
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    win = gui.MainWindow()
+    try:
+        win.build_form(act)
+        combo, spin = win.current_widgets["dpi"]
+        assert combo.currentText() == "High"
+        assert not spin.isVisible()
+        combo.setCurrentText("Custom")
+        assert spin.isVisible()
+    finally:
+        win.close()

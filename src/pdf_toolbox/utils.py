@@ -8,6 +8,7 @@ import json
 import sys
 from typing import Iterable, List
 
+from platformdirs import user_config_dir
 import fitz  # type: ignore
 
 
@@ -17,17 +18,16 @@ REQUIRED_LIBS: Iterable[str] = (
     "docx",
     "win32com.client",
 )
-
-
-CONFIG_FILE = Path(__file__).resolve().parent.parent / "pdf_toolbox_config.json"
+# store configuration in a platform-specific user config directory
+CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
 
 
 def _load_author_info() -> tuple[str, str]:
     """Return configured author information.
 
     The configuration must provide ``author`` and ``email`` fields in
-    ``pdf_toolbox_config.json``. A ``RuntimeError`` is raised if the configuration
-    is missing or incomplete.
+    ``pdf_toolbox_config.json`` located in the user's configuration directory.
+    A ``RuntimeError`` is raised if the configuration is missing or incomplete.
     """
 
     try:

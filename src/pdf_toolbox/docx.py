@@ -14,7 +14,13 @@ from .utils import sane_output_dir
 
 @action(category="Office")
 def pdf_to_docx(input_pdf: str, out_dir: str | None = None) -> str:
-    """Wandle ein PDF in eine DOCX-Datei um."""
+    """Convert a PDF into a DOCX document.
+
+    The text of each page is extracted and appended to a Word document. Images
+    encountered in the PDF are embedded as PNGs in the corresponding position.
+    The resulting file is stored next to ``input_pdf`` unless ``out_dir`` points
+    to a different directory. The path to the created DOCX file is returned.
+    """
     docx_doc = Document()
     with fitz.open(input_pdf) as pdf:
         for page in pdf:

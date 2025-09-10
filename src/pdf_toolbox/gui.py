@@ -3,14 +3,15 @@ from __future__ import annotations
 import json
 import sys
 import inspect
-import tempfile
+import html
+import types
 from pathlib import Path
-from typing import Any, Dict, Literal, get_args, get_origin
+from typing import Any, Dict, Literal, Union, get_args, get_origin
 
 from .actions import Action, list_actions
 from . import utils
 
-CONFIG_PATH = Path(tempfile.gettempdir()) / "pdf_toolbox_config.json"
+CONFIG_PATH = utils.CONFIG_FILE
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 DEFAULT_CONFIG = {
     "last_open_dir": str(Path.home()),
@@ -25,12 +26,13 @@ DEFAULT_CONFIG = {
 
 
 def load_config() -> dict:
+    cfg = DEFAULT_CONFIG.copy()
     if CONFIG_PATH.exists():
         try:
-            return json.loads(CONFIG_PATH.read_text())
+            cfg.update(json.loads(CONFIG_PATH.read_text()))
         except Exception:
             pass
-    return DEFAULT_CONFIG.copy()
+    return cfg
 
 
 def save_config(cfg: dict) -> None:
@@ -147,7 +149,7 @@ if QT_AVAILABLE:
             self.setWindowTitle("PDF Toolbox")
             self.cfg = load_config()
             self.current_action: Action | None = None
-            self.current_widgets: Dict[str, QWidget] = {}
+            self.current_widgets: Dict[str, Any] = {}
             self.resize(900, 480)
             self.base_height = self.height()
 
@@ -244,6 +246,36 @@ if QT_AVAILABLE:
                 ann = param.annotation
                 origin = get_origin(ann)
                 lower = param.name.lower()
+
+                if origin in (Union, types.UnionType) and int in get_args(ann):
+                    lit = next(
+                        (a for a in get_args(ann) if get_origin(a) is Literal), None
+                    )
+                    if lit is not None:
+                        combo = QComboBox()
+                        choices = [str(x) for x in get_args(lit)]
+                        combo.addItems(choices + ["Custom"])
+                        spin = QSpinBox()
+                        spin.setMaximum(10000)
+                        spin.setVisible(False)
+                        if isinstance(param.default, int):
+                            combo.setCurrentText("Custom")
+                            spin.setValue(int(param.default))
+                            spin.setVisible(True)
+                        elif param.default not in (inspect._empty, None):
+                            combo.setCurrentText(str(param.default))
+                        combo.currentTextChanged.connect(
+                            lambda text, s=spin: s.setVisible(text == "Custom")
+                        )
+                        container = QWidget()
+                        h = QHBoxLayout(container)
+                        h.setContentsMargins(0, 0, 0, 0)
+                        h.addWidget(combo)
+                        h.addWidget(spin)
+                        self.form_layout.addRow(param.name, container)
+                        self.current_widgets[param.name] = (combo, spin)
+                        continue
+
                 if ann is bool:
                     widget = QCheckBox()
                     if param.default is True:
@@ -293,7 +325,11 @@ if QT_AVAILABLE:
         def collect_args(self) -> Dict[str, Any]:
             kwargs: Dict[str, Any] = {}
             for name, widget in self.current_widgets.items():
-                if isinstance(widget, FileEdit):
+                if isinstance(widget, tuple):
+                    combo, spin = widget
+                    val = combo.currentText()
+                    kwargs[name] = int(spin.value()) if val == "Custom" else val
+                elif isinstance(widget, FileEdit):
                     text = widget.text().strip()
                     if widget.multi:
                         kwargs[name] = [p for p in text.split(";") if p]
@@ -315,8 +351,20 @@ if QT_AVAILABLE:
         def on_info(self) -> None:  # pragma: no cover - GUI
             if not self.current_action:
                 return
-            text = self.current_action.help or "Keine Beschreibung vorhanden."
-            QMessageBox.information(self, self.current_action.name, text)
+            text = inspect.cleandoc(
+                self.current_action.help or "Keine Beschreibung vorhanden."
+            )
+            html_text = (
+                "<p>"
+                + "<br>".join(html.escape(line) for line in text.splitlines())
+                + "</p>"
+            )
+            msg = QMessageBox(self)
+            msg.setWindowTitle(self.current_action.name)
+            msg.setTextFormat(Qt.TextFormat.RichText)
+            msg.setText(html_text)
+            msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            msg.exec()
 
         def on_run(self) -> None:  # pragma: no cover - GUI
             if not self.current_action:
@@ -379,12 +427,8 @@ if QT_AVAILABLE:
             dlg = QDialog(self)
             dlg.setWindowTitle("Autor/E-Mail")
             form = QFormLayout(dlg)
-            try:
-                data = json.loads(utils.CONFIG_FILE.read_text())
-            except Exception:
-                data = {}
-            author_edit = QLineEdit(data.get("author", ""))
-            email_edit = QLineEdit(data.get("email", ""))
+            author_edit = QLineEdit(self.cfg.get("author", ""))
+            email_edit = QLineEdit(self.cfg.get("email", ""))
             form.addRow("Autor", author_edit)
             form.addRow("E-Mail", email_edit)
             buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]
@@ -392,15 +436,9 @@ if QT_AVAILABLE:
             buttons.accepted.connect(dlg.accept)
             buttons.rejected.connect(dlg.reject)
             if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
-                utils.CONFIG_FILE.write_text(
-                    json.dumps(
-                        {
-                            "author": author_edit.text().strip(),
-                            "email": email_edit.text().strip(),
-                        },
-                        indent=2,
-                    )
-                )
+                self.cfg["author"] = author_edit.text().strip()
+                self.cfg["email"] = email_edit.text().strip()
+                save_config(self.cfg)
 
         def check_author(self) -> None:
             try:
