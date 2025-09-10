@@ -90,6 +90,38 @@ def test_pdf_to_images_custom_dpi(sample_pdf):
     assert images[0].size == expected
 
 
+def test_pdf_to_images_jpeg_quality_preset(sample_pdf):
+    images = pdf_to_images(
+        sample_pdf,
+        as_pil=True,
+        image_format="JPEG",
+        quality="Medium (85)",
+        dpi="Low (72 dpi)",
+    )
+    assert len(images) == 3
+
+
+def test_pdf_to_images_jpeg_quality_custom(sample_pdf):
+    images = pdf_to_images(
+        sample_pdf,
+        as_pil=True,
+        image_format="JPEG",
+        quality=80,
+        dpi="Low (72 dpi)",
+    )
+    assert len(images) == 3
+
+
+def test_pdf_to_images_unknown_quality(sample_pdf):
+    with pytest.raises(ValueError, match="Unknown JPEG quality preset"):
+        pdf_to_images(
+            sample_pdf,
+            as_pil=True,
+            image_format="JPEG",
+            quality="Ultra",
+        )
+
+
 def test_pdf_to_images_invalid_page_range(sample_pdf):
     with pytest.raises(ValueError, match="end must be greater than or equal to start"):
         pdf_to_images(sample_pdf, pages="3-2")
