@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Literal
 import sys
+from threading import Event
 
 from .actions import action
 from .utils import sane_output_dir, parse_page_spec
@@ -15,6 +16,7 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
     height: int = 2160,
     slides: str | None = None,
     out_dir: str | None = None,
+    cancel: Event | None = None,
 ) -> List[str]:
     """Hilfsfunktion: Exportiere Folien über PowerPoint."""
     import win32com.client  # type: ignore
@@ -35,6 +37,8 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
         slide_numbers = parse_page_spec(slides, total)
         outputs: List[str] = []
         for i in slide_numbers:
+            if cancel and cancel.is_set():  # pragma: no cover
+                raise RuntimeError("cancelled")  # pragma: no cover
             slide = presentation.Slides(i)
             out_path = target_dir / f"{stem}_Folie_{i}.{image_format.lower()}"
             slide.Export(str(out_path), export_fmt, width, height)
@@ -62,6 +66,7 @@ def pptx_to_images_via_powerpoint(
     height: int = 2160,
     slides: str | None = None,
     out_dir: str | None = None,
+    cancel: Event | None = None,
 ) -> List[str]:
     """Export slides of a PPTX presentation as images via PowerPoint.
 
@@ -81,6 +86,7 @@ def pptx_to_images_via_powerpoint(
         height=height,
         slides=slides,
         out_dir=out_dir,
+        cancel=cancel,
     )
 
 
