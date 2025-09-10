@@ -5,7 +5,7 @@ import sys
 import inspect
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, get_args, get_origin
+from typing import Any, Dict, Literal, get_args, get_origin
 
 from .actions import Action, list_actions
 from . import utils
@@ -45,6 +45,7 @@ try:  # pragma: no cover - optional import
         QDialog,
         QDialogButtonBox,
         QDoubleSpinBox,
+        QComboBox,
         QFileDialog,
         QFormLayout,
         QHBoxLayout,
@@ -164,16 +165,15 @@ if QT_AVAILABLE:
             layout.addWidget(self.log)
             self.setCentralWidget(central)
 
-            left = QWidget()
-            left_layout = QVBoxLayout(left)
-            head = QHBoxLayout()
-            left_layout.addLayout(head)
             lbl = QLabel("Aktionen")
             self.info_btn = QPushButton("i")
             self.info_btn.setFixedWidth(24)
             self.info_btn.setEnabled(False)
-            head.addWidget(lbl)
-            head.addWidget(self.info_btn)
+            top_bar.addWidget(lbl)
+            top_bar.addWidget(self.info_btn)
+
+            left = QWidget()
+            left_layout = QVBoxLayout(left)
             self.tree = QTreeWidget()
             self.tree.setHeaderHidden(True)
             self.tree.setMinimumWidth(200)
@@ -191,8 +191,7 @@ if QT_AVAILABLE:
             self.progress = QProgressBar()
             self.status = ClickableLabel("Bereit")
             bottom.addWidget(self.status)
-            bottom.addWidget(self.progress)
-            bottom.addStretch()
+            bottom.addWidget(self.progress, 1)
             bottom.addWidget(self.run_btn)
 
             self.settings_btn = QToolButton()
@@ -257,6 +256,12 @@ if QT_AVAILABLE:
                     widget = QDoubleSpinBox()
                     if param.default not in (inspect._empty, None):
                         widget.setValue(float(param.default))
+                elif origin is Literal:
+                    widget = QComboBox()
+                    choices = [str(x) for x in get_args(ann)]
+                    widget.addItems(choices)
+                    if param.default not in (inspect._empty, None):
+                        widget.setCurrentText(str(param.default))
                 elif origin is list and get_args(ann) == (str,):
                     widget = FileEdit(self.cfg, multi=True)
                 else:
@@ -296,6 +301,8 @@ if QT_AVAILABLE:
                 elif isinstance(widget, QLineEdit):
                     val = widget.text().strip()
                     kwargs[name] = val if val else None
+                elif isinstance(widget, QComboBox):
+                    kwargs[name] = widget.currentText()
                 elif isinstance(widget, QCheckBox):
                     kwargs[name] = widget.isChecked()
                 elif isinstance(widget, QSpinBox):
@@ -331,16 +338,28 @@ if QT_AVAILABLE:
             self.progress.setValue(1)
             self.status.setText("Fertig")
             self.run_btn.setEnabled(True)
-            self.log.setVisible(False)
-            self.resize(self.width(), self.base_height)
+            if result:
+                if isinstance(result, (list, tuple)):
+                    text = "\n".join(map(str, result))
+                else:
+                    text = str(result)
+                self.log.setPlainText(text)
+                self.log.setVisible(True)
+                self.resize(
+                    self.width(), self.base_height + self.log.sizeHint().height()
+                )
+            else:
+                self.log.setVisible(False)
+                self.resize(self.width(), self.base_height)
 
         def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
             self.log.setPlainText(msg)
-            self.log.setVisible(False)
+            self.log.setVisible(True)
             self.progress.setRange(0, 1)
             self.progress.setValue(0)
             self.status.setText("Fehler")
             self.run_btn.setEnabled(True)
+            self.resize(self.width(), self.base_height + self.log.sizeHint().height())
 
         def toggle_log(self) -> None:  # pragma: no cover - GUI
             if self.log.isVisible():
