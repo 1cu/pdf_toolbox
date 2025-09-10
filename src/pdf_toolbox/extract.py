@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 import fitz  # type: ignore
 
 from .actions import action
-from .utils import sane_output_dir, update_metadata
+from .utils import sane_output_dir, update_metadata, parse_page_spec
 
 
 @action(category="PDF")
@@ -18,29 +18,21 @@ def extract_range(
 ) -> str:
     """Extract a range of pages from ``input_pdf``.
 
-    ``pages`` may be a single page (``"5"``), a range like ``"3-7"`` or an
-    open-ended range such as ``"2-"`` which extracts from page 2 to the end.
-    Returns the path of the created PDF.
+    ``pages`` may be a single page (``"5"``), ranges like ``"3-7"`` or
+    ``"2-"`` and comma separated combinations such as ``"1,5,6"``. If
+    ``pages`` is empty all pages are extracted. Returns the path of the
+    created PDF.
     """
 
-    def _parse_range(rng: str, total: int) -> Tuple[int, int]:
-        if "-" in rng:
-            start_s, end_s = rng.split("-", 1)
-            start = int(start_s) if start_s else 1
-            end = int(end_s) if end_s else total
-        else:
-            start = end = int(rng)
-        return start, end
-
     with fitz.open(input_pdf) as doc:
-        start_page, end_page = _parse_range(pages, doc.page_count)
-        if start_page < 1 or end_page < start_page or end_page > doc.page_count:
-            raise ValueError("Invalid page range")
+        page_numbers = parse_page_spec(pages, doc.page_count)
         new_doc = fitz.open()
-        new_doc.insert_pdf(doc, from_page=start_page - 1, to_page=end_page - 1)
+        for page in page_numbers:
+            new_doc.insert_pdf(doc, from_page=page - 1, to_page=page - 1)
         update_metadata(new_doc, note=" | extract_range")
+        safe_spec = pages.replace(",", "_").replace("-", "_").strip("_")
         out_path = sane_output_dir(input_pdf, out_dir) / (
-            f"{Path(input_pdf).stem}_Auszug_{start_page}_{end_page}.pdf"
+            f"{Path(input_pdf).stem}_Auszug_{safe_spec}.pdf"
         )
         new_doc.save(out_path)
         new_doc.close()

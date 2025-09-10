@@ -7,7 +7,7 @@ import fitz  # type: ignore
 from PIL import Image
 
 from .actions import action
-from .utils import sane_output_dir
+from .utils import sane_output_dir, parse_page_spec
 
 
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF"]
@@ -34,8 +34,7 @@ DpiChoice = Literal[
 @action(category="PDF")
 def pdf_to_images(
     input_pdf: str,
-    start_page: int | None = None,
-    end_page: int | None = None,
+    pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     quality: int = 95,
@@ -44,12 +43,14 @@ def pdf_to_images(
 ) -> List[Union[str, Image.Image]]:
     """Rasterize a PDF into images.
 
-    Each page of ``input_pdf`` is rendered to the chosen image format. Supported
-    formats are listed in :data:`SUPPORTED_IMAGE_FORMATS`.
-    ``dpi`` may be one of the labels defined in :data:`DPI_PRESETS` or any
-    integer DPI value; higher values yield higher quality but also larger files.
-    ``quality`` is only used for JPEG output. If ``as_pil`` is ``True`` a list
-    of :class:`PIL.Image.Image` objects is returned instead of file paths.
+    Each page of ``input_pdf`` specified by ``pages`` is rendered to the chosen
+    image format. ``pages`` accepts comma separated ranges like ``"1-3,5"``;
+    ``None`` selects all pages. Supported formats are listed in
+    :data:`SUPPORTED_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
+    :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
+    quality but also larger files. ``quality`` is only used for JPEG output. If
+    ``as_pil`` is ``True`` a list of :class:`PIL.Image.Image` objects is
+    returned instead of file paths.
     """
 
     outputs: List[Union[str, Image.Image]] = []
@@ -71,37 +72,17 @@ def pdf_to_images(
         )
     ext = fmt.lower()
 
-    if start_page is not None:
-        try:
-            start_page = int(start_page)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("start_page must be an integer") from exc
-    if end_page is not None:
-        try:
-            end_page = int(end_page)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("end_page must be an integer") from exc
-
     try:
         doc = fitz.open(input_pdf)
     except Exception as exc:  # pragma: no cover - exercised in tests
         raise ValueError(f"Could not open PDF file: {input_pdf}") from exc
 
     with doc:
-        total = doc.page_count
-        if start_page is not None and not 1 <= start_page <= total:
-            raise ValueError(f"start_page {start_page} out of range 1..{total}")
-        if end_page is not None and not 1 <= end_page <= total:
-            raise ValueError(f"end_page {end_page} out of range 1..{total}")
-        if start_page is not None and end_page is not None and end_page < start_page:
-            raise ValueError("end_page must be greater than or equal to start_page")
-
-        start = (start_page - 1) if start_page else 0
-        end = end_page if end_page else total
+        page_numbers = parse_page_spec(pages, doc.page_count)
         out_base = None if as_pil else sane_output_dir(input_pdf, out_dir)
 
-        for page_no in range(start, end):
-            page = doc.load_page(page_no)
+        for page_no in page_numbers:
+            page = doc.load_page(page_no - 1)
             pix = page.get_pixmap(matrix=matrix)
             if pix.colorspace is None or pix.colorspace.n not in (1, 3):
                 pix = fitz.Pixmap(fitz.csRGB, pix)
@@ -118,9 +99,7 @@ def pdf_to_images(
                 outputs.append(img)
             else:
                 assert out_base is not None
-                out_path = (
-                    out_base / f"{Path(input_pdf).stem}_Seite_{page_no + 1}.{ext}"
-                )
+                out_path = out_base / f"{Path(input_pdf).stem}_Seite_{page_no}.{ext}"
                 img.save(out_path, format=fmt, **save_kwargs)
                 outputs.append(str(out_path))
     return outputs
