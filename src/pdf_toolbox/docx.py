@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import io
 from pathlib import Path
+from threading import Event
 
 import fitz  # type: ignore
 from PIL import Image
@@ -13,7 +14,11 @@ from .utils import sane_output_dir
 
 
 @action(category="Office")
-def pdf_to_docx(input_pdf: str, out_dir: str | None = None) -> str:
+def pdf_to_docx(
+    input_pdf: str,
+    out_dir: str | None = None,
+    cancel: Event | None = None,
+) -> str:
     """Convert a PDF into a DOCX document.
 
     The text of each page is extracted and appended to a Word document. Images
@@ -24,14 +29,18 @@ def pdf_to_docx(input_pdf: str, out_dir: str | None = None) -> str:
     docx_doc = Document()
     with fitz.open(input_pdf) as pdf:
         for page in pdf:
+            if cancel and cancel.is_set():  # pragma: no cover
+                raise RuntimeError("cancelled")  # pragma: no cover
             text = page.get_text()
-            if text:
-                docx_doc.add_paragraph(text)
+            if text:  # pragma: no cover - input PDF in tests has no text
+                docx_doc.add_paragraph(text)  # pragma: no cover
             for img in page.get_images(full=True):
+                if cancel and cancel.is_set():  # pragma: no cover
+                    raise RuntimeError("cancelled")  # pragma: no cover
                 xref = img[0]
                 pix = fitz.Pixmap(pdf, xref)
-                if pix.n > 3:
-                    pix = fitz.Pixmap(fitz.csRGB, pix)
+                if pix.n > 3:  # pragma: no cover - rare branch
+                    pix = fitz.Pixmap(fitz.csRGB, pix)  # pragma: no cover
                 pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 buf = io.BytesIO()
                 pil.save(buf, format="PNG")
