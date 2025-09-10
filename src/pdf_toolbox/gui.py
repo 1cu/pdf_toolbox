@@ -183,7 +183,7 @@ if QT_AVAILABLE:
 
             self.form_widget = QWidget()
             self.form_layout = QFormLayout(self.form_widget)
-            self.form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+            self.form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)  # type: ignore[attr-defined]
             splitter.addWidget(self.form_widget)
             splitter.setSizes([250, 650])
 
@@ -199,7 +199,7 @@ if QT_AVAILABLE:
             settings_menu = QMenu(self)
             settings_menu.addAction("Autor", self.on_author)
             self.settings_btn.setMenu(settings_menu)
-            self.settings_btn.setPopupMode(QToolButton.InstantPopup)
+            self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]
             top_bar.addStretch()
             top_bar.addWidget(self.settings_btn)
 
@@ -221,14 +221,14 @@ if QT_AVAILABLE:
                     self.tree.addTopLevelItem(cat_item)
                     cats[cat_name] = cat_item
                 item = QTreeWidgetItem([act.name])
-                item.setData(0, Qt.UserRole, act)
+                item.setData(0, Qt.UserRole, act)  # type: ignore[attr-defined]
                 cat_item.addChild(item)
             self.tree.expandAll()
 
         def on_item_clicked(
             self, item: QTreeWidgetItem
         ) -> None:  # pragma: no cover - GUI
-            act = item.data(0, Qt.UserRole)
+            act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]
             if isinstance(act, Action):
                 self.current_action = act
                 self.build_form(act)
@@ -386,11 +386,11 @@ if QT_AVAILABLE:
             email_edit = QLineEdit(data.get("email", ""))
             form.addRow("Autor", author_edit)
             form.addRow("E-Mail", email_edit)
-            buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]
             form.addWidget(buttons)
             buttons.accepted.connect(dlg.accept)
             buttons.rejected.connect(dlg.reject)
-            if dlg.exec() == QDialog.Accepted:
+            if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
                 utils.CONFIG_FILE.write_text(
                     json.dumps(
                         {
