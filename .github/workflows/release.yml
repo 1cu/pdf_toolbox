@@ -10,8 +10,39 @@ permissions:
   id-token: write
 
 jobs:
+  build-exe:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+          pip install pyinstaller
+      - name: Build executable
+        run: |
+          pyinstaller -n pdf_toolbox -F -w src/pdf_toolbox/gui.py
+      - name: Package executable
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            powershell Compress-Archive -Path dist\pdf_toolbox.exe -DestinationPath pdf_toolbox-windows.zip
+          else
+            zip -j pdf_toolbox-macos.zip dist/pdf_toolbox
+          fi
+      - uses: actions/upload-artifact@1df5031b5de2fbba57937d38405b5a228cbf43f9 # v4
+        with:
+          name: pdf_toolbox-${{ runner.os }}
+          path: pdf_toolbox-*.zip
+
   publish:
     runs-on: ubuntu-latest
+    needs: build-exe
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -23,6 +54,10 @@ jobs:
           pip install build
       - name: Build package
         run: python -m build
+      - name: Download executables
+        uses: actions/download-artifact@9d99cedd4c308d4558c0772306f4ac41e4e3f6b9 # v4
+        with:
+          path: artifacts
       - name: Create tag
         id: tag
         run: |
@@ -45,3 +80,5 @@ jobs:
         with:
           tag: ${{ steps.tag.outputs.tag }}
           generateReleaseNotes: true
+          artifacts: "dist/*,artifacts/*"
+          allowUpdates: true
