@@ -45,8 +45,10 @@ def test_literal_parameters_resolved():
 
     assert get_origin(pdf_fmt) is Literal
     assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF"}
-    assert get_origin(pdf_dpi) is Literal
-    assert set(get_args(pdf_dpi)) == set(DPI_PRESETS.keys())
+    dpi_args = get_args(pdf_dpi)
+    assert int in dpi_args
+    lit = next(a for a in dpi_args if get_origin(a) is Literal)
+    assert set(get_args(lit)) == set(DPI_PRESETS.keys())
     assert get_origin(pptx_fmt) is Literal
     assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF"}
 

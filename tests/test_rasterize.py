@@ -81,6 +81,16 @@ def test_pdf_to_images_high_dpi(tmp_path, dpi_label):
     assert images[0].size == expected
 
 
+def test_pdf_to_images_custom_dpi(sample_pdf):
+    base = pdf_to_images(sample_pdf, as_pil=True, dpi=72)[0].size
+    images = pdf_to_images(sample_pdf, as_pil=True, dpi=200)
+    expected = (
+        math.ceil(base[0] * 200 / 72),
+        math.ceil(base[1] * 200 / 72),
+    )
+    assert images[0].size == expected
+
+
 def test_pdf_to_images_invalid_page_range(sample_pdf):
     with pytest.raises(
         ValueError, match="end_page must be greater than or equal to start_page"

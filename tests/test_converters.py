@@ -11,7 +11,7 @@ from pdf_toolbox.unlock import unlock_pdf
 
 def test_pdf_to_images_png(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi="Low (72 dpi)", image_format="PNG", out_dir=str(tmp_path)
+        sample_pdf, dpi=72, image_format="PNG", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
     assert all(Path(p).exists() for p in outputs)
