@@ -29,9 +29,10 @@ jobs:
         run: |
           pyinstaller -n pdf_toolbox -F -w src/pdf_toolbox/gui.py
       - name: Package executable
+        shell: bash
         run: |
           if [ "$RUNNER_OS" = "Windows" ]; then
-            powershell Compress-Archive -Path dist\pdf_toolbox.exe -DestinationPath pdf_toolbox-windows.zip
+            pwsh -Command "Compress-Archive -Path dist\\pdf_toolbox.exe -DestinationPath pdf_toolbox-windows.zip"
           else
             zip -j pdf_toolbox-macos.zip dist/pdf_toolbox
           fi
