@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import fitz
-from pdf_toolbox.optimize import optimize_pdf, QUALITY_SETTINGS
+import pytest
+from pdf_toolbox.optimize import QUALITY_SETTINGS, optimize_pdf
 
 
 def test_pdf_quality_passed_to_doc_save(tmp_path, monkeypatch):
@@ -21,3 +24,20 @@ def test_pdf_quality_passed_to_doc_save(tmp_path, monkeypatch):
     pdf_quality = QUALITY_SETTINGS["screen"]["pdf_quality"]
     expected = max(0, min(9, (100 - pdf_quality) // 10))
     assert saved.get("compression_effort") == expected
+
+
+def test_invalid_quality_raises(sample_pdf):
+    with pytest.raises(ValueError):
+        optimize_pdf(sample_pdf, quality="unknown")
+
+
+def test_compress_images(pdf_with_image, tmp_path):
+    out, _ = optimize_pdf(pdf_with_image, compress_images=True, out_dir=str(tmp_path))
+    assert Path(out).exists()
+
+
+def test_remove_output_on_small_reduction(sample_pdf, tmp_path, monkeypatch):
+    monkeypatch.setitem(QUALITY_SETTINGS["default"], "min_reduction", 1.0)
+    out, reduction = optimize_pdf(sample_pdf, keep=False, out_dir=str(tmp_path))
+    assert out is None
+    assert reduction < 1.0

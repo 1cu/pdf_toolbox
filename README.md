@@ -69,8 +69,9 @@ python -m pdf_toolbox.gui
 ### Pre-commit hooks
 The configuration uses `language: system` so hooks run in the active virtual
 environment. Hooks lint, format, type-check, and run tests on every commit,
-even if you only edit documentation. Activate the `.venv` before installing or
-running them:
+even if you only edit documentation. Test coverage must reach at least 80%
+for each module (excluding `pdf_toolbox/gui.py`), and the hooks enforce this
+threshold. Activate the `.venv` before installing or running them:
 
 ```bash
 pre-commit install
