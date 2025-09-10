@@ -67,13 +67,15 @@ def action(name: str | None = None, category: str | None = None):
 
 def build_action(fn, name: str | None = None, category: str | None = None) -> Action:
     sig = inspect.signature(fn)
+    hints = t.get_type_hints(fn, include_extras=True)
     params: list[Param] = []
     for p in sig.parameters.values():
+        ann = hints.get(p.name, p.annotation)
         params.append(
             Param(
                 name=p.name,
                 kind=str(p.kind),
-                annotation=p.annotation,
+                annotation=ann,
                 default=p.default,
             )
         )
