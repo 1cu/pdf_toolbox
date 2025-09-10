@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Union, Literal
+from typing import Dict, List, Union, Literal
 
 import fitz  # type: ignore
 from PIL import Image
@@ -12,13 +12,31 @@ from .utils import sane_output_dir
 
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF"]
 
+# Preset DPI options exposed via the GUI. The key is the human readable label
+# presented to users while the value is the numeric DPI used for rendering.
+DPI_PRESETS: Dict[str, int] = {
+    "Low (72 dpi)": 72,
+    "Medium (150 dpi)": 150,
+    "High (300 dpi)": 300,
+    "Very High (600 dpi)": 600,
+    "Ultra (1200 dpi)": 1200,
+}
+
+DpiChoice = Literal[
+    "Low (72 dpi)",
+    "Medium (150 dpi)",
+    "High (300 dpi)",
+    "Very High (600 dpi)",
+    "Ultra (1200 dpi)",
+]
+
 
 @action(category="PDF")
 def pdf_to_images(
     input_pdf: str,
     start_page: int | None = None,
     end_page: int | None = None,
-    dpi: int = 300,
+    dpi: DpiChoice = "High (300 dpi)",
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     quality: int = 95,
     out_dir: str | None = None,
@@ -28,15 +46,16 @@ def pdf_to_images(
 
     Each page of ``input_pdf`` is rendered to the chosen image format. Supported
     formats are listed in :data:`SUPPORTED_IMAGE_FORMATS`.
-    ``dpi`` controls the resolution; higher values yield higher quality
-    but also larger files. ``quality`` is only used for JPEG output.
-    If ``as_pil`` is ``True`` a list of :class:`PIL.Image.Image` objects
-    is returned instead of file paths.
+    ``dpi`` selects one of the predefined resolutions from
+    :data:`DPI_PRESETS`; higher values yield higher quality but also larger
+    files. ``quality`` is only used for JPEG output. If ``as_pil`` is ``True``
+    a list of :class:`PIL.Image.Image` objects is returned instead of file paths.
     """
 
     outputs: List[Union[str, Image.Image]] = []
 
-    zoom = dpi / 72  # default PDF resolution is 72 dpi
+    dpi_value = DPI_PRESETS[dpi]
+    zoom = dpi_value / 72  # default PDF resolution is 72 dpi
     matrix = fitz.Matrix(zoom, zoom)
 
     fmt = image_format.upper()
@@ -101,4 +120,4 @@ def pdf_to_images(
     return outputs
 
 
-__all__ = ["pdf_to_images"]
+__all__ = ["pdf_to_images", "DPI_PRESETS"]
