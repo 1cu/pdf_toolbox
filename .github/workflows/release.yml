@@ -16,8 +16,8 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -45,8 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-exe
     steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -56,7 +56,7 @@ jobs:
       - name: Build package
         run: python -m build
       - name: Download executables
-        uses: actions/download-artifact@9d99cedd4c308d4558c0772306f4ac41e4e3f6b9 # v4
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
@@ -78,7 +78,7 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Create GitHub release
         if: steps.tag.outputs.created == 'true'
-        uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1
+        uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag.outputs.tag }}
           generateReleaseNotes: true
