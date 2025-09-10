@@ -74,7 +74,7 @@ for each module (excluding `pdf_toolbox/gui.py`), and the hooks enforce this
 threshold. Activate the `.venv` before installing or running them:
 
 ```bash
-pre-commit install
+pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
 
 To check the entire codebase manually:
