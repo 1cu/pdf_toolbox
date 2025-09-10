@@ -15,6 +15,11 @@ def test_extract_range_open_end(sample_pdf, tmp_path):
     assert Path(out).exists()
 
 
+def test_extract_range_single_page(sample_pdf, tmp_path):
+    out = extract_range(sample_pdf, "2", out_dir=str(tmp_path))
+    assert Path(out).exists()
+
+
 def test_extract_range_default_outdir(sample_pdf):
     out = extract_range(sample_pdf, "1-2")
     assert Path(out).parent == Path(sample_pdf).parent
