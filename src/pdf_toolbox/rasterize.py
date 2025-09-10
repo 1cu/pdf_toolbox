@@ -40,11 +40,28 @@ def pdf_to_images(
     matrix = fitz.Matrix(zoom, zoom)
 
     fmt = image_format.upper()
+    if fmt not in SUPPORTED_IMAGE_FORMATS:
+        raise ValueError(
+            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(SUPPORTED_IMAGE_FORMATS)}"
+        )
     ext = fmt.lower()
 
-    with fitz.open(input_pdf) as doc:
+    try:
+        doc = fitz.open(input_pdf)
+    except Exception as exc:  # pragma: no cover - exercised in tests
+        raise ValueError(f"Could not open PDF file: {input_pdf}") from exc
+
+    with doc:
+        total = doc.page_count
+        if start_page is not None and not 1 <= start_page <= total:
+            raise ValueError(f"start_page {start_page} out of range 1..{total}")
+        if end_page is not None and not 1 <= end_page <= total:
+            raise ValueError(f"end_page {end_page} out of range 1..{total}")
+        if start_page is not None and end_page is not None and end_page < start_page:
+            raise ValueError("end_page must be greater than or equal to start_page")
+
         start = (start_page - 1) if start_page else 0
-        end = end_page if end_page else doc.page_count
+        end = end_page if end_page else total
         out_base = None if as_pil else sane_output_dir(input_pdf, out_dir)
 
         for page_no in range(start, end):
