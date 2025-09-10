@@ -46,6 +46,17 @@ def pdf_to_images(
         )
     ext = fmt.lower()
 
+    if start_page is not None:
+        try:
+            start_page = int(start_page)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("start_page must be an integer") from exc
+    if end_page is not None:
+        try:
+            end_page = int(end_page)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("end_page must be an integer") from exc
+
     try:
         doc = fitz.open(input_pdf)
     except Exception as exc:  # pragma: no cover - exercised in tests
