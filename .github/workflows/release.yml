@@ -27,6 +27,7 @@ jobs:
           pip install pyinstaller
       - name: Get version
         id: version
+        shell: bash  # ensure consistent GITHUB_OUTPUT handling on Windows
         run: echo "version=$(python scripts/get_version.py)" >> "$GITHUB_OUTPUT"
       - name: Build executable (macOS)
         if: runner.os == 'macOS'
