@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz
+from pdf_toolbox._fitz import fitz
 import pytest
 from pdf_toolbox.optimize import QUALITY_SETTINGS, optimize_pdf
 
