@@ -3,8 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 from threading import Event
+from contextlib import contextmanager
+from collections.abc import Iterator
 import io
 import warnings
+import sys
 
 import fitz  # type: ignore
 from PIL import Image
@@ -49,6 +52,27 @@ LOSSY_QUALITY_PRESETS: dict[str, int] = {
 }
 
 QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
+
+
+@contextmanager
+def _unlimited_int_str_digits() -> Iterator[None]:
+    """Temporarily disable Python's string-to-int digit limit.
+
+    Pillow may convert very large integers to strings when saving images,
+    which can exceed the default safety limit introduced in Python 3.11 and
+    trigger a ``ValueError``. This context manager lifts the restriction while
+    preserving the previous value.
+    """
+
+    if hasattr(sys, "set_int_max_str_digits"):
+        prev = sys.get_int_max_str_digits()
+        try:
+            sys.set_int_max_str_digits(0)
+            yield
+        finally:
+            sys.set_int_max_str_digits(prev)
+    else:
+        yield
 
 
 @action(category="PDF")
@@ -128,7 +152,8 @@ def pdf_to_images(
                     while low <= high:
                         mid = (low + high) // 2
                         buf = io.BytesIO()
-                        img.save(buf, format=fmt, quality=mid)
+                        with _unlimited_int_str_digits():
+                            img.save(buf, format=fmt, quality=mid)
                         size = buf.tell()
                         if size <= max_bytes:
                             best_q = mid
@@ -143,7 +168,8 @@ def pdf_to_images(
                     save_kwargs["compress_level"] = 0
                 if max_bytes is not None:
                     buf = io.BytesIO()
-                    img.save(buf, format=fmt, **save_kwargs)
+                    with _unlimited_int_str_digits():
+                        img.save(buf, format=fmt, **save_kwargs)
                     if buf.tell() > max_bytes:
                         warnings.warn(
                             "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
@@ -161,7 +187,8 @@ def pdf_to_images(
                                 Image.Resampling.LANCZOS,
                             )
                             buf = io.BytesIO()
-                            resized.save(buf, format=fmt, **save_kwargs)
+                            with _unlimited_int_str_digits():
+                                resized.save(buf, format=fmt, **save_kwargs)
                             if buf.tell() > max_bytes:
                                 scale_high = ratio
                             else:
@@ -176,7 +203,8 @@ def pdf_to_images(
                         )
 
             out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
-            img.save(out_path, format=fmt, **save_kwargs)
+            with _unlimited_int_str_digits():
+                img.save(out_path, format=fmt, **save_kwargs)
             if max_bytes is not None and Path(out_path).stat().st_size > max_bytes:
                 raise RuntimeError("Could not reduce image below max_size_mb")
             outputs.append(str(out_path))

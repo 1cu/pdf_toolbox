@@ -135,6 +135,19 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
                     _register_module(f"{pkg_mod.__name__}.{res.name[:-3]}")
         except Exception:
             pass
+    if not _registry:
+        # In some bundled environments (e.g., PyInstaller one-file builds),
+        # neither ``pkgutil.walk_packages`` nor ``importlib.resources`` can
+        # enumerate package modules.  If the package's loader exposes a table
+        # of contents (PyInstaller's ``toc`` attribute), use it to discover
+        # available modules.
+        toc = getattr(getattr(pkg_mod.__spec__, "loader", None), "toc", [])
+        for mod_name in toc:
+            if mod_name.startswith(pkg_mod.__name__ + "."):
+                try:
+                    _register_module(mod_name)
+                except Exception:
+                    pass
     _discovered = True
 
 

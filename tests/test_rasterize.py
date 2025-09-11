@@ -96,6 +96,31 @@ def test_pdf_to_images_high_dpi(tmp_path, dpi_label):
     assert img.size == expected
 
 
+def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
+    import fitz
+    import sys
+
+    sys.set_int_max_str_digits(4300)
+    doc = fitz.open()
+    doc.new_page()
+    pdf_path = tmp_path / "doc.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    with pytest.warns(UserWarning, match="downscale"):
+        outputs = pdf_to_images(
+            str(pdf_path),
+            dpi="Very High (600 dpi)",
+            image_format="PNG",
+            max_size_mb=30,
+            out_dir=str(tmp_path),
+        )
+
+    assert len(outputs) == 1
+    assert Path(outputs[0]).exists()
+    assert sys.get_int_max_str_digits() == 4300
+
+
 def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):
     low_dir = tmp_path / "low"
     high_dir = tmp_path / "high"
