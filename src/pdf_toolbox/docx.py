@@ -10,7 +10,7 @@ from PIL import Image
 from docx import Document
 
 from .actions import action
-from .utils import sane_output_dir
+from .utils import open_pdf, raise_if_cancelled, sane_output_dir
 
 
 @action(category="Office")
@@ -27,16 +27,14 @@ def pdf_to_docx(
     to a different directory. The path to the created DOCX file is returned.
     """
     docx_doc = Document()
-    with fitz.open(input_pdf) as pdf:
+    with open_pdf(input_pdf) as pdf:
         for page in pdf:
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             text = page.get_text()
             if text:  # pragma: no cover - input PDF in tests has no text
                 docx_doc.add_paragraph(text)  # pragma: no cover
             for img in page.get_images(full=True):
-                if cancel and cancel.is_set():  # pragma: no cover
-                    raise RuntimeError("cancelled")  # pragma: no cover
+                raise_if_cancelled(cancel)  # pragma: no cover
                 xref = img[0]
                 pix = fitz.Pixmap(pdf, xref)
                 if pix.n > 3:  # pragma: no cover - rare branch

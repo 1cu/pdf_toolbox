@@ -22,7 +22,7 @@ def test_pdf_to_images_invalid_page(sample_pdf):
 
 def test_pdf_to_images_missing_file(tmp_path):
     missing = tmp_path / "missing.pdf"
-    with pytest.raises(ValueError, match="Could not open PDF file"):
+    with pytest.raises(RuntimeError, match="Could not open PDF file"):
         pdf_to_images(str(missing))
 
 
