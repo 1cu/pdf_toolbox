@@ -7,6 +7,12 @@ from PIL import Image
 from pdf_toolbox.rasterize import DPI_PRESETS, pdf_to_images
 
 
+def test_jpeg_quality_presets_alias():
+    import pdf_toolbox.rasterize as ras
+
+    assert ras.JPEG_QUALITY_PRESETS is ras.LOSSY_QUALITY_PRESETS
+
+
 def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
     outputs = pdf_to_images(sample_pdf, dpi="Low (72 dpi)", out_dir=str(tmp_path))
     assert len(outputs) == 3
