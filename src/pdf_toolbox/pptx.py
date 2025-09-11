@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List, Literal
+from typing import Literal
 import sys
 from threading import Event
 
 from .actions import action
-from .utils import sane_output_dir, parse_page_spec
+from .utils import parse_page_spec, raise_if_cancelled, sane_output_dir
 
 
 def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + PowerPoint
@@ -17,8 +17,8 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
     slides: str | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
-) -> List[str]:
-    """Hilfsfunktion: Exportiere Folien über PowerPoint."""
+) -> list[str]:
+    """Helper: export slides via PowerPoint."""
     import win32com.client  # type: ignore
 
     fmt = image_format.upper()
@@ -35,12 +35,11 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
     try:
         total = presentation.Slides.Count
         slide_numbers = parse_page_spec(slides, total)
-        outputs: List[str] = []
+        outputs: list[str] = []
         for i in slide_numbers:
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             slide = presentation.Slides(i)
-            out_path = target_dir / f"{stem}_Folie_{i}.{image_format.lower()}"
+            out_path = target_dir / f"{stem}_Slide_{i}.{image_format.lower()}"
             slide.Export(str(out_path), export_fmt, width, height)
             outputs.append(str(out_path))
     finally:
@@ -67,7 +66,7 @@ def pptx_to_images_via_powerpoint(
     slides: str | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
-) -> List[str]:
+) -> list[str]:
     """Export slides of a PPTX presentation as images via PowerPoint.
 
     Microsoft PowerPoint renders the selected ``slides`` of ``pptx_path`` and
@@ -78,7 +77,7 @@ def pptx_to_images_via_powerpoint(
     systems with PowerPoint installed.
     """
     if sys.platform != "win32":
-        raise RuntimeError("PPTX→Bilder erfordert Windows + PowerPoint.")
+        raise RuntimeError("PPTX→images requires Windows and PowerPoint.")
     return _pptx_to_images_via_powerpoint(
         pptx_path,
         image_format,
