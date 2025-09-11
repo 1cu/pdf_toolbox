@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+from fnmatch import fnmatch
 import sys
 from pathlib import Path
-from fnmatch import fnmatch
+import tomllib
 import xml.etree.ElementTree as ET
-
-try:  # Python 3.11+
-    import tomllib  # type: ignore[attr-defined]
-except ModuleNotFoundError:  # pragma: no cover - for <3.11
-    import tomli as tomllib  # type: ignore[no-redef]
 
 
 def load_settings() -> tuple[float, list[str]]:
