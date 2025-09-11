@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Tuple, TypedDict
 from threading import Event
 
-from ._fitz import fitz  # type: ignore
+import fitz  # type: ignore
 from PIL import Image
 
 from pdf_toolbox.actions import action

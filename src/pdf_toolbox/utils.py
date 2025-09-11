@@ -10,7 +10,7 @@ from typing import Iterable
 from threading import Event
 
 from platformdirs import user_config_dir
-from ._fitz import fitz  # type: ignore
+import fitz  # type: ignore
 
 
 REQUIRED_LIBS: Iterable[str] = (

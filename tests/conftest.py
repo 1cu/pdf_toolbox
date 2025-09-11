@@ -1,12 +1,5 @@
 import json
-from pdf_toolbox._fitz import fitz
-import warnings
-
-warnings.filterwarnings(
-    "ignore",
-    message="builtin type .* has no __module__ attribute",
-    category=DeprecationWarning,
-)
+import fitz  # type: ignore
 from PIL import Image
 import pytest
 
