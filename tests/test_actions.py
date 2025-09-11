@@ -68,6 +68,14 @@ def test_format_name_plural_acronyms():
     assert actions._format_name("pdfs_to_pngs") == "PDFs to PNGs"
 
 
+def test_register_module_skips_undocumented(tmp_path, monkeypatch):
+    mod_path = tmp_path / "undoc_mod.py"
+    mod_path.write_text("def foo(x):\n    return x\n")
+    monkeypatch.syspath_prepend(tmp_path)
+    actions._register_module("undoc_mod")
+    assert "undoc_mod.foo" not in actions._registry
+
+
 def test_auto_discover_populates_registry():
     from pdf_toolbox import rasterize
 
