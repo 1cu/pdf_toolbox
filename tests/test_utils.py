@@ -57,9 +57,9 @@ def test_open_save_pdf(tmp_path):
 
 
 def test_ensure_libs_missing(monkeypatch):
-    monkeypatch.setattr(
-        "pdf_toolbox.utils.REQUIRED_LIBS", ["nonexistent_mod"], raising=False
-    )
+    missing = "__unlikely_module__"
+    monkeypatch.setattr("pdf_toolbox.utils.REQUIRED_LIBS", [missing], raising=False)
+    sys.modules.pop(missing, None)
     with pytest.raises(RuntimeError, match="see documentation"):
         ensure_libs()
 
