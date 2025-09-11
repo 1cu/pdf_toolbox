@@ -47,8 +47,6 @@ LOSSY_QUALITY_PRESETS: dict[str, int] = {
     "Medium (85)": 85,
     "High (95)": 95,
 }
-# Backward compatibility: retain old constant name
-JPEG_QUALITY_PRESETS = LOSSY_QUALITY_PRESETS
 
 QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
 
@@ -187,5 +185,4 @@ __all__ = [
     "pdf_to_images",
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
-    "JPEG_QUALITY_PRESETS",
 ]
