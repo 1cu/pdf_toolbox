@@ -69,10 +69,10 @@ def pdf_to_images(
     :data:`SUPPORTED_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
     :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
     quality but also larger files. ``quality`` is only used for JPEG and WebP
-    output. ``max_size_mb`` limits the resulting JPEG or WebP files to
-    approximately the given size in megabytes by reducing image quality. Images
-    are written to
-    ``out_dir`` or the PDF's directory and the paths are returned.
+    output. ``max_size_mb`` limits the resulting JPEG or WebP files by reducing
+    image quality and scales down PNG or TIFF images to roughly fit within the
+    given size. Images are written to ``out_dir`` or the PDF's directory and the
+    paths are returned.
     """
 
     outputs: list[str] = []
@@ -133,16 +133,39 @@ def pdf_to_images(
                             high = mid - 1
                     quality_val = best_q
                 save_kwargs["quality"] = quality_val
-            elif fmt == "PNG":  # lossless; avoid heavy compression for speed
+            else:  # lossless formats
+                if fmt == "PNG":
+                    # avoid heavy compression for speed
+                    save_kwargs["compress_level"] = 0
                 if max_bytes is not None:
-                    raise ValueError(
-                        "max_size_mb is only supported for JPEG and WEBP output"
-                    )
-                save_kwargs["compress_level"] = 0
-            elif max_bytes is not None:
-                raise ValueError(
-                    "max_size_mb is only supported for JPEG and WEBP output"
-                )
+                    buf = io.BytesIO()
+                    img.save(buf, format=fmt, **save_kwargs)
+                    if buf.tell() > max_bytes:
+                        scale_low, scale_high = 0.1, 1.0
+                        best_scale = scale_low
+                        for _ in range(10):
+                            ratio = (scale_low + scale_high) / 2
+                            resized = img.resize(
+                                (
+                                    max(1, int(pix.width * ratio)),
+                                    max(1, int(pix.height * ratio)),
+                                ),
+                                Image.Resampling.LANCZOS,
+                            )
+                            buf = io.BytesIO()
+                            resized.save(buf, format=fmt, **save_kwargs)
+                            if buf.tell() > max_bytes:
+                                scale_high = ratio
+                            else:
+                                best_scale = ratio
+                                scale_low = ratio
+                        img = img.resize(
+                            (
+                                max(1, int(pix.width * best_scale)),
+                                max(1, int(pix.height * best_scale)),
+                            ),
+                            Image.Resampling.LANCZOS,
+                        )
 
             out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
             img.save(out_path, format=fmt, **save_kwargs)
