@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz
+import fitz  # type: ignore
 import pytest
 
 from pdf_toolbox.docx import pdf_to_docx
