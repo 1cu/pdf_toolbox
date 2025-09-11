@@ -25,20 +25,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install .
           pip install pyinstaller
-      - name: Build executable
+      - name: Get version
+        id: version
+        run: echo "version=$(python scripts/get_version.py)" >> "$GITHUB_OUTPUT"
+      - name: Build executable (macOS)
+        if: runner.os == 'macOS'
+        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w src/pdf_toolbox/gui.py
+      - name: Build executable (Windows)
+        if: runner.os == 'Windows'
+        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -F -w --collect-all PySide6 src/pdf_toolbox/gui.py
+      - name: Package executable (macOS)
+        if: runner.os == 'macOS'
         run: |
-          pyinstaller -n pdf_toolbox -F -w src/pdf_toolbox/gui.py
-      - name: Package executable
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            pwsh -Command "Compress-Archive -Path dist\\pdf_toolbox.exe -DestinationPath pdf_toolbox-windows.zip"
-          else
-            zip -j pdf_toolbox-macos.zip dist/pdf_toolbox
-          fi
+          cd dist
+          zip -r ../pdf_toolbox-${{ steps.version.outputs.version }}-macos.zip pdf_toolbox-${{ steps.version.outputs.version }}.app
+      - name: Package executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist\pdf_toolbox-${{ steps.version.outputs.version }}.exe -DestinationPath pdf_toolbox-${{ steps.version.outputs.version }}-windows.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: pdf_toolbox-${{ runner.os }}
+          name: pdf_toolbox-${{ steps.version.outputs.version }}-${{ runner.os }}
           path: pdf_toolbox-*.zip
 
   publish:
