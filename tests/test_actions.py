@@ -90,16 +90,52 @@ def test_auto_discover_populates_registry():
     assert any(a.fqname == "pdf_toolbox.rasterize.pdf_to_images" for a in actions_list)
 
 
-def test_auto_discover_fallback(monkeypatch):
-    """Ensure discovery works when walk_packages yields nothing."""
-    monkeypatch.setattr(actions.pkgutil, "walk_packages", lambda *a, **k: [])
+def test_auto_discover_loader_toc(monkeypatch):
+    """Discovery works when package loader exposes a ``toc`` attribute."""
+    import types
+    import importlib.resources as ir
+
+    pkg = sys.modules["pdf_toolbox"]
+    original_loader = pkg.__spec__.loader
+    monkeypatch.setattr(actions.pkgutil, "walk_packages", lambda *_, **__: [])
+    monkeypatch.setattr(
+        ir, "files", lambda *_, **__: (_ for _ in ()).throw(FileNotFoundError)
+    )
+    pkg.__spec__.loader = types.SimpleNamespace(toc=["pdf_toolbox.rasterize"])
+    saved = {
+        name: mod
+        for name, mod in sys.modules.items()
+        if name.startswith("pdf_toolbox.")
+        and name not in {"pdf_toolbox.actions", "pdf_toolbox.utils"}
+    }
+    for name in saved:
+        sys.modules.pop(name)
     actions._registry.clear()
     actions._discovered = False
-    for mod in list(sys.modules):
-        if mod.startswith("pdf_toolbox.") and mod not in {
-            "pdf_toolbox.actions",
-            "pdf_toolbox.utils",
-        }:
-            sys.modules.pop(mod)
-    actions.list_actions()
-    assert len(actions._registry) > 0
+    try:
+        actions.list_actions()
+        assert any(
+            a.fqname == "pdf_toolbox.rasterize.pdf_to_images"
+            for a in actions._registry.values()
+        )
+    finally:
+        pkg.__spec__.loader = original_loader
+        sys.modules.update(saved)
+        actions._registry.clear()
+        actions._discovered = False
+
+
+def test_register_module_ignores_nodoc_functions(monkeypatch):
+    import types
+
+    mod = types.ModuleType("dummy_mod")
+
+    def func_without_docs():
+        pass
+
+    mod.func_without_docs = func_without_docs
+    sys.modules["dummy_mod"] = mod
+    actions._registry.clear()
+    actions._discovered = False
+    actions._register_module("dummy_mod")
+    assert not actions._registry
