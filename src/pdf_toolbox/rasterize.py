@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Literal
 from threading import Event
 import io
+import warnings
 
 import fitz  # type: ignore
 from PIL import Image
@@ -71,8 +72,8 @@ def pdf_to_images(
     quality but also larger files. ``quality`` is only used for JPEG and WebP
     output. ``max_size_mb`` limits the resulting JPEG or WebP files by reducing
     image quality and scales down PNG or TIFF images to roughly fit within the
-    given size. Images are written to ``out_dir`` or the PDF's directory and the
-    paths are returned.
+    given size, emitting a warning when this fallback is used. Images are written
+    to ``out_dir`` or the PDF's directory and the paths are returned.
     """
 
     outputs: list[str] = []
@@ -138,6 +139,11 @@ def pdf_to_images(
                     # avoid heavy compression for speed
                     save_kwargs["compress_level"] = 0
                 if max_bytes is not None:
+                    warnings.warn(
+                        "max_size_mb with lossless formats will downscale image dimensions to"
+                        " meet the target size; use JPEG or WebP to keep dimensions",
+                        UserWarning,
+                    )
                     buf = io.BytesIO()
                     img.save(buf, format=fmt, **save_kwargs)
                     if buf.tell() > max_bytes:
