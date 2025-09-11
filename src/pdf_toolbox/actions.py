@@ -98,26 +98,43 @@ _EXCLUDE = {
 }
 
 
+def _register_module(mod_name: str) -> None:
+    """Import *mod_name* and register its actions."""
+    if mod_name in _EXCLUDE:
+        return
+    mod = importlib.import_module(mod_name)
+    for _, obj in inspect.getmembers(mod, inspect.isfunction):
+        if obj.__module__ != mod_name:
+            continue
+        if obj.__name__.startswith("_"):
+            continue
+        if getattr(obj, "__pdf_toolbox_action__", False):
+            continue
+        if not any([obj.__doc__, obj.__annotations__]):
+            continue
+        act = build_action(obj)
+        _registry.setdefault(act.fqname, act)
+
+
 def _auto_discover(pkg: str = "pdf_toolbox") -> None:
     global _discovered
     if _discovered:
         return
     pkg_mod = importlib.import_module(pkg)
-    for modinfo in pkgutil.walk_packages(pkg_mod.__path__, pkg_mod.__name__ + "."):
-        if modinfo.name in _EXCLUDE:
-            continue
-        mod = importlib.import_module(modinfo.name)
-        for _, obj in inspect.getmembers(mod, inspect.isfunction):
-            if obj.__module__ != modinfo.name:
-                continue
-            if obj.__name__.startswith("_"):
-                continue
-            if getattr(obj, "__pdf_toolbox_action__", False):
-                continue
-            if not any([obj.__doc__, obj.__annotations__]):
-                continue
-            act = build_action(obj)
-            _registry.setdefault(act.fqname, act)
+    paths = getattr(pkg_mod, "__path__", [])
+    found = False
+    for modinfo in pkgutil.walk_packages(paths, pkg_mod.__name__ + "."):
+        found = True
+        _register_module(modinfo.name)
+    if not found:
+        try:
+            from importlib import resources
+
+            for res in resources.files(pkg_mod).iterdir():
+                if res.name.endswith(".py") and res.name != "__init__.py":
+                    _register_module(f"{pkg_mod.__name__}.{res.name[:-3]}")
+        except Exception:
+            pass
     _discovered = True
 
 
