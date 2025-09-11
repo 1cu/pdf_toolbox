@@ -32,6 +32,11 @@ def test_pdf_to_images_unsupported_format(sample_pdf):
         pdf_to_images(sample_pdf, image_format="BMP")
 
 
+def test_pdf_to_images_unknown_dpi(sample_pdf):
+    with pytest.raises(ValueError, match="Unknown DPI preset"):
+        pdf_to_images(sample_pdf, dpi="bogus")
+
+
 def test_pdf_to_images_selected_pages(sample_pdf, tmp_path):
     outputs = pdf_to_images(
         sample_pdf,

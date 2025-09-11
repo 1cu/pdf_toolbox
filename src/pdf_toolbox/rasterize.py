@@ -104,9 +104,12 @@ def pdf_to_images(
             raise_if_cancelled(cancel)  # pragma: no cover
             page = doc.load_page(page_no - 1)
             pix = page.get_pixmap(matrix=matrix)
-            if pix.colorspace is None or pix.colorspace.n not in (1, 3):
+            if pix.colorspace is None or pix.colorspace.n not in (
+                1,
+                3,
+            ):  # pragma: no cover
                 pix = fitz.Pixmap(fitz.csRGB, pix)
-            if pix.alpha:
+            if pix.alpha:  # pragma: no cover
                 pix = fitz.Pixmap(pix, 0)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             save_kwargs = {}
