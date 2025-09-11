@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Union, Literal
+from typing import Literal
 from threading import Event
 
 import fitz  # type: ignore
 from PIL import Image
 
 from .actions import action
-from .utils import sane_output_dir, parse_page_spec
+from .utils import open_pdf, parse_page_spec, raise_if_cancelled, sane_output_dir
 
 
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF"]
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
-DPI_PRESETS: Dict[str, int] = {
+DPI_PRESETS: dict[str, int] = {
     "Low (72 dpi)": 72,
     "Medium (150 dpi)": 150,
     "High (300 dpi)": 300,
@@ -34,7 +34,7 @@ DpiChoice = Literal[
 # Preset JPEG quality options similar to DPI presets. These are only used when
 # ``image_format`` is ``"JPEG"``. The GUI presents the human readable key while
 # the value is the numeric quality passed to :func:`PIL.Image.Image.save`.
-JPEG_QUALITY_PRESETS: Dict[str, int] = {
+JPEG_QUALITY_PRESETS: dict[str, int] = {
     "Low (70)": 70,
     "Medium (85)": 85,
     "High (95)": 95,
@@ -51,10 +51,8 @@ def pdf_to_images(
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     quality: int | QualityChoice = "High (95)",
     out_dir: str | None = None,
-    as_pil: bool = False,
     cancel: Event | None = None,
-) -> List[Union[str, Image.Image]]:
-
+) -> list[str]:
     """Rasterize a PDF into images.
 
     Each page of ``input_pdf`` specified by ``pages`` is rendered to the chosen
@@ -67,7 +65,7 @@ def pdf_to_images(
     returned.
     """
 
-    outputs: List[str] = []
+    outputs: list[str] = []
 
     if isinstance(dpi, str):
         try:
@@ -86,18 +84,13 @@ def pdf_to_images(
         )
     ext = fmt.lower()
 
-    try:
-        doc = fitz.open(input_pdf)
-    except Exception as exc:  # pragma: no cover - exercised in tests
-        raise ValueError(f"Could not open PDF file: {input_pdf}") from exc
-
+    doc = open_pdf(input_pdf)
     with doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
         out_base = sane_output_dir(input_pdf, out_dir)
 
         for page_no in page_numbers:
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             page = doc.load_page(page_no - 1)
             pix = page.get_pixmap(matrix=matrix)
             if pix.colorspace is None or pix.colorspace.n not in (1, 3):
@@ -120,7 +113,7 @@ def pdf_to_images(
             elif fmt == "PNG":  # lossless; avoid heavy compression for speed
                 save_kwargs["compress_level"] = 0
 
-            out_path = out_base / f"{Path(input_pdf).stem}_Seite_{page_no}.{ext}"
+            out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
             img.save(out_path, format=fmt, **save_kwargs)
             outputs.append(str(out_path))
     return outputs

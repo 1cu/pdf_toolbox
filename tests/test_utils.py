@@ -8,8 +8,10 @@ import pytest
 
 from pdf_toolbox.utils import (
     ensure_libs,
+    open_pdf,
     parse_page_spec,
     sane_output_dir,
+    save_pdf,
     update_metadata,
 )
 
@@ -42,6 +44,16 @@ def test_update_metadata(tmp_path):
     meta = doc.metadata
     assert "note" in meta.get("subject", "")
     assert meta.get("author") == "Tester"
+
+
+def test_open_save_pdf(tmp_path):
+    doc = fitz.open()
+    doc.new_page()
+    out = tmp_path / "test.pdf"
+    save_pdf(doc, out)
+    reopened = open_pdf(out)
+    assert reopened.page_count == 1
+    reopened.close()
 
 
 def test_ensure_libs_missing(monkeypatch):

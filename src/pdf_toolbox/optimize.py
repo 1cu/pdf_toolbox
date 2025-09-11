@@ -10,7 +10,7 @@ import fitz  # type: ignore
 from PIL import Image
 
 from .actions import action
-from .utils import sane_output_dir, update_metadata
+from .utils import open_pdf, raise_if_cancelled, save_pdf, sane_output_dir
 
 
 class QualitySetting(TypedDict):
@@ -32,11 +32,9 @@ def _compress_images(
     doc: fitz.Document, image_quality: int, cancel: Event | None = None
 ) -> None:
     for page in doc:
-        if cancel and cancel.is_set():  # pragma: no cover
-            raise RuntimeError("cancelled")  # pragma: no cover
+        raise_if_cancelled(cancel)  # pragma: no cover
         for img in page.get_images(full=True):
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             xref = img[0]
             pix = fitz.Pixmap(doc, xref)
             try:
@@ -75,28 +73,25 @@ def optimize_pdf(
     out_path = out_dir_path / f"{input_path.stem}_optimized_{quality}.pdf"
 
     original_size = input_path.stat().st_size
-    doc = fitz.open(input_pdf)
-    update_metadata(doc, note=" | optimized")
-
-    if cancel and cancel.is_set():  # pragma: no cover
-        raise RuntimeError("cancelled")  # pragma: no cover
+    doc = open_pdf(input_pdf)
+    raise_if_cancelled(cancel, doc)  # pragma: no cover
 
     if compress_images:
         _compress_images(doc, settings["image_quality"], cancel)
 
-    if cancel and cancel.is_set():  # pragma: no cover
-        raise RuntimeError("cancelled")  # pragma: no cover
+    raise_if_cancelled(cancel, doc)  # pragma: no cover
 
     pdf_quality = settings["pdf_quality"]
     compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
-    doc.save(
+    save_pdf(
+        doc,
         out_path,
+        note=" | optimized",
         garbage=3,
         deflate=True,
         clean=True,
         compression_effort=compression_effort,
     )
-    doc.close()
 
     optimized_size = out_path.stat().st_size
     reduction = 1 - (optimized_size / original_size)

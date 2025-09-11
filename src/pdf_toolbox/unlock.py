@@ -7,7 +7,7 @@ from threading import Event
 import fitz  # type: ignore
 
 from .actions import action
-from .utils import sane_output_dir, update_metadata
+from .utils import open_pdf, raise_if_cancelled, save_pdf, sane_output_dir
 
 
 @action(category="PDF")
@@ -17,21 +17,21 @@ def unlock_pdf(
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> str:
-    """Entferne den Kennwortschutz eines PDFs."""
-    if cancel and cancel.is_set():  # pragma: no cover
-        raise RuntimeError("cancelled")  # pragma: no cover
-    doc = fitz.open(input_pdf)
+    """Remove password protection from a PDF."""
+    raise_if_cancelled(cancel)  # pragma: no cover
+    doc = open_pdf(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
         raise ValueError("Invalid password")
-    update_metadata(doc, note=" | unlocked")
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_unlocked.pdf"
     )
-    if cancel and cancel.is_set():  # pragma: no cover
-        doc.close()
-        raise RuntimeError("cancelled")  # pragma: no cover
-    doc.save(out_path, encryption=fitz.PDF_ENCRYPT_NONE)
-    doc.close()
+    raise_if_cancelled(cancel, doc)  # pragma: no cover
+    save_pdf(
+        doc,
+        out_path,
+        note=" | unlocked",
+        encryption=fitz.PDF_ENCRYPT_NONE,
+    )
     return str(out_path)
 
 

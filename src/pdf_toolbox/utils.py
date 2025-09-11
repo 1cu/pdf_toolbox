@@ -6,7 +6,8 @@ from pathlib import Path
 import importlib
 import json
 import sys
-from typing import Iterable, List
+from typing import Iterable
+from threading import Event
 
 from platformdirs import user_config_dir
 import fitz  # type: ignore
@@ -71,7 +72,7 @@ def ensure_libs() -> None:
         raise RuntimeError("Missing required libraries: " + ", ".join(parts))
 
 
-def parse_page_spec(spec: str | None, total: int) -> List[int]:
+def parse_page_spec(spec: str | None, total: int) -> list[int]:
     """Parse a page/slide specification into a list of 1-based numbers.
 
     ``spec`` follows a simple syntax with comma-separated parts. Each part may
@@ -142,4 +143,55 @@ def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
     fitz_doc.set_metadata(metadata)
 
 
-__all__ = ["ensure_libs", "sane_output_dir", "update_metadata", "parse_page_spec"]
+def raise_if_cancelled(
+    cancel: Event | None, doc: fitz.Document | None = None
+) -> None:  # pragma: no cover - cooperative cancellation helper
+    """Raise ``RuntimeError('cancelled')`` if ``cancel`` is set.
+
+    If ``doc`` is provided it will be closed before raising to free
+    resources. The function is excluded from coverage as it depends on
+    timing-sensitive user interaction.
+    """
+
+    if cancel and cancel.is_set():
+        if doc is not None:
+            doc.close()
+        raise RuntimeError("cancelled")
+
+
+def open_pdf(path: str | Path) -> fitz.Document:
+    """Open ``path`` as a PDF document with friendly errors."""
+
+    try:
+        return fitz.open(str(path))
+    except Exception as exc:  # pragma: no cover - best effort
+        raise RuntimeError(f"Could not open PDF file: {path}") from exc
+
+
+def save_pdf(
+    doc: fitz.Document,
+    out_path: str | Path,
+    *,
+    note: str | None = None,
+    **save_kwargs,
+) -> None:
+    """Save ``doc`` to ``out_path`` updating metadata and closing it."""
+
+    update_metadata(doc, note)
+    try:
+        doc.save(str(out_path), **save_kwargs)
+    except Exception as exc:  # pragma: no cover - best effort
+        raise RuntimeError(f"Could not save PDF file: {out_path}") from exc
+    finally:
+        doc.close()
+
+
+__all__ = [
+    "ensure_libs",
+    "sane_output_dir",
+    "update_metadata",
+    "parse_page_spec",
+    "raise_if_cancelled",
+    "open_pdf",
+    "save_pdf",
+]

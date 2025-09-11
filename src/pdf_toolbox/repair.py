@@ -4,29 +4,23 @@ import argparse
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore
 
 from .actions import action
-from .utils import sane_output_dir, update_metadata
+from .utils import open_pdf, raise_if_cancelled, save_pdf, sane_output_dir
 
 
 @action(category="PDF")
 def repair_pdf(
     input_pdf: str, out_dir: str | None = None, cancel: Event | None = None
 ) -> str:
-    """Repariere ein PDF und bereinige inkonsistente Daten."""
-    if cancel and cancel.is_set():  # pragma: no cover
-        raise RuntimeError("cancelled")  # pragma: no cover
-    doc = fitz.open(input_pdf)
-    update_metadata(doc, note=" | repaired")
+    """Repair a PDF and clean up inconsistent data."""
+    raise_if_cancelled(cancel)  # pragma: no cover
+    doc = open_pdf(input_pdf)
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_repaired.pdf"
     )
-    if cancel and cancel.is_set():  # pragma: no cover
-        doc.close()
-        raise RuntimeError("cancelled")  # pragma: no cover
-    doc.save(out_path, clean=True, deflate=True, garbage=4)
-    doc.close()
+    raise_if_cancelled(cancel, doc)  # pragma: no cover
+    save_pdf(doc, out_path, note=" | repaired", clean=True, deflate=True, garbage=4)
     return str(out_path)
 
 
