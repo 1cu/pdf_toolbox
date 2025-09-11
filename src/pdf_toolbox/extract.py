@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 from threading import Event
 
-from ._fitz import fitz  # type: ignore
+import fitz  # type: ignore
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
