@@ -19,7 +19,13 @@ warnings.filterwarnings(
     message="builtin type swigvarlink has no __module__ attribute",
     category=DeprecationWarning,
 )
+warnings.filterwarnings(
+    "ignore",
+    message=".*swigvarlink.*",
+    category=DeprecationWarning,
+)
 
 import fitz as fitz  # type: ignore
+import pymupdf as _pymupdf  # noqa: F401
 
 __all__ = ["fitz"]
