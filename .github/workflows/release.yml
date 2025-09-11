@@ -96,5 +96,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          MAX_RELEASES: 20
+          MAX_RELEASES: 3
         run: python scripts/prune_releases.py
