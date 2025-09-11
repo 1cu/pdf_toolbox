@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.2.48"
+version = "0.2.49"
 description = "Utilities for PDF operations"
 requires-python = ">=3.10"
 dependencies = [
