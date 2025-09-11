@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import List
 from threading import Event
 
 import fitz  # type: ignore
 
 from .actions import action
-from .utils import sane_output_dir, update_metadata, parse_page_spec
+from .utils import (
+    open_pdf,
+    parse_page_spec,
+    raise_if_cancelled,
+    sane_output_dir,
+    update_metadata,
+)
 
 
 @action(category="PDF")
@@ -26,20 +31,18 @@ def extract_range(
     created PDF.
     """
 
-    with fitz.open(input_pdf) as doc:
+    with open_pdf(input_pdf) as doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
         new_doc = fitz.open()
         for page in page_numbers:
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             new_doc.insert_pdf(doc, from_page=page - 1, to_page=page - 1)
         update_metadata(new_doc, note=" | extract_range")
         safe_spec = pages.replace(",", "_").replace("-", "_").strip("_")
         out_path = sane_output_dir(input_pdf, out_dir) / (
-            f"{Path(input_pdf).stem}_Auszug_{safe_spec}.pdf"
+            f"{Path(input_pdf).stem}_Extract_{safe_spec}.pdf"
         )
-        if cancel and cancel.is_set():  # pragma: no cover
-            raise RuntimeError("cancelled")  # pragma: no cover
+        raise_if_cancelled(cancel)  # pragma: no cover
         new_doc.save(out_path)
         new_doc.close()
     return str(out_path)
@@ -51,14 +54,13 @@ def split_pdf(
     pages_per_file: int,
     out_dir: str | None = None,
     cancel: Event | None = None,
-) -> List[str]:
+) -> list[str]:
     """Split a PDF into parts of ``pages_per_file`` pages."""
 
-    outputs: List[str] = []
-    with fitz.open(input_pdf) as doc:
+    outputs: list[str] = []
+    with open_pdf(input_pdf) as doc:
         for start in range(0, doc.page_count, pages_per_file):
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             end = min(start + pages_per_file, doc.page_count)
             new_doc = fitz.open()
             new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
@@ -66,8 +68,7 @@ def split_pdf(
             out_path = sane_output_dir(input_pdf, out_dir) / (
                 f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
             )
-            if cancel and cancel.is_set():  # pragma: no cover
-                raise RuntimeError("cancelled")  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover
             new_doc.save(out_path)
             new_doc.close()
             outputs.append(str(out_path))

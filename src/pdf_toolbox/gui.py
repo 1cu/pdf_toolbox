@@ -7,7 +7,7 @@ import html
 import types
 from threading import Event
 from pathlib import Path
-from typing import Any, Dict, Literal, Union, get_args, get_origin
+from typing import Any, Literal, Union, get_args, get_origin
 
 from .actions import Action, list_actions
 from . import utils
@@ -88,19 +88,21 @@ if QT_AVAILABLE:
         def browse(self) -> None:
             initial = self.cfg.get("last_open_dir", str(Path.home()))
             if self.directory:
-                path = QFileDialog.getExistingDirectory(self, "Ordner wählen", initial)
+                path = QFileDialog.getExistingDirectory(
+                    self, "Select directory", initial
+                )
                 if path:
                     self.setText(path)
                     self.cfg["last_open_dir"] = path
                     save_config(self.cfg)
             elif self.multi:
-                paths, _ = QFileDialog.getOpenFileNames(self, "Dateien wählen", initial)
+                paths, _ = QFileDialog.getOpenFileNames(self, "Select files", initial)
                 if paths:
                     self.setText(";".join(paths))
                     self.cfg["last_open_dir"] = str(Path(paths[0]).parent)
                     save_config(self.cfg)
             else:
-                path, _ = QFileDialog.getOpenFileName(self, "Datei wählen", initial)
+                path, _ = QFileDialog.getOpenFileName(self, "Select file", initial)
                 if path:
                     self.setText(path)
                     self.cfg["last_open_dir"] = str(Path(path).parent)
@@ -127,7 +129,7 @@ if QT_AVAILABLE:
         finished = Signal(object)
         error = Signal(str)
 
-        def __init__(self, func, kwargs: Dict[str, Any]):
+        def __init__(self, func, kwargs: dict[str, Any]):
             super().__init__()
             self.func = func
             self.kwargs = kwargs
@@ -161,7 +163,7 @@ if QT_AVAILABLE:
             self.setWindowTitle("PDF Toolbox")
             self.cfg = load_config()
             self.current_action: Action | None = None
-            self.current_widgets: Dict[str, Any] = {}
+            self.current_widgets: dict[str, Any] = {}
             self.worker: Worker | None = None
             self.resize(900, 480)
             self.base_height = self.height()
@@ -182,7 +184,7 @@ if QT_AVAILABLE:
             layout.addWidget(self.log)
             self.setCentralWidget(central)
 
-            lbl = QLabel("Aktionen")
+            lbl = QLabel("Actions")
             self.info_btn = QPushButton("i")
             self.info_btn.setFixedWidth(24)
             self.info_btn.setEnabled(False)
@@ -207,7 +209,7 @@ if QT_AVAILABLE:
             self.run_btn = QPushButton("Start")
             self.progress = QProgressBar()
             self.status = ClickableLabel("")
-            self.status_text = "Bereit"
+            self.status_text = "Ready"
             bottom.addWidget(self.status)
             bottom.addWidget(self.progress, 1)
             bottom.addWidget(self.run_btn)
@@ -344,11 +346,11 @@ if QT_AVAILABLE:
                     self.form_layout.addRow(param.name, widget)
                 self.current_widgets[param.name] = widget
 
-        def collect_args(self) -> Dict[str, Any]:
+        def collect_args(self) -> dict[str, Any]:
             if not self.current_action:
                 return {}
             params = {p.name: p for p in self.current_action.params}
-            kwargs: Dict[str, Any] = {}
+            kwargs: dict[str, Any] = {}
             for name, widget in self.current_widgets.items():
                 param = params.get(name)
                 optional = False
@@ -414,7 +416,7 @@ if QT_AVAILABLE:
             try:
                 kwargs = self.collect_args()
             except ValueError as exc:
-                QMessageBox.critical(self, "Fehler", str(exc))
+                QMessageBox.critical(self, "Error", str(exc))
                 return
             if self.worker and self.worker.isRunning():
                 self.worker.cancel()
@@ -429,7 +431,7 @@ if QT_AVAILABLE:
                 return
 
             self.progress.setRange(0, 0)
-            self.update_status("Läuft...")
+            self.update_status("Running...")
             self.log.clear()
             self.log.setVisible(False)
             self.resize(self.width(), self.base_height)
@@ -459,7 +461,7 @@ if QT_AVAILABLE:
             self.progress.setRange(0, 1)
             self.progress.setValue(0)
             self.run_btn.setText("Start")
-            self.update_status("Fehler")
+            self.update_status("Error")
             self.resize(self.width(), self.base_height + self.log.height())
             self.worker = None
 
