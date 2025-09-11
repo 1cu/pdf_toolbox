@@ -4,6 +4,11 @@ Utilities for manipulating PDF files. A Qt-based GUI discovers available functio
 
 The toolbox can also export PPTX presentations to images (JPEG, PNG, or TIFF) using Microsoft PowerPoint. TIFF exports are lossless for higher-quality results, and images are organized in a format-specific subdirectory.
 
+PDF pages can likewise be rasterized to images. When a `max_size_mb` limit is
+used with lossless PNG or TIFF output, the pages are downscaled to fit the
+target size and a warning is emitted, since those formats lack adjustable
+quality settings.
+
 ## Table of Contents
 - [Configuration](#configuration)
 - [Optimization](#optimization)
