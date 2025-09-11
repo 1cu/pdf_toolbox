@@ -40,7 +40,7 @@ def test_literal_parameters_resolved():
     from pdf_toolbox.rasterize import DPI_PRESETS
 
     assert get_origin(pdf_fmt) is Literal
-    assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF"}
+    assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP"}
     dpi_args = get_args(pdf_dpi)
     assert int in dpi_args
     lit = next(a for a in dpi_args if get_origin(a) is Literal)

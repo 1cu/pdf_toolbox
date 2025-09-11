@@ -104,10 +104,11 @@ def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):
     assert img.size == expected
 
 
-def test_pdf_to_images_jpeg_quality_preset(sample_pdf, tmp_path):
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_lossy_quality_preset(sample_pdf, tmp_path, fmt):
     images = pdf_to_images(
         sample_pdf,
-        image_format="JPEG",
+        image_format=fmt,
         quality="Medium (85)",
         dpi="Low (72 dpi)",
         out_dir=str(tmp_path),
@@ -115,10 +116,11 @@ def test_pdf_to_images_jpeg_quality_preset(sample_pdf, tmp_path):
     assert len(images) == 3
 
 
-def test_pdf_to_images_jpeg_quality_custom(sample_pdf, tmp_path):
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_lossy_quality_custom(sample_pdf, tmp_path, fmt):
     images = pdf_to_images(
         sample_pdf,
-        image_format="JPEG",
+        image_format=fmt,
         quality=80,
         dpi="Low (72 dpi)",
         out_dir=str(tmp_path),
@@ -126,11 +128,12 @@ def test_pdf_to_images_jpeg_quality_custom(sample_pdf, tmp_path):
     assert len(images) == 3
 
 
-def test_pdf_to_images_unknown_quality(sample_pdf):
-    with pytest.raises(ValueError, match="Unknown JPEG quality preset"):
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_unknown_quality(sample_pdf, fmt):
+    with pytest.raises(ValueError, match="Unknown quality preset"):
         pdf_to_images(
             sample_pdf,
-            image_format="JPEG",
+            image_format=fmt,
             quality="Ultra",
         )
 
@@ -147,3 +150,45 @@ def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
         p = Path(out)
         assert p.exists()
         assert p.suffix.lower() == ".png"
+
+
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
+    import os
+    import fitz
+
+    width = height = 500
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    high_dir = tmp_path / "high"
+    limited_dir = tmp_path / "limited"
+    base = pdf_to_images(str(pdf_path), image_format=fmt, out_dir=str(high_dir))[0]
+    base_size = Path(base).stat().st_size
+    limit_mb = base_size / (2 * 1024 * 1024)
+    limited = pdf_to_images(
+        str(pdf_path),
+        image_format=fmt,
+        out_dir=str(limited_dir),
+        max_size_mb=limit_mb,
+    )[0]
+    limited_size = Path(limited).stat().st_size
+    assert limited_size <= limit_mb * 1024 * 1024
+    assert limited_size < base_size
+
+
+def test_pdf_to_images_max_size_png(sample_pdf):
+    with pytest.raises(
+        ValueError,
+        match="max_size_mb is only supported for JPEG and WEBP output",
+    ):
+        pdf_to_images(sample_pdf, max_size_mb=1.0)
