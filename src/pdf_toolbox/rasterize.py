@@ -139,13 +139,13 @@ def pdf_to_images(
                     # avoid heavy compression for speed
                     save_kwargs["compress_level"] = 0
                 if max_bytes is not None:
-                    warnings.warn(
-                        "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
-                        UserWarning,
-                    )
                     buf = io.BytesIO()
                     img.save(buf, format=fmt, **save_kwargs)
                     if buf.tell() > max_bytes:
+                        warnings.warn(
+                            "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
+                            UserWarning,
+                        )
                         scale_low, scale_high = 0.1, 1.0
                         best_scale = scale_low
                         for _ in range(10):
