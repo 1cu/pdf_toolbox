@@ -36,6 +36,14 @@ def test_save_config_roundtrip(tmp_path, monkeypatch):
     assert loaded == data
 
 
+def test_mainwindow_populates_actions(app):
+    win = gui.MainWindow()
+    try:
+        assert win.tree.topLevelItemCount() > 0
+    finally:
+        win.close()
+
+
 def test_mainwindow_collect_args(app, monkeypatch):
     def sample(name: str, flag: bool = False) -> None:
         pass
