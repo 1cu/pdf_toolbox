@@ -210,12 +210,13 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     base_size = Path(base).stat().st_size
     base_img = Image.open(base)
     limit_mb = base_size / (2 * 1024 * 1024)
-    limited = pdf_to_images(
-        str(pdf_path),
-        image_format=fmt,
-        out_dir=str(limited_dir),
-        max_size_mb=limit_mb,
-    )[0]
+    with pytest.warns(UserWarning, match="downscale"):
+        limited = pdf_to_images(
+            str(pdf_path),
+            image_format=fmt,
+            out_dir=str(limited_dir),
+            max_size_mb=limit_mb,
+        )[0]
     limited_size = Path(limited).stat().st_size
     limited_img = Image.open(limited)
     assert limited_size <= limit_mb * 1024 * 1024
