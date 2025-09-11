@@ -140,8 +140,7 @@ def pdf_to_images(
                     save_kwargs["compress_level"] = 0
                 if max_bytes is not None:
                     warnings.warn(
-                        "max_size_mb with lossless formats will downscale image dimensions to"
-                        " meet the target size; use JPEG or WebP to keep dimensions",
+                        "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
                         UserWarning,
                     )
                     buf = io.BytesIO()
