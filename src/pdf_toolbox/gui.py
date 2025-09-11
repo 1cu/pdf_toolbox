@@ -9,8 +9,8 @@ from threading import Event
 from pathlib import Path
 from typing import Any, Literal, Union, get_args, get_origin
 
-from .actions import Action, list_actions
-from . import utils
+from pdf_toolbox.actions import Action, list_actions
+from pdf_toolbox import utils
 
 CONFIG_PATH = utils.CONFIG_FILE
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
