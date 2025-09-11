@@ -5,6 +5,7 @@ import sys
 import inspect
 import html
 import types
+import webbrowser
 from threading import Event
 from pathlib import Path
 from typing import Any, Literal, Union, get_args, get_origin
@@ -219,6 +220,7 @@ if QT_AVAILABLE:
             self.settings_btn.setText("⚙")
             settings_menu = QMenu(self)
             settings_menu.addAction("Autor", self.on_author)
+            settings_menu.addAction("About", self.on_about)
             self.settings_btn.setMenu(settings_menu)
             self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]
             top_bar.addStretch()
@@ -493,6 +495,9 @@ if QT_AVAILABLE:
                 self.cfg["author"] = author_edit.text().strip()
                 self.cfg["email"] = email_edit.text().strip()
                 save_config(self.cfg)
+
+        def on_about(self) -> None:  # pragma: no cover - GUI
+            webbrowser.open("https://github.com/pdf-toolbox/pdf-toolbox")
 
         def check_author(self) -> None:
             try:
