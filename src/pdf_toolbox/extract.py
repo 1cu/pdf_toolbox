@@ -6,8 +6,8 @@ from threading import Event
 
 import fitz  # type: ignore
 
-from .actions import action
-from .utils import (
+from pdf_toolbox.actions import action
+from pdf_toolbox.utils import (
     open_pdf,
     parse_page_spec,
     raise_if_cancelled,
