@@ -75,6 +75,7 @@ def test_auto_discover_populates_registry():
     if had_attr is not None:
         delattr(rasterize.pdf_to_images, "__pdf_toolbox_action__")
     actions._registry.clear()
+    actions._discovered = False
     actions_list = list_actions()
     if had_attr is not None:
         setattr(rasterize.pdf_to_images, "__pdf_toolbox_action__", had_attr)

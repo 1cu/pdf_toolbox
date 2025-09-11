@@ -26,6 +26,7 @@ class Action:
 
 
 _registry: dict[str, Action] = {}
+_discovered = False
 
 
 def _format_name(func_name: str) -> str:
@@ -98,6 +99,9 @@ _EXCLUDE = {
 
 
 def _auto_discover(pkg: str = "pdf_toolbox") -> None:
+    global _discovered
+    if _discovered:
+        return
     pkg_mod = importlib.import_module(pkg)
     for modinfo in pkgutil.walk_packages(pkg_mod.__path__, pkg_mod.__name__ + "."):
         if modinfo.name in _EXCLUDE:
@@ -114,11 +118,11 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
                 continue
             act = build_action(obj)
             _registry.setdefault(act.fqname, act)
+    _discovered = True
 
 
 def list_actions() -> list[Action]:
-    if not _registry:
-        _auto_discover()
+    _auto_discover()
     return list(_registry.values())
 
 
