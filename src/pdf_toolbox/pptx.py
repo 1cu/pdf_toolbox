@@ -5,8 +5,12 @@ from typing import Literal
 import sys
 from threading import Event
 
-from .actions import action
-from .utils import parse_page_spec, raise_if_cancelled, sane_output_dir
+from pdf_toolbox.actions import action
+from pdf_toolbox.utils import (
+    parse_page_spec,
+    raise_if_cancelled,
+    sane_output_dir,
+)
 
 
 def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + PowerPoint

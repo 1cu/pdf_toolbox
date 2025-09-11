@@ -7,8 +7,13 @@ from threading import Event
 import fitz  # type: ignore
 from PIL import Image
 
-from .actions import action
-from .utils import open_pdf, parse_page_spec, raise_if_cancelled, sane_output_dir
+from pdf_toolbox.actions import action
+from pdf_toolbox.utils import (
+    open_pdf,
+    parse_page_spec,
+    raise_if_cancelled,
+    sane_output_dir,
+)
 
 
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF"]

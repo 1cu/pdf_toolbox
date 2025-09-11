@@ -6,8 +6,13 @@ from threading import Event
 
 import fitz  # type: ignore
 
-from .actions import action
-from .utils import open_pdf, raise_if_cancelled, save_pdf, sane_output_dir
+from pdf_toolbox.actions import action
+from pdf_toolbox.utils import (
+    open_pdf,
+    raise_if_cancelled,
+    save_pdf,
+    sane_output_dir,
+)
 
 
 @action(category="PDF")
