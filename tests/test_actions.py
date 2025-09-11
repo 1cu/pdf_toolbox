@@ -68,6 +68,14 @@ def test_format_name_plural_acronyms():
     assert actions._format_name("pdfs_to_pngs") == "PDFs to PNGs"
 
 
+def test_register_module_skips_undocumented(tmp_path, monkeypatch):
+    mod_path = tmp_path / "undoc_mod.py"
+    mod_path.write_text("def foo(x):\n    return x\n")
+    monkeypatch.syspath_prepend(tmp_path)
+    actions._register_module("undoc_mod")
+    assert "undoc_mod.foo" not in actions._registry
+
+
 def test_auto_discover_populates_registry():
     from pdf_toolbox import rasterize
 
@@ -82,25 +90,16 @@ def test_auto_discover_populates_registry():
     assert any(a.fqname == "pdf_toolbox.rasterize.pdf_to_images" for a in actions_list)
 
 
-def test_auto_discover_fallback():
+def test_auto_discover_fallback(monkeypatch):
     """Ensure discovery works when walk_packages yields nothing."""
-    import subprocess
-    import sys
-    import textwrap
-
-    code = textwrap.dedent(
-        """
-        import sys
-        import pdf_toolbox.actions as actions
-        actions.pkgutil.walk_packages = lambda *_, **__: []
-        actions._registry.clear()
-        actions._discovered = False
-        for mod in list(sys.modules):
-            if mod.startswith('pdf_toolbox.') and mod != 'pdf_toolbox.actions':
-                sys.modules.pop(mod)
-        actions.list_actions()
-        print(len(actions._registry))
-        """
-    )
-    out = subprocess.check_output([sys.executable, "-c", code])
-    assert int(out.strip()) > 0
+    monkeypatch.setattr(actions.pkgutil, "walk_packages", lambda *a, **k: [])
+    actions._registry.clear()
+    actions._discovered = False
+    for mod in list(sys.modules):
+        if mod.startswith("pdf_toolbox.") and mod not in {
+            "pdf_toolbox.actions",
+            "pdf_toolbox.utils",
+        }:
+            sys.modules.pop(mod)
+    actions.list_actions()
+    assert len(actions._registry) > 0

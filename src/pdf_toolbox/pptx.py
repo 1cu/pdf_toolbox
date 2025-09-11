@@ -53,7 +53,7 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
 
 
 if sys.platform == "win32":
-    _register_action = action(category="Office")
+    _register_action = action(category="Office")  # pragma: no cover - Windows only
 else:
 
     def _register_action(fn):
@@ -90,7 +90,7 @@ def pptx_to_images_via_powerpoint(
         slides=slides,
         out_dir=out_dir,
         cancel=cancel,
-    )
+    )  # pragma: no cover - Windows only
 
 
 __all__ = ["pptx_to_images_via_powerpoint"]
