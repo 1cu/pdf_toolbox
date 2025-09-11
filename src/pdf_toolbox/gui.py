@@ -497,7 +497,7 @@ if QT_AVAILABLE:
                 save_config(self.cfg)
 
         def on_about(self) -> None:  # pragma: no cover - GUI
-            webbrowser.open("https://github.com/pdf-toolbox/pdf-toolbox")
+            webbrowser.open("https://github.com/1cu/pdf_toolbox/")
 
         def check_author(self) -> None:
             try:

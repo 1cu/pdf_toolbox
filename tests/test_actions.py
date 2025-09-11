@@ -80,3 +80,27 @@ def test_auto_discover_populates_registry():
     if had_attr is not None:
         setattr(rasterize.pdf_to_images, "__pdf_toolbox_action__", had_attr)
     assert any(a.fqname == "pdf_toolbox.rasterize.pdf_to_images" for a in actions_list)
+
+
+def test_auto_discover_fallback():
+    """Ensure discovery works when walk_packages yields nothing."""
+    import subprocess
+    import sys
+    import textwrap
+
+    code = textwrap.dedent(
+        """
+        import sys
+        import pdf_toolbox.actions as actions
+        actions.pkgutil.walk_packages = lambda *_, **__: []
+        actions._registry.clear()
+        actions._discovered = False
+        for mod in list(sys.modules):
+            if mod.startswith('pdf_toolbox.') and mod != 'pdf_toolbox.actions':
+                sys.modules.pop(mod)
+        actions.list_actions()
+        print(len(actions._registry))
+        """
+    )
+    out = subprocess.check_output([sys.executable, "-c", code])
+    assert int(out.strip()) > 0
