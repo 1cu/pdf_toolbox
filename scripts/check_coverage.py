@@ -40,6 +40,7 @@ def main() -> int:
         filename = cls.get("filename")
         if not filename:
             continue
+        filename = Path(filename).as_posix()
         if any(fnmatch(filename, pat) for pat in omit_patterns):
             continue
         rate = float(cls.get("line-rate", "0"))
