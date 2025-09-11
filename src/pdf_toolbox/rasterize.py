@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 from threading import Event
+import io
 
 import fitz  # type: ignore
 from PIL import Image
@@ -16,7 +17,8 @@ from pdf_toolbox.utils import (
 )
 
 
-SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF"]
+# Include WebP for better quality/size tradeoffs
+SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP"]
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
@@ -36,10 +38,10 @@ DpiChoice = Literal[
     "Ultra (1200 dpi)",
 ]
 
-# Preset JPEG quality options similar to DPI presets. These are only used when
-# ``image_format`` is ``"JPEG"``. The GUI presents the human readable key while
-# the value is the numeric quality passed to :func:`PIL.Image.Image.save`.
-JPEG_QUALITY_PRESETS: dict[str, int] = {
+# Preset quality options for lossy formats like JPEG and WebP. The GUI presents
+# the human readable key while the value is the numeric quality passed to
+# :func:`PIL.Image.Image.save`.
+LOSSY_QUALITY_PRESETS: dict[str, int] = {
     "Low (70)": 70,
     "Medium (85)": 85,
     "High (95)": 95,
@@ -53,8 +55,9 @@ def pdf_to_images(
     input_pdf: str,
     pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",
-    image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
+    image_format: Literal["PNG", "JPEG", "TIFF", "WEBP"] = "PNG",
     quality: int | QualityChoice = "High (95)",
+    max_size_mb: float | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:
@@ -65,9 +68,11 @@ def pdf_to_images(
     ``None`` selects all pages. Supported formats are listed in
     :data:`SUPPORTED_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
     :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
-    quality but also larger files. ``quality`` is only used for JPEG output.
-    Images are written to ``out_dir`` or the PDF's directory and the paths are
-    returned.
+    quality but also larger files. ``quality`` is only used for JPEG and WebP
+    output. ``max_size_mb`` limits the resulting JPEG or WebP files to
+    approximately the given size in megabytes by reducing image quality. Images
+    are written to
+    ``out_dir`` or the PDF's directory and the paths are returned.
     """
 
     outputs: list[str] = []
@@ -104,22 +109,45 @@ def pdf_to_images(
                 pix = fitz.Pixmap(pix, 0)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             save_kwargs = {}
-            if fmt == "JPEG":
+            max_bytes = int(max_size_mb * 1024 * 1024) if max_size_mb else None
+            if fmt in {"JPEG", "WEBP"}:
                 if isinstance(quality, str):
                     try:
-                        quality_val = JPEG_QUALITY_PRESETS[quality]
+                        quality_val = LOSSY_QUALITY_PRESETS[quality]
                     except KeyError as exc:
-                        raise ValueError(
-                            f"Unknown JPEG quality preset '{quality}'"
-                        ) from exc
+                        raise ValueError(f"Unknown quality preset '{quality}'") from exc
                 else:
                     quality_val = int(quality)
+                if max_bytes is not None:
+                    low, high = 1, quality_val
+                    best_q = low
+                    while low <= high:
+                        mid = (low + high) // 2
+                        buf = io.BytesIO()
+                        img.save(buf, format=fmt, quality=mid)
+                        size = buf.tell()
+                        if size <= max_bytes:
+                            best_q = mid
+                            low = mid + 1
+                        else:
+                            high = mid - 1
+                    quality_val = best_q
                 save_kwargs["quality"] = quality_val
             elif fmt == "PNG":  # lossless; avoid heavy compression for speed
+                if max_bytes is not None:
+                    raise ValueError(
+                        "max_size_mb is only supported for JPEG and WEBP output"
+                    )
                 save_kwargs["compress_level"] = 0
+            elif max_bytes is not None:
+                raise ValueError(
+                    "max_size_mb is only supported for JPEG and WEBP output"
+                )
 
             out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
             img.save(out_path, format=fmt, **save_kwargs)
+            if max_bytes is not None and Path(out_path).stat().st_size > max_bytes:
+                raise RuntimeError("Could not reduce image below max_size_mb")
             outputs.append(str(out_path))
     return outputs
 
@@ -127,5 +155,5 @@ def pdf_to_images(
 __all__ = [
     "pdf_to_images",
     "DPI_PRESETS",
-    "JPEG_QUALITY_PRESETS",
+    "LOSSY_QUALITY_PRESETS",
 ]
