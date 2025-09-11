@@ -51,5 +51,3 @@ omit = ["*/pdf_toolbox/gui.py"]
 show_missing = true
 fail_under = 95
 
-[tool.pytest.ini_options]
-filterwarnings = ["ignore:builtin type .* has no __module__ attribute:DeprecationWarning"]

@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-import fitz
+from pdf_toolbox._fitz import fitz
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
