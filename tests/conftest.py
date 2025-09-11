@@ -1,5 +1,5 @@
 import json
-import fitz
+import fitz  # type: ignore
 from PIL import Image
 import pytest
 

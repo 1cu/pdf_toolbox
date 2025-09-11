@@ -1,7 +1,7 @@
 # Agent Guidelines
 
 - Ensure the virtual environment is activated and dependencies installed with `pip install -e '.[dev]'`.
-- Bump the `version` in `pyproject.toml` when preparing pull requests.
+- Bump the `version` in `pyproject.toml` once per pull request, not for every commit.
 - Install `pre-commit` hooks with `pre-commit install` so code is validated.
 - Write descriptive commit messages: start with a short imperative summary
   (<=72 characters), leave a blank line, then provide detailed context and
