@@ -2,16 +2,15 @@ from __future__ import annotations
 
 """Common utilities for PDF toolbox modules."""
 
-from pathlib import Path
 import importlib
 import json
 import sys
-from typing import Iterable
+from collections.abc import Iterable
+from pathlib import Path
 from threading import Event
 
-from platformdirs import user_config_dir
 import fitz  # type: ignore
-
+from platformdirs import user_config_dir
 
 REQUIRED_LIBS: Iterable[str] = (
     "fitz",

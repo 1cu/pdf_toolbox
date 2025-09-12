@@ -10,8 +10,8 @@ from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
     open_pdf,
     raise_if_cancelled,
-    save_pdf,
     sane_output_dir,
+    save_pdf,
 )
 
 

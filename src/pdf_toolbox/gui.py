@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+import html
+import inspect
 import json
 import sys
-import inspect
-import html
 import types
 import webbrowser
-from threading import Event
 from pathlib import Path
+from threading import Event
 from typing import Any, Literal, Union, get_args, get_origin
 
-from pdf_toolbox.actions import Action, list_actions
 from pdf_toolbox import utils
+from pdf_toolbox.actions import Action, list_actions
 
 CONFIG_PATH = utils.CONFIG_FILE
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -46,10 +46,10 @@ try:  # pragma: no cover - optional import
     from PySide6.QtWidgets import (
         QApplication,
         QCheckBox,
+        QComboBox,
         QDialog,
         QDialogButtonBox,
         QDoubleSpinBox,
-        QComboBox,
         QFileDialog,
         QFormLayout,
         QHBoxLayout,
@@ -109,11 +109,11 @@ if QT_AVAILABLE:
                     self.cfg["last_open_dir"] = str(Path(path).parent)
                     save_config(self.cfg)
 
-        def dragEnterEvent(self, e):  # pragma: no cover - GUI
+        def dragEnterEvent(self, e):  # pragma: no cover - GUI  # noqa: N802
             if e.mimeData().hasUrls():
                 e.acceptProposedAction()
 
-        def dropEvent(self, e):  # pragma: no cover - GUI
+        def dropEvent(self, e):  # pragma: no cover - GUI  # noqa: N802
             paths = [url.toLocalFile() for url in e.mimeData().urls()]
             if not paths:
                 return
@@ -154,7 +154,7 @@ if QT_AVAILABLE:
     class ClickableLabel(QLabel):
         clicked = Signal()
 
-        def mousePressEvent(self, event):  # pragma: no cover - GUI
+        def mousePressEvent(self, event):  # pragma: no cover - GUI  # noqa: N802
             self.clicked.emit()
             super().mousePressEvent(event)
 
@@ -450,7 +450,7 @@ if QT_AVAILABLE:
             self.run_btn.setText("Start")
             self.update_status("Fertig")
             if result:
-                if isinstance(result, (list, tuple)):
+                if isinstance(result, list | tuple):
                     text = "\n".join(map(str, result))
                 else:
                     text = str(result)

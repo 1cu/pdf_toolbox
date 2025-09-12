@@ -1,6 +1,6 @@
-from pathlib import Path
 import math
 import warnings
+from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -97,8 +97,9 @@ def test_pdf_to_images_high_dpi(tmp_path, dpi_label):
 
 
 def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
-    import fitz
     import sys
+
+    import fitz
 
     sys.set_int_max_str_digits(4300)
     doc = fitz.open()
@@ -130,8 +131,9 @@ def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
 
 
 def test_pdf_to_images_png_30mb_limit_no_digit_error(tmp_path):
-    import fitz
     import sys
+
+    import fitz
 
     sys.set_int_max_str_digits(1000)
     doc = fitz.open()
@@ -220,6 +222,7 @@ def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
 def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
     import os
+
     import fitz
 
     width = height = 500
@@ -254,6 +257,7 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
 def test_pdf_to_images_max_size_binary_search(tmp_path, fmt, monkeypatch):
     import io
+
     import fitz
 
     def fake_save(self, fp, format=None, quality=None, **kwargs):
@@ -287,6 +291,7 @@ def test_pdf_to_images_max_size_binary_search(tmp_path, fmt, monkeypatch):
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
 def test_pdf_to_images_max_size_too_small_raises(tmp_path, fmt):
     import os
+
     import fitz
 
     width = height = 100
@@ -314,6 +319,7 @@ def test_pdf_to_images_max_size_too_small_raises(tmp_path, fmt):
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
 def test_pdf_to_images_max_size_under_limit_keeps_quality(tmp_path, fmt):
     import os
+
     import fitz
 
     width = height = 100
@@ -349,6 +355,7 @@ def test_pdf_to_images_max_size_under_limit_keeps_quality(tmp_path, fmt):
 @pytest.mark.parametrize("fmt", ["PNG", "TIFF"])
 def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     import os
+
     import fitz
 
     width = height = 500
@@ -390,6 +397,7 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
 @pytest.mark.parametrize("fmt", ["PNG", "TIFF"])
 def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, fmt):
     import os
+
     import fitz
 
     width = height = 500

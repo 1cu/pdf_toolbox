@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Literal
-from threading import Event
-from contextlib import contextmanager
-from collections.abc import Iterator
 import io
-import warnings
-import sys
 import math
+import sys
+import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
+from threading import Event
+from typing import Literal
 
 import fitz  # type: ignore
 from PIL import Image
@@ -20,7 +20,6 @@ from pdf_toolbox.utils import (
     raise_if_cancelled,
     sane_output_dir,
 )
-
 
 # Include WebP for better quality/size tradeoffs
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP"]
@@ -138,6 +137,7 @@ def pdf_to_images(
                         warnings.warn(
                             "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
                             UserWarning,
+                            stacklevel=2,
                         )
                         scale = math.sqrt(max_bytes / uncompressed)
                         matrix = fitz.Matrix(zoom * scale, zoom * scale)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import inspect
 import importlib
+import inspect
 import pkgutil
 import typing as t
 from dataclasses import dataclass

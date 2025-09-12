@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from fnmatch import fnmatch
 import sys
-from pathlib import Path
 import tomllib
 import xml.etree.ElementTree as ET
+from fnmatch import fnmatch
+from pathlib import Path
 
 
 def load_settings() -> tuple[float, list[str]]:

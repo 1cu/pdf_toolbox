@@ -49,13 +49,7 @@ To check the entire codebase manually:
 pre-commit run --all-files
 ```
 
-Run tests with:
-
-```bash
-pytest
-```
-
-The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
+`pre-commit run --all-files` executes tests, so no separate `pytest` step is required. The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
 
 ## Release
 

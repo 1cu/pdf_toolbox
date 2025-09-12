@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Literal
 import sys
+from pathlib import Path
 from threading import Event
+from typing import Literal
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (

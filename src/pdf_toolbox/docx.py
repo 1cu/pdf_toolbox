@@ -6,8 +6,8 @@ from pathlib import Path
 from threading import Event
 
 import fitz  # type: ignore
-from PIL import Image
 from docx import Document
+from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (

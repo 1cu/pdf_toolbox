@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import io
 from pathlib import Path
-from typing import Tuple, TypedDict
 from threading import Event
+from typing import TypedDict
 
 import fitz  # type: ignore
 from PIL import Image
@@ -13,8 +13,8 @@ from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
     open_pdf,
     raise_if_cancelled,
-    save_pdf,
     sane_output_dir,
+    save_pdf,
 )
 
 
@@ -66,7 +66,7 @@ def optimize_pdf(
     keep: bool = True,
     out_dir: str | None = None,
     cancel: Event | None = None,
-) -> Tuple[str | None, float]:
+) -> tuple[str | None, float]:
     """Optimize ``input_pdf`` and return (output_path, reduction_ratio)."""
 
     if quality not in QUALITY_SETTINGS:

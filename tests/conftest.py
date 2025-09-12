@@ -1,7 +1,8 @@
 import json
+
 import fitz  # type: ignore
-from PIL import Image
 import pytest
+from PIL import Image
 
 import pdf_toolbox.utils as utils
 
