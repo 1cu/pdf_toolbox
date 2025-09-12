@@ -13,6 +13,7 @@ dependencies = [
   "pymupdf>=1.24",
   "python-docx",
   "python-pptx",
+  "aspose.slides",
   "platformdirs",
 ]
 

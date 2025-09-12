@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import io
-import shutil
-import subprocess
 import sys
 import tempfile
 import warnings
@@ -14,9 +12,15 @@ from pathlib import Path
 from threading import Event
 from typing import Literal
 
+try:
+    import aspose.slides as aspose_slides
+    from aspose.slides.export import SaveFormat
+except Exception:  # pragma: no cover - optional dependency
+    aspose_slides = None  # type: ignore[assignment]
+    SaveFormat = None  # type: ignore[assignment]
 import fitz  # type: ignore
 from PIL import Image
-from pptx import Presentation
+from pptx import Presentation as PptxPresentation
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
@@ -293,7 +297,7 @@ def pdf_to_images(  # noqa: PLR0913
     ``out_dir`` or the PDF's directory and the paths are returned.
     """
     doc = open_pdf(input_pdf)
-    with doc:
+    with doc, _unlimited_int_str_digits():
         page_numbers = parse_page_spec(pages, doc.page_count)
         dpi_val: int | DpiChoice = dpi
         if width is not None or height is not None:
@@ -326,9 +330,9 @@ def pptx_to_images(  # noqa: PLR0913
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:
-    """Export slides of a PPTX presentation as images using LibreOffice.
+    """Export slides of a PPTX presentation as images using Aspose.Slides.
 
-    LibreOffice renders ``pptx_path`` to a temporary PDF and
+    The presentation is first rendered to a temporary PDF and
     :func:`_render_doc_pages` performs the actual image generation. Supported
     formats are listed in :data:`IMAGE_FORMATS`. ``width`` and ``height``
     specify the target pixel dimensions for each slide; ``slides`` may be a
@@ -338,16 +342,15 @@ def pptx_to_images(  # noqa: PLR0913
         raise ValueError(
             f"Unsupported image format '{image_format}'. Supported formats: {', '.join(IMAGE_FORMATS)}"
         )
-    exe = shutil.which("libreoffice") or shutil.which("soffice")
-    if exe is None:
-        raise RuntimeError("LibreOffice is required for PPTX to images conversion")
+    if aspose_slides is None:
+        raise RuntimeError("aspose.slides is required for PPTX to images conversion")
 
-    prs = Presentation(pptx_path)
-    total = len(prs.slides)
+    pptx = PptxPresentation(pptx_path)
+    total = len(pptx.slides)
     slide_numbers = parse_page_spec(slides, total)
 
-    slide_w = prs.slide_width
-    slide_h = prs.slide_height
+    slide_w = pptx.slide_width
+    slide_h = pptx.slide_height
     if slide_w is None or slide_h is None:  # pragma: no cover - defensive
         raise RuntimeError("Presentation has no slide dimensions")
     slide_w_in = slide_w / EMU_PER_INCH
@@ -358,23 +361,11 @@ def pptx_to_images(  # noqa: PLR0913
 
     with tempfile.TemporaryDirectory() as tmpdir:
         raise_if_cancelled(cancel)  # pragma: no cover
-        cmd = [
-            exe,
-            "--headless",
-            "--convert-to",
-            "pdf",
-            pptx_path,
-            "--outdir",
-            tmpdir,
-        ]
-        subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
         pdf_path = Path(tmpdir) / f"{Path(pptx_path).stem}.pdf"
-        if not pdf_path.exists():  # pragma: no cover - LibreOffice should create
-            raise RuntimeError(
-                "LibreOffice failed to create PDF from PPTX"
-            )  # pragma: no cover
+        with aspose_slides.Presentation(pptx_path) as prs:  # type: ignore[union-attr]
+            prs.save(str(pdf_path), SaveFormat.PDF)  # type: ignore[arg-type]
         doc = open_pdf(str(pdf_path))
-        with doc:
+        with doc, _unlimited_int_str_digits():
             return _render_doc_pages(
                 pptx_path,
                 doc,

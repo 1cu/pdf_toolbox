@@ -528,8 +528,8 @@ if QT_AVAILABLE:
             msg = QMessageBox(self)
             msg.setWindowTitle("About")
             msg.setTextFormat(Qt.TextFormat.RichText)
-            msg.setText(
-                f"<b>pdf_toolbox {ver}</b><br/>"
+            msg.setText(f"<b>pdf_toolbox {ver}</b>")
+            msg.setInformativeText(
                 "<a href='https://github.com/1cu/pdf_toolbox/'>GitHub Repository</a>"
             )
             msg.setStandardButtons(QMessageBox.StandardButton.Ok)
