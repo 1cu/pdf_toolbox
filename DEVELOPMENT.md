@@ -59,11 +59,17 @@ The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` t
 
 ## Release
 
-The release workflow automatically tags and publishes a release when changes to `pyproject.toml` are pushed to the `main` branch. The tag is derived from the `version` field in `pyproject.toml`. If the tag already exists, the workflow skips the release.
+The release workflow runs only when a version tag (matching `v*`) is pushed. This allows releases to be cut manually instead of on every commit.
 
 To cut a new release:
 
 1. Update the version in `pyproject.toml`.
-2. Commit the change and push to `main`.
+2. Commit the change.
+3. Create and push a matching tag, for example:
 
-The workflow will create the corresponding tag and GitHub release.
+   ```bash
+   git tag v0.2.62
+   git push origin v0.2.62
+   ```
+
+The workflow will build the package and publish a GitHub release for that tag.
