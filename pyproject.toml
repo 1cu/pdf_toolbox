@@ -22,6 +22,9 @@ dev = [
   "ruff",
   "mypy",
   "pre-commit",
+  "mdformat",
+  "mdformat-gfm",
+  "language-formatters-pre-commit-hooks",
   "build",
   "coverage",
 ]
