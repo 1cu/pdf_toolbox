@@ -1,14 +1,16 @@
+"""Render PDF pages to raster images."""
+
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Literal
-from threading import Event
-from contextlib import contextmanager
-from collections.abc import Iterator
 import io
-import warnings
-import sys
 import math
+import sys
+import warnings
+from collections.abc import Iterator
+from contextlib import contextmanager
+from pathlib import Path
+from threading import Event
+from typing import Literal
 
 import fitz  # type: ignore
 from PIL import Image
@@ -20,7 +22,6 @@ from pdf_toolbox.utils import (
     raise_if_cancelled,
     sane_output_dir,
 )
-
 
 # Include WebP for better quality/size tradeoffs
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP"]
@@ -64,7 +65,6 @@ def _unlimited_int_str_digits() -> Iterator[None]:
     trigger a ``ValueError``. This context manager lifts the restriction while
     preserving the previous value.
     """
-
     if hasattr(sys, "set_int_max_str_digits"):
         prev = sys.get_int_max_str_digits()
         try:
@@ -77,7 +77,7 @@ def _unlimited_int_str_digits() -> Iterator[None]:
 
 
 @action(category="PDF")
-def pdf_to_images(
+def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     input_pdf: str,
     pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",
@@ -100,7 +100,6 @@ def pdf_to_images(
     given size, emitting a warning when this fallback is used. Images are written
     to ``out_dir`` or the PDF's directory and the paths are returned.
     """
-
     outputs: list[str] = []
 
     if isinstance(dpi, str):
@@ -138,6 +137,7 @@ def pdf_to_images(
                         warnings.warn(
                             "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
                             UserWarning,
+                            stacklevel=2,
                         )
                         scale = math.sqrt(max_bytes / uncompressed)
                         matrix = fitz.Matrix(zoom * scale, zoom * scale)
@@ -236,7 +236,7 @@ def pdf_to_images(
 
 
 __all__ = [
-    "pdf_to_images",
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
+    "pdf_to_images",
 ]

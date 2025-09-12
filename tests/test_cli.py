@@ -1,6 +1,6 @@
-from pathlib import Path
 import runpy
 import sys
+from pathlib import Path
 
 
 def run_cli(module: str, argv: list[str], monkeypatch) -> None:

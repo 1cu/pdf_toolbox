@@ -1,3 +1,5 @@
+"""Convert PDF files to DOCX documents."""
+
 from __future__ import annotations
 
 import argparse
@@ -6,8 +8,8 @@ from pathlib import Path
 from threading import Event
 
 import fitz  # type: ignore
-from PIL import Image
 from docx import Document
+from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
@@ -15,6 +17,8 @@ from pdf_toolbox.utils import (
     raise_if_cancelled,
     sane_output_dir,
 )
+
+RGB_COMPONENTS = 3
 
 
 @action(category="Office")
@@ -41,7 +45,7 @@ def pdf_to_docx(
                 raise_if_cancelled(cancel)  # pragma: no cover
                 xref = img[0]
                 pix = fitz.Pixmap(pdf, xref)
-                if pix.n > 3:  # pragma: no cover - rare branch
+                if pix.n > RGB_COMPONENTS:  # pragma: no cover - rare branch
                     pix = fitz.Pixmap(fitz.csRGB, pix)  # pragma: no cover
                 pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 with io.BytesIO() as buf:
