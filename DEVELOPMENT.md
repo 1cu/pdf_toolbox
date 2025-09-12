@@ -58,11 +58,9 @@ The release workflow runs only when a version tag (matching `v*`) is pushed. Thi
 
 To cut a new release:
 
-<ol>
-  <li>Update the version in `pyproject.toml`.</li>
-  <li>Commit the change.</li>
-  <li>Create and push a matching tag, for example:</li>
-</ol>
+1. Update the version in `pyproject.toml`.
+1. Commit the change.
+1. Create and push a matching tag, for example:
 
 ```bash
 git tag v0.2.62
