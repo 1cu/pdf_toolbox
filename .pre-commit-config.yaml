@@ -37,7 +37,7 @@ repos:
       types: [markdown]
     - id: pretty-format-yaml
       name: pretty-format-yaml
-      entry: pretty-format-yaml --autofix
+      entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
       language: system
       types: [yaml]
       exclude: ^\.pre-commit-config\.yaml$
