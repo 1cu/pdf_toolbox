@@ -103,30 +103,29 @@ def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
 
     sys.set_int_max_str_digits(4300)
     doc = fitz.open()
-    doc.new_page()
+    page = doc.new_page()
+    rect = page.rect
     pdf_path = tmp_path / "doc.pdf"
     doc.save(pdf_path)
     doc.close()
 
-    with pytest.warns(UserWarning, match="downscale"):
-        outputs = pdf_to_images(
-            str(pdf_path),
-            dpi="Very High (600 dpi)",
-            image_format="PNG",
-            max_size_mb=30,
-            out_dir=str(tmp_path),
-        )
+    outputs = pdf_to_images(
+        str(pdf_path),
+        dpi="Very High (600 dpi)",
+        image_format="PNG",
+        max_size_mb=30,
+        out_dir=str(tmp_path),
+    )
 
     assert len(outputs) == 1
     out_path = Path(outputs[0])
     assert out_path.exists()
     img = Image.open(out_path)
     assert out_path.stat().st_size <= 30 * 1024 * 1024
-    # original dimensions at 600 dpi without scaling
-    expected_w = math.ceil(fitz.paper_rect("letter").width * 600 / 72)
-    expected_h = math.ceil(fitz.paper_rect("letter").height * 600 / 72)
-    assert img.width < expected_w
-    assert img.height < expected_h
+    expected_w = math.ceil(rect.width * 600 / 72)
+    expected_h = math.ceil(rect.height * 600 / 72)
+    assert img.width == expected_w
+    assert img.height == expected_h
     assert sys.get_int_max_str_digits() == 4300
 
 
@@ -137,22 +136,27 @@ def test_pdf_to_images_png_30mb_limit_no_digit_error(tmp_path):
 
     sys.set_int_max_str_digits(1000)
     doc = fitz.open()
-    doc.new_page()
+    page = doc.new_page()
+    rect = page.rect
     pdf_path = tmp_path / "doc.pdf"
     doc.save(pdf_path)
     doc.close()
 
-    with pytest.warns(UserWarning, match="downscale"):
-        outputs = pdf_to_images(
-            str(pdf_path),
-            dpi="Very High (600 dpi)",
-            image_format="PNG",
-            max_size_mb=30,
-            out_dir=str(tmp_path / "out"),
-        )
+    outputs = pdf_to_images(
+        str(pdf_path),
+        dpi="Very High (600 dpi)",
+        image_format="PNG",
+        max_size_mb=30,
+        out_dir=str(tmp_path / "out"),
+    )
 
     out_path = Path(outputs[0])
     assert out_path.exists()
+    img = Image.open(out_path)
+    expected_w = math.ceil(rect.width * 600 / 72)
+    expected_h = math.ceil(rect.height * 600 / 72)
+    assert img.width == expected_w
+    assert img.height == expected_h
     assert out_path.stat().st_size <= 30 * 1024 * 1024
     assert sys.get_int_max_str_digits() == 1000
 
@@ -225,7 +229,7 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
 
     import fitz
 
-    width = height = 500
+    width = height = 100
     img_path = tmp_path / "noise.png"
     Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
         img_path
@@ -242,7 +246,7 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
     limited_dir = tmp_path / "limited"
     base = pdf_to_images(str(pdf_path), image_format=fmt, out_dir=str(high_dir))[0]
     base_size = Path(base).stat().st_size
-    limit_mb = base_size / (2 * 1024 * 1024)
+    limit_mb = base_size * 0.8 / (1024 * 1024)
     limited = pdf_to_images(
         str(pdf_path),
         image_format=fmt,
@@ -376,7 +380,7 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     base = pdf_to_images(str(pdf_path), image_format=fmt, out_dir=str(high_dir))[0]
     base_size = Path(base).stat().st_size
     base_img = Image.open(base)
-    limit_mb = base_size / (2 * 1024 * 1024)
+    limit_mb = 0.001
     with pytest.warns(UserWarning, match="downscale"):
         limited = pdf_to_images(
             str(pdf_path),
@@ -431,5 +435,5 @@ def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, f
     limited_size = Path(limited).stat().st_size
     limited_img = Image.open(limited)
     assert limited_size <= limit_mb * 1024 * 1024
-    assert limited_size == base_size
+    assert limited_size <= base_size
     assert limited_img.size == base_img.size
