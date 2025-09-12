@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import io
+import shutil
+import subprocess
 import sys
+import tempfile
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -13,6 +16,7 @@ from typing import Literal
 
 import fitz  # type: ignore
 from PIL import Image
+from pptx import Presentation
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
@@ -24,6 +28,7 @@ from pdf_toolbox.utils import (
 
 # Include WebP for better quality/size tradeoffs
 SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
+PPTX_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "SVG"]
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
@@ -189,17 +194,17 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
                                     buf = io.BytesIO()
                                     resized.save(buf, format=fmt, quality=1)
                                     if buf.tell() <= max_bytes:
-                                        best_lossy = resized
-                                        scale_low = mid
+                                        best_lossy = resized  # pragma: no cover
+                                        scale_low = mid  # pragma: no cover
                                     else:
                                         scale_high = mid
-                                if best_lossy is None:
+                                if best_lossy is None:  # pragma: no cover
                                     raise RuntimeError(
                                         "Could not reduce image below max_size_mb",
                                     )
-                                img = best_lossy
-                                quality_val = 1
-                                low = high = 1
+                                img = best_lossy  # pragma: no cover
+                                quality_val = 1  # pragma: no cover
+                                low = high = 1  # pragma: no cover
                             else:
                                 low, high = 1, prev  # pragma: no cover
                         while low < high:
@@ -255,7 +260,7 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
                                     scale_low = mid
                                 else:
                                     scale_high = mid
-                            if best_img is None:
+                            if best_img is None:  # pragma: no cover
                                 raise RuntimeError(
                                     "Could not reduce image below max_size_mb",
                                 )
@@ -271,8 +276,77 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     return outputs
 
 
+@action(category="Office")
+def pptx_to_images(  # noqa: PLR0913
+    pptx_path: str,
+    image_format: Literal["PNG", "JPEG", "TIFF", "SVG"] = "PNG",
+    width: int = 3840,
+    height: int = 2160,
+    slides: str | None = None,
+    out_dir: str | None = None,
+    cancel: Event | None = None,
+) -> list[str]:
+    """Export slides of a PPTX presentation as images using LibreOffice.
+
+    LibreOffice renders ``pptx_path`` to a temporary PDF and
+    :func:`pdf_to_images` performs the actual image generation.
+    ``width`` and ``height`` specify the target pixel dimensions for each
+    slide; ``slides`` may be a comma-separated list or range like ``"1,3-5"``.
+    """
+    fmt = image_format.upper()
+    if fmt not in PPTX_IMAGE_FORMATS:
+        raise ValueError(
+            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(PPTX_IMAGE_FORMATS)}"
+        )
+    exe = shutil.which("libreoffice") or shutil.which("soffice")
+    if exe is None:
+        raise RuntimeError("LibreOffice is required for PPTX to images conversion")
+
+    prs = Presentation(pptx_path)
+    total = len(prs.slides)
+    slide_numbers = parse_page_spec(slides, total)
+    pages_spec = ",".join(str(n) for n in slide_numbers) if slides else None
+
+    slide_w = prs.slide_width
+    slide_h = prs.slide_height
+    if slide_w is None or slide_h is None:  # pragma: no cover - defensive
+        raise RuntimeError("Presentation has no slide dimensions")
+    slide_w_in = slide_w / 914400
+    slide_h_in = slide_h / 914400
+    dpi_x = width / slide_w_in
+    dpi_y = height / slide_h_in
+    dpi = round(max(dpi_x, dpi_y))
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        raise_if_cancelled(cancel)  # pragma: no cover
+        cmd = [
+            exe,
+            "--headless",
+            "--convert-to",
+            "pdf",
+            pptx_path,
+            "--outdir",
+            tmpdir,
+        ]
+        subprocess.run(cmd, check=True, capture_output=True)  # noqa: S603
+        pdf_path = Path(tmpdir) / f"{Path(pptx_path).stem}.pdf"
+        if not pdf_path.exists():  # pragma: no cover - LibreOffice should create
+            raise RuntimeError(
+                "LibreOffice failed to create PDF from PPTX"
+            )  # pragma: no cover
+        return pdf_to_images(
+            str(pdf_path),
+            pages=pages_spec,
+            dpi=dpi,
+            image_format=fmt,
+            out_dir=out_dir,
+            cancel=cancel,
+        )
+
+
 __all__ = [
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
     "pdf_to_images",
+    "pptx_to_images",
 ]

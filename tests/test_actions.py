@@ -48,7 +48,7 @@ def test_literal_parameters_resolved():
     assert set(get_args(lit)) == set(DPI_PRESETS.keys())
 
     pptx_act = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.pptx.pptx_to_images"
+        a for a in actions_list if a.fqname == "pdf_toolbox.rasterize.pptx_to_images"
     )
     pptx_fmt = next(p for p in pptx_act.params if p.name == "image_format").annotation
     assert get_origin(pptx_fmt) is Literal
