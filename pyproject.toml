@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.2.69"
+version = "0.2.70"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,8 +12,6 @@ dependencies = [
   "pillow",
   "pymupdf>=1.24",
   "python-docx",
-  "python-pptx",
-  "aspose.slides",
   "platformdirs",
 ]
 

@@ -22,8 +22,6 @@ DEFAULT_CONFIG = {
     "last_open_dir": str(Path.home()),
     "last_save_dir": str(Path.home()),
     "jpeg_quality": "High (95)",
-    "pptx_width": 3840,
-    "pptx_height": 2160,
     "opt_quality": "default",
     "opt_compress_images": False,
     "split_pages": 1,

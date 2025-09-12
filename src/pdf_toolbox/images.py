@@ -1,18 +1,14 @@
-"""Render PDF pages and PPTX slides to images."""
+"""Render PDF pages to images."""
 
 from __future__ import annotations
 
-import tempfile
 import warnings
 from pathlib import Path
 from threading import Event
 from typing import Literal
 
-import aspose.slides as aspose_slides
 import fitz  # type: ignore
-from aspose.slides.export import SaveFormat
 from PIL import Image
-from pptx import Presentation as PptxPresentation
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
@@ -22,13 +18,9 @@ from pdf_toolbox.utils import (
     sane_output_dir,
 )
 
-# Supported output formats for both PDF and PPTX rendering; WebP offers
-# smaller files with good quality and is now treated the same across input types.
+# Supported output formats for PDF rendering; WebP offers
+# smaller files with good quality.
 IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
-
-# ``python-pptx`` reports slide dimensions in English Metric Units (EMU).
-# There are 914,400 EMUs in one inch.
-EMU_PER_INCH = 914_400
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
@@ -73,9 +65,9 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
 ) -> list[str]:
     """Render ``page_numbers`` of ``doc`` to images.
 
-    This helper contains the core image-generation logic used by both
-    :func:`pdf_to_images` and :func:`pptx_to_images`. ``input_path`` is used to
-    derive sensible output names and locations.
+    This helper contains the core image-generation logic used by
+    :func:`pdf_to_images`. ``input_path`` is used to derive sensible output names
+    and locations.
     """
     outputs: list[str] = []
 
@@ -204,63 +196,8 @@ def pdf_to_images(  # noqa: PLR0913
         )
 
 
-@action(category="Office")
-def pptx_to_images(  # noqa: PLR0913
-    pptx_path: str,
-    slides: str | None = None,
-    image_format: Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"] = "PNG",
-    width: int = 3840,
-    height: int = 2160,
-    out_dir: str | None = None,
-    cancel: Event | None = None,
-) -> list[str]:
-    """Export slides of a PPTX presentation as images using Aspose.Slides.
-
-    The presentation is first rendered to a temporary PDF and
-    :func:`_render_doc_pages` performs the actual image generation. Supported
-    formats are listed in :data:`IMAGE_FORMATS`. ``width`` and ``height``
-    specify the target pixel dimensions for each slide; ``slides`` may be a
-    comma-separated list or range like ``"1,3-5"``.
-    """
-    if image_format.upper() not in IMAGE_FORMATS:
-        raise ValueError(
-            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(IMAGE_FORMATS)}"
-        )
-    pptx = PptxPresentation(pptx_path)
-    total = len(pptx.slides)
-    slide_numbers = parse_page_spec(slides, total)
-
-    slide_w = pptx.slide_width
-    slide_h = pptx.slide_height
-    if slide_w is None or slide_h is None:  # pragma: no cover - defensive
-        raise RuntimeError("Presentation has no slide dimensions")
-    slide_w_in = slide_w / EMU_PER_INCH
-    slide_h_in = slide_h / EMU_PER_INCH
-    dpi_x = width / slide_w_in
-    dpi_y = height / slide_h_in
-    dpi = round(max(dpi_x, dpi_y))
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        raise_if_cancelled(cancel)  # pragma: no cover
-        pdf_path = Path(tmpdir) / f"{Path(pptx_path).stem}.pdf"
-        with aspose_slides.Presentation(pptx_path) as prs:  # type: ignore[union-attr]
-            prs.save(str(pdf_path), SaveFormat.PDF)  # type: ignore[arg-type]
-        doc = open_pdf(str(pdf_path))
-        with doc:
-            return _render_doc_pages(
-                pptx_path,
-                doc,
-                slide_numbers,
-                dpi,
-                image_format,
-                out_dir=out_dir,
-                cancel=cancel,
-            )
-
-
 __all__ = [
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
     "pdf_to_images",
-    "pptx_to_images",
 ]
