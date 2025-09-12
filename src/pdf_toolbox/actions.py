@@ -40,7 +40,6 @@ def _format_name(func_name: str) -> str:
     acronyms = {
         "pdf": "PDF",
         "docx": "DOCX",
-        "pptx": "PPTX",
         "png": "PNG",
         "jpeg": "JPEG",
         "jpg": "JPG",
