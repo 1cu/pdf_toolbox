@@ -1,14 +1,19 @@
+"""Action registration and discovery utilities."""
+
 from __future__ import annotations
 
-import inspect
 import importlib
+import inspect
 import pkgutil
 import typing as t
+from contextlib import suppress
 from dataclasses import dataclass
 
 
 @dataclass
 class Param:
+    """Metadata for a function parameter."""
+
     name: str
     kind: str
     annotation: t.Any
@@ -17,6 +22,8 @@ class Param:
 
 @dataclass
 class Action:
+    """Registered action with metadata."""
+
     fqname: str
     name: str
     func: t.Callable
@@ -57,6 +64,8 @@ def _format_name(func_name: str) -> str:
 
 
 def action(name: str | None = None, category: str | None = None):
+    """Register a function as a command-line action."""
+
     def deco(fn):
         act = build_action(fn, name=name, category=category)
         fn.__pdf_toolbox_action__ = True  # type: ignore[attr-defined]
@@ -117,7 +126,7 @@ def _register_module(mod_name: str) -> None:
 
 
 def _auto_discover(pkg: str = "pdf_toolbox") -> None:
-    global _discovered
+    global _discovered  # noqa: PLW0603
     if _discovered:
         return
     pkg_mod = importlib.import_module(pkg)
@@ -127,14 +136,12 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
         found = True
         _register_module(modinfo.name)
     if not found:
-        try:
-            from importlib import resources
+        with suppress(Exception):
+            from importlib import resources  # noqa: PLC0415
 
             for res in resources.files(pkg_mod).iterdir():
                 if res.name.endswith(".py") and res.name != "__init__.py":
                     _register_module(f"{pkg_mod.__name__}.{res.name[:-3]}")
-        except Exception:
-            pass
     if not _registry:
         # In some bundled environments (e.g., PyInstaller one-file builds),
         # neither ``pkgutil.walk_packages`` nor ``importlib.resources`` can
@@ -144,16 +151,15 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
         toc = getattr(getattr(pkg_mod.__spec__, "loader", None), "toc", [])
         for mod_name in toc:
             if mod_name.startswith(pkg_mod.__name__ + "."):
-                try:
+                with suppress(Exception):
                     _register_module(mod_name)
-                except Exception:
-                    pass
     _discovered = True
 
 
 def list_actions() -> list[Action]:
+    """Return all discovered actions."""
     _auto_discover()
     return list(_registry.values())
 
 
-__all__ = ["Param", "Action", "action", "list_actions"]
+__all__ = ["Action", "Param", "action", "list_actions"]

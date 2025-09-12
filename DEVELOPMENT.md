@@ -37,7 +37,7 @@ python -m pdf_toolbox.gui
 
 ## Pre-commit hooks
 
-The configuration uses `language: system` so hooks run in the active virtual environment. Hooks lint, format, type-check, and run tests on every commit, even if you only edit documentation. Test coverage must reach at least 95% for each module (excluding `pdf_toolbox/gui.py`), and the hooks enforce this threshold. Activate the `.venv` before installing or running them:
+The configuration uses `language: system` so hooks run in the active virtual environment. Hooks lint, format, type-check, and run tests on every commit, even if you only edit documentation. Test coverage must reach at least 95% for each module (excluding `pdf_toolbox/gui.py`), and the hooks enforce this threshold. Ruff applies an extensive rule set, covering bugbear, pyupgrade, naming, builtins, comprehensions, tidy imports, return-value checks, common simplifications, docstring style, security checks, and Pylint-inspired rules. Activate the `.venv` before installing or running them:
 
 ```bash
 pre-commit install
@@ -49,13 +49,7 @@ To check the entire codebase manually:
 pre-commit run --all-files
 ```
 
-Run tests with:
-
-```bash
-pytest
-```
-
-The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
+`pre-commit run --all-files` executes tests, so no separate `pytest` step is required. The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
 
 ## Release
 

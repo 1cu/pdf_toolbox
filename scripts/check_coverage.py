@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
+"""Check per-file coverage thresholds."""
+
 from __future__ import annotations
 
-from fnmatch import fnmatch
 import sys
-from pathlib import Path
 import tomllib
 import xml.etree.ElementTree as ET
+from fnmatch import fnmatch
+from pathlib import Path
 
 
 def load_settings() -> tuple[float, list[str]]:
@@ -25,6 +27,7 @@ def load_settings() -> tuple[float, list[str]]:
 
 
 def main() -> int:
+    """Return 0 on success, 1 if coverage falls below thresholds."""
     xml_file = Path("coverage.xml")
     if not xml_file.exists():
         print("coverage.xml not found. Run tests first.", file=sys.stderr)
