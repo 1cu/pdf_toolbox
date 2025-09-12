@@ -2,8 +2,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - "main"
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -68,27 +68,10 @@ jobs:
         with:
           path: artifacts
           merge-multiple: true
-      - name: Create tag
-        id: tag
-        run: |
-          version=$(python scripts/get_version.py)
-          tag="v${version}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists"
-            echo "created=false" >> "$GITHUB_OUTPUT"
-          else
-            git tag "$tag"
-            git push origin "$tag"
-            echo "created=true" >> "$GITHUB_OUTPUT"
-          fi
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Create GitHub release
-        if: steps.tag.outputs.created == 'true'
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.tag.outputs.tag }}
+          tag: ${{ github.ref_name }}
           generateReleaseNotes: true
           artifacts: "dist/*,artifacts/*"
           allowUpdates: true
