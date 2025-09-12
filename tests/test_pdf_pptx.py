@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pdf_toolbox.rasterize import DPI_PRESETS, pdf_to_images
+from pdf_toolbox.pdf_pptx import DPI_PRESETS, pdf_to_images
 
 
 def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
