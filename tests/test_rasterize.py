@@ -260,7 +260,7 @@ def test_pdf_to_images_max_size_binary_search(tmp_path, fmt, monkeypatch):
 
     import fitz
 
-    def fake_save(self, fp, format=None, quality=None, **kwargs):
+    def fake_save(self, fp, *, quality=None, **kwargs):
         data = b"x" * (quality * 1000)
         if isinstance(fp, io.BytesIO):
             fp.write(data)

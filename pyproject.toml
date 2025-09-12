@@ -38,7 +38,7 @@ line-length = 88
 target-version = "py313"
 
 [tool.ruff.lint]
-extend-select = ["W", "B", "UP", "N", "I"]
+extend-select = ["W", "B", "UP", "N", "I", "A", "C4", "RET", "SIM", "TID", "RUF"]
 extend-ignore = ["E402"]
 
 [tool.mypy]

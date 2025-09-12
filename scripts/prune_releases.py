@@ -20,7 +20,7 @@ def _request(method: str, url: str, token: str) -> list | dict | None:
     req = urllib.request.Request(url, method=method)
     req.add_header("Authorization", f"token {token}")
     req.add_header("Accept", "application/vnd.github+json")
-    with urllib.request.urlopen(req) as response:  # noqa: S310 - trusted URL
+    with urllib.request.urlopen(req) as response:
         if response.status != 204:
             return json.load(response)
     return None

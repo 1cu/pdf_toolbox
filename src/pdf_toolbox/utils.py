@@ -187,10 +187,10 @@ def save_pdf(
 
 __all__ = [
     "ensure_libs",
-    "sane_output_dir",
-    "update_metadata",
+    "open_pdf",
     "parse_page_spec",
     "raise_if_cancelled",
-    "open_pdf",
+    "sane_output_dir",
     "save_pdf",
+    "update_metadata",
 ]

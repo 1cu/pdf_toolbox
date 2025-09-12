@@ -6,6 +6,7 @@ import json
 import sys
 import types
 import webbrowser
+from contextlib import suppress
 from pathlib import Path
 from threading import Event
 from typing import Any, Literal, Union, get_args, get_origin
@@ -30,10 +31,8 @@ DEFAULT_CONFIG = {
 def load_config() -> dict:
     cfg = DEFAULT_CONFIG.copy()
     if CONFIG_PATH.exists():
-        try:
+        with suppress(Exception):
             cfg.update(json.loads(CONFIG_PATH.read_text()))
-        except Exception:
-            pass
     return cfg
 
 
@@ -280,7 +279,7 @@ if QT_AVAILABLE:
                     if lit is not None:
                         combo = QComboBox()
                         choices = [str(x) for x in get_args(lit)]
-                        combo.addItems(choices + ["Custom"])
+                        combo.addItems([*choices, "Custom"])
                         spin = QSpinBox()
                         spin.setMaximum(10000)
                         spin.setVisible(False)

@@ -236,7 +236,7 @@ def pdf_to_images(
 
 
 __all__ = [
-    "pdf_to_images",
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
+    "pdf_to_images",
 ]

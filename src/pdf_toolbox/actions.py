@@ -4,6 +4,7 @@ import importlib
 import inspect
 import pkgutil
 import typing as t
+from contextlib import suppress
 from dataclasses import dataclass
 
 
@@ -127,14 +128,12 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
         found = True
         _register_module(modinfo.name)
     if not found:
-        try:
+        with suppress(Exception):
             from importlib import resources
 
             for res in resources.files(pkg_mod).iterdir():
                 if res.name.endswith(".py") and res.name != "__init__.py":
                     _register_module(f"{pkg_mod.__name__}.{res.name[:-3]}")
-        except Exception:
-            pass
     if not _registry:
         # In some bundled environments (e.g., PyInstaller one-file builds),
         # neither ``pkgutil.walk_packages`` nor ``importlib.resources`` can
@@ -144,10 +143,8 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
         toc = getattr(getattr(pkg_mod.__spec__, "loader", None), "toc", [])
         for mod_name in toc:
             if mod_name.startswith(pkg_mod.__name__ + "."):
-                try:
+                with suppress(Exception):
                     _register_module(mod_name)
-                except Exception:
-                    pass
     _discovered = True
 
 
@@ -156,4 +153,4 @@ def list_actions() -> list[Action]:
     return list(_registry.values())
 
 
-__all__ = ["Param", "Action", "action", "list_actions"]
+__all__ = ["Action", "Param", "action", "list_actions"]
