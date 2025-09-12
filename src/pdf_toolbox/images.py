@@ -13,6 +13,7 @@ from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     parse_page_spec,
     raise_if_cancelled,
@@ -90,6 +91,14 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
     max_bytes = int(max_size_mb * 1024 * 1024) if max_size_mb else None
 
     out_base = sane_output_dir(input_path, out_dir)
+    logger.info(
+        "Rendering %d page(s) from %s at %d dpi to %s%s",
+        len(page_numbers),
+        input_path,
+        dpi_value,
+        fmt,
+        f" with max {max_size_mb} MB" if max_bytes is not None else "",
+    )
 
     for page_no in page_numbers:
         raise_if_cancelled(cancel)  # pragma: no cover
@@ -109,6 +118,9 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
         img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
         out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
 
+        used_quality: int | None = None
+        used_level: int | None = None
+        final_scale: float | None = None
         if max_bytes is None:
             if fmt in {"JPEG", "WEBP"}:
                 if isinstance(quality, str):
@@ -118,8 +130,10 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                         raise ValueError(f"Unknown quality preset '{quality}'") from exc
                 else:
                     quality_val = int(quality)
+                used_quality = quality_val
                 img.save(out_path, format=fmt, quality=quality_val)
             elif fmt == "PNG":
+                used_level = 0
                 img.save(out_path, format=fmt, compress_level=0)
             else:
                 img.save(out_path, format=fmt)
@@ -141,6 +155,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                     data = buf.getvalue()
                 if size <= max_bytes:
                     best = data
+                    used_quality = mid
                     q_low = mid + 1
                 else:
                     q_high = mid - 1
@@ -157,6 +172,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                         data = buf.getvalue()
                     if size <= max_bytes:
                         out_path.write_bytes(data)
+                        used_level = level
                         need_scale = False
                         break
             else:
@@ -171,7 +187,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                 warnings.warn(
                     "Image scaled down to meet max_size_mb; size is approximate",
                     UserWarning,
-                    stacklevel=2,
+                    stacklevel=1,
                 )
                 scale_low, scale_high = 0.0, 1.0
                 scaled_bytes: bytes | None = None
@@ -197,6 +213,60 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                 if scaled_bytes is None:
                     raise RuntimeError("Could not reduce image below max_size_mb")
                 out_path.write_bytes(scaled_bytes)
+                final_scale = scale_low
+
+        size_out = out_path.stat().st_size / 1024
+        if max_bytes is None:
+            if used_quality is not None:
+                logger.info(
+                    "Page %d rendered with quality=%d (%.1f kB)",
+                    page_no,
+                    used_quality,
+                    size_out,
+                )
+            elif used_level is not None:
+                logger.info(
+                    "Page %d rendered with compress_level=%d (%.1f kB)",
+                    page_no,
+                    used_level,
+                    size_out,
+                )
+            else:
+                logger.info(
+                    "Page %d rendered (%.1f kB)",
+                    page_no,
+                    size_out,
+                )
+        elif used_quality is not None:
+            logger.info(
+                "Page %d saved with quality=%d to meet %.1f MB (%.1f kB)",
+                page_no,
+                used_quality,
+                max_size_mb,
+                size_out,
+            )
+        elif final_scale is not None:
+            logger.info(
+                "Page %d scaled to %d%% to meet %.1f MB (%.1f kB)",
+                page_no,
+                int(final_scale * 100),
+                max_size_mb,
+                size_out,
+            )
+        elif used_level is not None:
+            logger.info(
+                "Page %d compressed at level=%d to meet %.1f MB (%.1f kB)",
+                page_no,
+                used_level,
+                max_size_mb,
+                size_out,
+            )
+        else:
+            logger.info(
+                "Page %d saved without changes (%.1f kB)",
+                page_no,
+                size_out,
+            )
 
         outputs.append(str(out_path))
     return outputs
@@ -230,6 +300,7 @@ def pdf_to_images(  # noqa: PLR0913
     emitting a warning if resizing occurs. Images are written to ``out_dir`` or
     the PDF's directory and the paths are returned.
     """
+    logger.info("pdf_to_images called for %s", input_pdf)
     doc = open_pdf(input_pdf)
     with doc:
         page_numbers = parse_page_spec(pages, doc.page_count)

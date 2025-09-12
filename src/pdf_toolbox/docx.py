@@ -13,6 +13,7 @@ from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     raise_if_cancelled,
     sane_output_dir,
@@ -34,6 +35,7 @@ def pdf_to_docx(
     The resulting file is stored next to ``input_pdf`` unless ``out_dir`` points
     to a different directory. The path to the created DOCX file is returned.
     """
+    logger.info("Converting %s to DOCX", input_pdf)
     docx_doc = Document()
     with open_pdf(input_pdf) as pdf:
         for page in pdf:
@@ -54,6 +56,7 @@ def pdf_to_docx(
                     docx_doc.add_picture(buf)
     out_path = sane_output_dir(input_pdf, out_dir) / f"{Path(input_pdf).stem}.docx"
     docx_doc.save(str(out_path))
+    logger.info("DOCX written to %s", out_path)
     return str(out_path)
 
 

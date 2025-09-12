@@ -10,6 +10,7 @@ import fitz  # type: ignore
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     parse_page_spec,
     raise_if_cancelled,
@@ -32,6 +33,7 @@ def extract_range(
     ``pages`` is empty all pages are extracted. Returns the path of the
     created PDF.
     """
+    logger.info("Extracting pages '%s' from %s", pages, input_pdf)
     with open_pdf(input_pdf) as doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
         new_doc = fitz.open()
@@ -46,6 +48,7 @@ def extract_range(
         raise_if_cancelled(cancel)  # pragma: no cover
         new_doc.save(out_path)
         new_doc.close()
+    logger.info("Extracted pages written to %s", out_path)
     return str(out_path)
 
 
@@ -57,6 +60,7 @@ def split_pdf(
     cancel: Event | None = None,
 ) -> list[str]:
     """Split a PDF into parts of ``pages_per_file`` pages."""
+    logger.info("Splitting %s into chunks of %d pages", input_pdf, pages_per_file)
     outputs: list[str] = []
     with open_pdf(input_pdf) as doc:
         for start in range(0, doc.page_count, pages_per_file):
@@ -71,6 +75,7 @@ def split_pdf(
             raise_if_cancelled(cancel)  # pragma: no cover
             new_doc.save(out_path)
             new_doc.close()
+            logger.info("Created %s", out_path)
             outputs.append(str(out_path))
     return outputs
 
