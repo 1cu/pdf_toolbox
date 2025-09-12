@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import math
 import sys
 import warnings
 from collections.abc import Iterator
@@ -54,6 +53,8 @@ LOSSY_QUALITY_PRESETS: dict[str, int] = {
 }
 
 QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
+
+SCALE_EPS = 0.01
 
 
 @contextmanager
@@ -129,18 +130,6 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
             with _unlimited_int_str_digits():
                 page = doc.load_page(page_no - 1)
                 matrix = fitz.Matrix(zoom, zoom)
-                if max_bytes is not None:
-                    width_px = math.ceil(page.rect.width * zoom)
-                    height_px = math.ceil(page.rect.height * zoom)
-                    uncompressed = width_px * height_px * 3
-                    if uncompressed > max_bytes:
-                        warnings.warn(
-                            "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
-                            UserWarning,
-                            stacklevel=2,
-                        )
-                        scale = math.sqrt(max_bytes / uncompressed)
-                        matrix = fitz.Matrix(zoom * scale, zoom * scale)
                 pix = page.get_pixmap(matrix=matrix)
                 if pix.colorspace is None or pix.colorspace.n not in (
                     1,
@@ -180,10 +169,33 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
                             buf = io.BytesIO()
                             img.save(buf, format=fmt, quality=1)
                             if buf.tell() > max_bytes:
-                                raise RuntimeError(
-                                    "Could not reduce image below max_size_mb"
-                                )  # pragma: no cover
-                            low, high = 1, prev  # pragma: no cover
+                                scale_low, scale_high = 0.0, 1.0
+                                best_lossy: Image.Image | None = None
+                                while scale_high - scale_low > SCALE_EPS:
+                                    mid = (scale_low + scale_high) / 2
+                                    resized = img.resize(
+                                        (
+                                            max(1, int(img.width * mid)),
+                                            max(1, int(img.height * mid)),
+                                        ),
+                                        Image.Resampling.LANCZOS,
+                                    )
+                                    buf = io.BytesIO()
+                                    resized.save(buf, format=fmt, quality=1)
+                                    if buf.tell() <= max_bytes:
+                                        best_lossy = resized
+                                        scale_low = mid
+                                    else:
+                                        scale_high = mid
+                                if best_lossy is None:
+                                    raise RuntimeError(
+                                        "Could not reduce image below max_size_mb",
+                                    )
+                                img = best_lossy
+                                quality_val = 1
+                                low = high = 1
+                            else:
+                                low, high = 1, prev  # pragma: no cover
                         while low < high:
                             mid = (low + high + 1) // 2
                             buf = io.BytesIO()
@@ -205,27 +217,45 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
                         )  # pragma: no cover
                 else:  # lossless formats
                     if fmt == "PNG":
-                        # avoid heavy compression for speed
-                        save_kwargs["compress_level"] = 0
+                        if max_bytes is None:
+                            save_kwargs["compress_level"] = 0
+                        else:
+                            save_kwargs["compress_level"] = 9
                     out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
                     if max_bytes is not None:
                         buf = io.BytesIO()
                         img.save(buf, format=fmt, **save_kwargs)
                         if buf.tell() > max_bytes:
-                            ratio = math.sqrt(max_bytes / buf.tell())
-                            img = img.resize(
-                                (
-                                    max(1, int(img.width * ratio)),
-                                    max(1, int(img.height * ratio)),
-                                ),
-                                Image.Resampling.LANCZOS,
+                            warnings.warn(
+                                "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
+                                UserWarning,
+                                stacklevel=2,
                             )
+                            scale_low, scale_high = 0.0, 1.0
+                            best_img: Image.Image | None = None
+                            while scale_high - scale_low > SCALE_EPS:
+                                mid = (scale_low + scale_high) / 2
+                                resized = img.resize(
+                                    (
+                                        max(1, int(img.width * mid)),
+                                        max(1, int(img.height * mid)),
+                                    ),
+                                    Image.Resampling.LANCZOS,
+                                )
+                                buf = io.BytesIO()
+                                resized.save(buf, format=fmt, **save_kwargs)
+                                if buf.tell() <= max_bytes:
+                                    best_img = resized
+                                    scale_low = mid
+                                else:
+                                    scale_high = mid
+                            if best_img is None:
+                                raise RuntimeError(
+                                    "Could not reduce image below max_size_mb",
+                                )
+                            img = best_img
                             buf = io.BytesIO()
                             img.save(buf, format=fmt, **save_kwargs)
-                            if buf.tell() > max_bytes:
-                                raise RuntimeError(
-                                    "Could not reduce image below max_size_mb"
-                                )
                         with open(out_path, "wb") as f:
                             f.write(buf.getbuffer())
                     else:
