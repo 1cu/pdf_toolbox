@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import warnings
 from pathlib import Path
 from threading import Event
@@ -106,25 +107,23 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
         if pix.alpha:  # pragma: no cover
             pix = fitz.Pixmap(pix, 0)
         img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+        out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
 
-        if max_bytes is not None:
-            bpp = 3
-            total = img.width * img.height * bpp
-            if total > max_bytes:
-                scale = (max_bytes / total) ** 0.5
-                new_size = (
-                    max(1, int(img.width * scale)),
-                    max(1, int(img.height * scale)),
-                )
-                img = img.resize(new_size, Image.Resampling.LANCZOS)
-                warnings.warn(
-                    "Image scaled down to meet max_size_mb; size is approximate",
-                    UserWarning,
-                    stacklevel=2,
-                )
-
-        save_kwargs: dict[str, int] = {}
-        if fmt in {"JPEG", "WEBP"}:
+        if max_bytes is None:
+            if fmt in {"JPEG", "WEBP"}:
+                if isinstance(quality, str):
+                    try:
+                        quality_val = LOSSY_QUALITY_PRESETS[quality]
+                    except KeyError as exc:
+                        raise ValueError(f"Unknown quality preset '{quality}'") from exc
+                else:
+                    quality_val = int(quality)
+                img.save(out_path, format=fmt, quality=quality_val)
+            elif fmt == "PNG":
+                img.save(out_path, format=fmt, compress_level=0)
+            else:
+                img.save(out_path, format=fmt)
+        elif fmt in {"JPEG", "WEBP"}:
             if isinstance(quality, str):
                 try:
                     quality_val = LOSSY_QUALITY_PRESETS[quality]
@@ -132,14 +131,72 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                     raise ValueError(f"Unknown quality preset '{quality}'") from exc
             else:
                 quality_val = int(quality)
-            save_kwargs["quality"] = quality_val
-        elif fmt == "PNG":
-            save_kwargs["compress_level"] = 0 if max_bytes is None else 9
-
-        out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
-        img.save(out_path, format=fmt, **save_kwargs)
-        if max_bytes is not None and Path(out_path).stat().st_size > max_bytes:
-            raise RuntimeError("Could not reduce image below max_size_mb")
+            q_low, q_high = 1, quality_val
+            best: bytes | None = None
+            while q_low <= q_high:
+                mid = (q_low + q_high) // 2
+                with io.BytesIO() as buf:
+                    img.save(buf, format=fmt, quality=mid)
+                    size = buf.tell()
+                    data = buf.getvalue()
+                if size <= max_bytes:
+                    best = data
+                    q_low = mid + 1
+                else:
+                    q_high = mid - 1
+            if best is None:
+                raise RuntimeError("Could not reduce image below max_size_mb")
+            out_path.write_bytes(best)
+        else:
+            need_scale = True
+            if fmt == "PNG":
+                for level in range(10):
+                    with io.BytesIO() as buf:
+                        img.save(buf, format=fmt, compress_level=level)
+                        size = buf.tell()
+                        data = buf.getvalue()
+                    if size <= max_bytes:
+                        out_path.write_bytes(data)
+                        need_scale = False
+                        break
+            else:
+                with io.BytesIO() as buf:
+                    img.save(buf, format=fmt)
+                    size = buf.tell()
+                    data = buf.getvalue()
+                if size <= max_bytes:
+                    out_path.write_bytes(data)
+                    need_scale = False
+            if need_scale:
+                warnings.warn(
+                    "Image scaled down to meet max_size_mb; size is approximate",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                scale_low, scale_high = 0.0, 1.0
+                scaled_bytes: bytes | None = None
+                for _ in range(20):
+                    scale = (scale_low + scale_high) / 2
+                    if scale <= 0:
+                        break
+                    new_size = (
+                        max(1, int(img.width * scale)),
+                        max(1, int(img.height * scale)),
+                    )
+                    scaled = img.resize(new_size, Image.Resampling.LANCZOS)
+                    with io.BytesIO() as buf:
+                        kwargs = {"compress_level": 9} if fmt == "PNG" else {}
+                        scaled.save(buf, format=fmt, **kwargs)
+                        size = buf.tell()
+                        data = buf.getvalue()
+                    if size <= max_bytes:
+                        scaled_bytes = data
+                        scale_low = scale
+                    else:
+                        scale_high = scale
+                if scaled_bytes is None:
+                    raise RuntimeError("Could not reduce image below max_size_mb")
+                out_path.write_bytes(scaled_bytes)
 
         outputs.append(str(out_path))
     return outputs
@@ -167,10 +224,11 @@ def pdf_to_images(  # noqa: PLR0913
     :data:`DPI_PRESETS` or any integer value. Alternatively, ``width`` and
     ``height`` may be supplied to scale pages to specific pixel dimensions; both
     must be given together. ``quality`` is only used for JPEG and WebP output.
-    ``max_size_mb`` limits the resulting JPEG or WebP files by reducing image
-    quality and scales down PNG or TIFF images to roughly fit within the given
-    size, emitting a warning when this fallback is used. Images are written to
-    ``out_dir`` or the PDF's directory and the paths are returned.
+    ``max_size_mb`` limits the resulting file size. JPEG and WebP images
+    progressively lower their quality to satisfy the limit, while PNG and TIFF
+    images increase compression and are only downscaled when necessary,
+    emitting a warning if resizing occurs. Images are written to ``out_dir`` or
+    the PDF's directory and the paths are returned.
     """
     doc = open_pdf(input_pdf)
     with doc:
