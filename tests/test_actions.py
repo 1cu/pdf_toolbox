@@ -22,7 +22,7 @@ def test_decorator_preserves_category():
 def test_action_name_formatting():
     actions_list = list_actions()
     img = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.pdf_pptx.pdf_to_images"
+        a for a in actions_list if a.fqname == "pdf_toolbox.images.pdf_to_images"
     )
     assert img.name == "PDF to images"
 
@@ -30,7 +30,7 @@ def test_action_name_formatting():
 def test_literal_parameters_resolved():
     actions_list = list_actions()
     pdf_act = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.pdf_pptx.pdf_to_images"
+        a for a in actions_list if a.fqname == "pdf_toolbox.images.pdf_to_images"
     )
 
     pdf_fmt = next(p for p in pdf_act.params if p.name == "image_format").annotation
@@ -38,7 +38,7 @@ def test_literal_parameters_resolved():
 
     from typing import Literal, get_args, get_origin
 
-    from pdf_toolbox.pdf_pptx import DPI_PRESETS
+    from pdf_toolbox.images import DPI_PRESETS
 
     assert get_origin(pdf_fmt) is Literal
     assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
@@ -46,13 +46,6 @@ def test_literal_parameters_resolved():
     assert int in dpi_args
     lit = next(a for a in dpi_args if get_origin(a) is Literal)
     assert set(get_args(lit)) == set(DPI_PRESETS.keys())
-
-    pptx_act = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.pdf_pptx.pptx_to_images"
-    )
-    pptx_fmt = next(p for p in pptx_act.params if p.name == "image_format").annotation
-    assert get_origin(pptx_fmt) is Literal
-    assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
 
 
 def test_format_name_plural_acronyms():
@@ -68,17 +61,17 @@ def test_register_module_skips_undocumented(tmp_path, monkeypatch):
 
 
 def test_auto_discover_populates_registry():
-    from pdf_toolbox import pdf_pptx
+    from pdf_toolbox import images
 
-    had_attr = getattr(pdf_pptx.pdf_to_images, "__pdf_toolbox_action__", None)
+    had_attr = getattr(images.pdf_to_images, "__pdf_toolbox_action__", None)
     if had_attr is not None:
-        delattr(pdf_pptx.pdf_to_images, "__pdf_toolbox_action__")
+        delattr(images.pdf_to_images, "__pdf_toolbox_action__")
     actions._registry.clear()
     actions._discovered = False
     actions_list = list_actions()
     if had_attr is not None:
-        pdf_pptx.pdf_to_images.__pdf_toolbox_action__ = had_attr
-    assert any(a.fqname == "pdf_toolbox.pdf_pptx.pdf_to_images" for a in actions_list)
+        images.pdf_to_images.__pdf_toolbox_action__ = had_attr
+    assert any(a.fqname == "pdf_toolbox.images.pdf_to_images" for a in actions_list)
 
 
 def test_auto_discover_loader_toc(monkeypatch):
@@ -92,7 +85,7 @@ def test_auto_discover_loader_toc(monkeypatch):
     monkeypatch.setattr(
         ir, "files", lambda *_, **__: (_ for _ in ()).throw(FileNotFoundError)
     )
-    pkg.__spec__.loader = types.SimpleNamespace(toc=["pdf_toolbox.pdf_pptx"])
+    pkg.__spec__.loader = types.SimpleNamespace(toc=["pdf_toolbox.images"])
     saved = {
         name: mod
         for name, mod in sys.modules.items()
@@ -106,7 +99,7 @@ def test_auto_discover_loader_toc(monkeypatch):
     try:
         actions.list_actions()
         assert any(
-            a.fqname == "pdf_toolbox.pdf_pptx.pdf_to_images"
+            a.fqname == "pdf_toolbox.images.pdf_to_images"
             for a in actions._registry.values()
         )
     finally:
@@ -130,34 +123,3 @@ def test_register_module_ignores_nodoc_functions(monkeypatch):
     actions._discovered = False
     actions._register_module("dummy_mod")
     assert not actions._registry
-
-
-def test_image_action_param_alignment():
-    import inspect
-
-    from pdf_toolbox.pdf_pptx import pdf_to_images, pptx_to_images
-
-    pdf_params = list(inspect.signature(pdf_to_images).parameters)
-    pptx_params = list(inspect.signature(pptx_to_images).parameters)
-
-    assert pdf_params == [
-        "input_pdf",
-        "pages",
-        "dpi",
-        "image_format",
-        "width",
-        "height",
-        "quality",
-        "max_size_mb",
-        "out_dir",
-        "cancel",
-    ]
-    assert pptx_params == [
-        "pptx_path",
-        "slides",
-        "image_format",
-        "width",
-        "height",
-        "out_dir",
-        "cancel",
-    ]

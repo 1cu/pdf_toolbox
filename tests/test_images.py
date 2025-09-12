@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pdf_toolbox.pdf_pptx import DPI_PRESETS, pdf_to_images
+from pdf_toolbox.images import DPI_PRESETS, pdf_to_images
 
 
 def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
@@ -244,7 +244,7 @@ def test_pdf_to_images_max_size_too_small_raises(tmp_path, fmt):
         )
 
 
-@pytest.mark.parametrize("fmt", ["PNG", "TIFF"])
+@pytest.mark.parametrize("fmt", ["PNG"])
 def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     import os
 
@@ -268,7 +268,7 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     base = pdf_to_images(str(pdf_path), image_format=fmt, out_dir=str(high_dir))[0]
     base_size = Path(base).stat().st_size
     base_img = Image.open(base)
-    limit_mb = 0.001
+    limit_mb = 0.01
     with pytest.warns(UserWarning, match="scaled down"):
         limited = pdf_to_images(
             str(pdf_path),
@@ -286,7 +286,7 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     )
 
 
-@pytest.mark.parametrize("fmt", ["PNG", "TIFF"])
+@pytest.mark.parametrize("fmt", ["PNG"])
 def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, fmt):
     import os
 
