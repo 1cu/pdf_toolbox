@@ -129,6 +129,32 @@ def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
     assert sys.get_int_max_str_digits() == 4300
 
 
+def test_pdf_to_images_png_30mb_limit_no_digit_error(tmp_path):
+    import fitz
+    import sys
+
+    sys.set_int_max_str_digits(1000)
+    doc = fitz.open()
+    doc.new_page()
+    pdf_path = tmp_path / "doc.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    with pytest.warns(UserWarning, match="downscale"):
+        outputs = pdf_to_images(
+            str(pdf_path),
+            dpi="Very High (600 dpi)",
+            image_format="PNG",
+            max_size_mb=30,
+            out_dir=str(tmp_path / "out"),
+        )
+
+    out_path = Path(outputs[0])
+    assert out_path.exists()
+    assert out_path.stat().st_size <= 30 * 1024 * 1024
+    assert sys.get_int_max_str_digits() == 1000
+
+
 def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):
     low_dir = tmp_path / "low"
     high_dir = tmp_path / "high"
@@ -223,6 +249,101 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
     limited_size = Path(limited).stat().st_size
     assert limited_size <= limit_mb * 1024 * 1024
     assert limited_size < base_size
+
+
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_binary_search(tmp_path, fmt, monkeypatch):
+    import io
+    import fitz
+
+    def fake_save(self, fp, format=None, quality=None, **kwargs):
+        data = b"x" * (quality * 1000)
+        if isinstance(fp, io.BytesIO):
+            fp.write(data)
+        else:
+            with open(fp, "wb") as f:
+                f.write(data)
+
+    monkeypatch.setattr(Image.Image, "save", fake_save)
+
+    doc = fitz.open()
+    doc.new_page()
+    pdf_path = tmp_path / "doc.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    limit_mb = (90_000 - 1) / (1024 * 1024)
+    limited = pdf_to_images(
+        str(pdf_path),
+        image_format=fmt,
+        quality=95,
+        max_size_mb=limit_mb,
+        out_dir=str(tmp_path / "out"),
+    )[0]
+    limited_size = Path(limited).stat().st_size
+    assert 85_000 < limited_size < 95_000
+
+
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_too_small_raises(tmp_path, fmt):
+    import os
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    with pytest.raises(RuntimeError, match="Could not reduce image below max_size_mb"):
+        pdf_to_images(
+            str(pdf_path),
+            image_format=fmt,
+            out_dir=str(tmp_path),
+            max_size_mb=1e-6,
+        )
+
+
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_under_limit_keeps_quality(tmp_path, fmt):
+    import os
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    base = pdf_to_images(str(pdf_path), image_format=fmt, out_dir=str(tmp_path))[0]
+    base_size = Path(base).stat().st_size
+    zoom = 300 / 72
+    width_px = math.ceil(width * zoom)
+    height_px = math.ceil(height * zoom)
+    uncompressed = width_px * height_px * 3
+    limit_mb = uncompressed * 2 / (1024 * 1024)
+    limited = pdf_to_images(
+        str(pdf_path),
+        image_format=fmt,
+        out_dir=str(tmp_path / "limited"),
+        max_size_mb=limit_mb,
+    )[0]
+    limited_size = Path(limited).stat().st_size
+    assert limited_size == base_size
 
 
 @pytest.mark.parametrize("fmt", ["PNG", "TIFF"])
