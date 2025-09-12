@@ -16,6 +16,11 @@ def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
         assert isinstance(out, str)
 
 
+def test_pdf_to_images_requires_width_height(sample_pdf, tmp_path):
+    with pytest.raises(ValueError, match="width and height must be provided together"):
+        pdf_to_images(sample_pdf, width=100, out_dir=str(tmp_path))
+
+
 def test_pdf_to_images_svg(sample_pdf, tmp_path):
     outputs = pdf_to_images(
         sample_pdf, image_format="SVG", dpi="Low (72 dpi)", out_dir=str(tmp_path)
@@ -212,8 +217,35 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
         max_size_mb=limit_mb,
     )[0]
     limited_size = Path(limited).stat().st_size
+    base_img = Image.open(base)
+    limited_img = Image.open(limited)
     assert limited_size <= limit_mb * 1024 * 1024
     assert limited_size < base_size
+    assert limited_img.size == base_img.size
+
+
+def test_pdf_to_images_numeric_quality(tmp_path):
+    import os
+
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    out = pdf_to_images(
+        str(pdf_path), image_format="JPEG", quality=80, out_dir=str(tmp_path)
+    )[0]
+    assert Path(out).exists()
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
@@ -286,6 +318,33 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     )
 
 
+def test_pdf_to_images_png_max_size_too_small_raises(tmp_path):
+    import os
+
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    with pytest.raises(RuntimeError, match="Could not reduce image below max_size_mb"):
+        pdf_to_images(
+            str(pdf_path),
+            image_format="PNG",
+            out_dir=str(tmp_path),
+            max_size_mb=1e-6,
+        )
+
+
 @pytest.mark.parametrize("fmt", ["PNG"])
 def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, fmt):
     import os
@@ -325,3 +384,34 @@ def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, f
     assert limited_size <= limit_mb * 1024 * 1024
     assert limited_size <= base_size
     assert limited_img.size == base_img.size
+
+
+def test_pdf_to_images_tiff_max_size(tmp_path):
+    import os
+
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    base = pdf_to_images(str(pdf_path), image_format="TIFF", out_dir=str(tmp_path))[0]
+    base_size = Path(base).stat().st_size
+    limit_mb = base_size * 2 / (1024 * 1024)
+    limited = pdf_to_images(
+        str(pdf_path),
+        image_format="TIFF",
+        out_dir=str(tmp_path),
+        max_size_mb=limit_mb,
+    )[0]
+    limited_size = Path(limited).stat().st_size
+    assert limited_size <= limit_mb * 1024 * 1024
