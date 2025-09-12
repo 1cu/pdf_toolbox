@@ -70,6 +70,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+QT_AVAILABLE = True
+QT_IMPORT_ERROR: Exception | None = None
+
 
 class FileEdit(QLineEdit):
     """Widget for selecting files or directories."""
@@ -241,6 +244,7 @@ class MainWindow(QMainWindow):
 
         self._populate_actions()
         self.check_author()
+        self.show()
 
     def update_status(self, text: str) -> None:
         """Update status label and arrow."""
@@ -538,9 +542,10 @@ class MainWindow(QMainWindow):
 
 def main() -> None:  # pragma: no cover - entry point
     """Launch the GUI application."""
+    if not QT_AVAILABLE:
+        raise QT_IMPORT_ERROR or RuntimeError("Qt libraries not available")
     app = QApplication(sys.argv)
-    win = MainWindow()
-    win.show()
+    _win = MainWindow()
     sys.exit(app.exec())
 
 
