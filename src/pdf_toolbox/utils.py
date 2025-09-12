@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib
 import json
-import sys
 from collections.abc import Iterable
 from pathlib import Path
 from threading import Event
@@ -12,18 +11,17 @@ from threading import Event
 import fitz  # type: ignore
 from platformdirs import user_config_dir
 
+# Modules required at runtime; PowerPoint COM is no longer needed
 REQUIRED_LIBS: Iterable[str] = (
     "fitz",
     "PIL.Image",
     "docx",
-    "win32com.client",
 )
 # suggestions for installing optional runtime libraries
 LIB_HINTS: dict[str, str] = {
     "fitz": "pip install pymupdf",
     "PIL.Image": "pip install pillow",
     "docx": "pip install python-docx",
-    "win32com.client": "pip install pywin32",
 }
 # store configuration in a platform-specific user config directory
 CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
@@ -55,8 +53,6 @@ def ensure_libs() -> None:
     """
     missing: list[str] = []
     for mod in REQUIRED_LIBS:
-        if mod == "win32com.client" and sys.platform != "win32":
-            continue
         try:
             importlib.import_module(mod)
         except Exception:  # pragma: no cover - best effort

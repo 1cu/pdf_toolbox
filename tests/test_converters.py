@@ -4,7 +4,7 @@ import fitz  # type: ignore
 import pytest
 
 from pdf_toolbox.docx import pdf_to_docx
-from pdf_toolbox.rasterize import pdf_to_images
+from pdf_toolbox.pdf_pptx import pdf_to_images
 from pdf_toolbox.repair import repair_pdf
 from pdf_toolbox.unlock import unlock_pdf
 
