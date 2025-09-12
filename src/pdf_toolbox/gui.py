@@ -517,13 +517,20 @@ class MainWindow(QMainWindow):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
-            self.log.setPlainText(text)
+            self.log.setVisible(True)
+            if self.log.toPlainText():
+                self.log.appendPlainText(text)
+            else:
+                self.log.setPlainText(text)
         self.worker = None
 
     def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
         """Display an error message."""
-        self.log.setPlainText(msg)
         self.log.setVisible(True)
+        if self.log.toPlainText():
+            self.log.appendPlainText(msg)
+        else:
+            self.log.setPlainText(msg)
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         self.run_btn.setText("Start")

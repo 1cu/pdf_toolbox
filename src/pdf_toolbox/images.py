@@ -187,7 +187,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                 warnings.warn(
                     "Image scaled down to meet max_size_mb; size is approximate",
                     UserWarning,
-                    stacklevel=2,
+                    stacklevel=1,
                 )
                 scale_low, scale_high = 0.0, 1.0
                 scaled_bytes: bytes | None = None
