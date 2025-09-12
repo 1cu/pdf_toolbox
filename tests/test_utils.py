@@ -86,14 +86,6 @@ def test_ensure_libs_ok(monkeypatch):
     ensure_libs()
 
 
-def test_ensure_libs_skips_win32(monkeypatch):
-    monkeypatch.setattr("sys.platform", "linux")
-    monkeypatch.setattr(
-        "pdf_toolbox.utils.REQUIRED_LIBS", ["win32com.client"], raising=False
-    )
-    ensure_libs()
-
-
 def test_parse_page_spec_examples():
     assert parse_page_spec(None, 6) == [1, 2, 3, 4, 5, 6]
     assert parse_page_spec("1-2", 6) == [1, 2]

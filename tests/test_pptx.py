@@ -1,19 +1,50 @@
-import sys
+import shutil
+import subprocess
+from pathlib import Path
 
 import pytest
+from pptx import Presentation
 
-from pdf_toolbox.pptx import _pptx_to_images_via_powerpoint, pptx_to_images
+from pdf_toolbox.rasterize import pptx_to_images
 
 
 @pytest.mark.parametrize("fmt", ["PNG", "JPEG", "TIFF", "SVG"])
-@pytest.mark.skipif(sys.platform == "win32", reason="requires non-Windows")
-def test_pptx_to_images_requires_win32(tmp_path, fmt):
-    dummy = tmp_path / "sample.pptx"
-    dummy.write_bytes(b"")
+def test_pptx_to_images_requires_libreoffice(tmp_path, fmt, monkeypatch):
+    pptx_path = tmp_path / "dummy.pptx"
+    Presentation().save(pptx_path)
+    monkeypatch.setattr(shutil, "which", lambda name: None)
     with pytest.raises(RuntimeError):
-        pptx_to_images(str(dummy), image_format=fmt)
+        pptx_to_images(str(pptx_path), image_format=fmt)
 
 
-def test_pptx_to_images_invalid_format():
+def test_pptx_to_images_invalid_format(tmp_path):
+    pptx_path = tmp_path / "dummy.pptx"
+    Presentation().save(pptx_path)
     with pytest.raises(ValueError):
-        _pptx_to_images_via_powerpoint("dummy.pptx", image_format="BMP")
+        pptx_to_images(str(pptx_path), image_format="BMP")
+
+
+def test_pptx_to_images_converts(tmp_path, monkeypatch, sample_pdf):
+    pptx_path = tmp_path / "sample.pptx"
+    prs = Presentation()
+    prs.slides.add_slide(prs.slide_layouts[5])
+    prs.save(pptx_path)
+
+    def fake_which(name: str):
+        return "/usr/bin/libreoffice"
+
+    def fake_run(cmd, **kwargs):
+        outdir = Path(cmd[cmd.index("--outdir") + 1])
+        pdf_target = outdir / f"{pptx_path.stem}.pdf"
+        pdf_target.write_bytes(Path(sample_pdf).read_bytes())
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(shutil, "which", fake_which)
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    out_dir = tmp_path / "out"
+    images = pptx_to_images(
+        str(pptx_path), image_format="PNG", slides="1", out_dir=str(out_dir)
+    )
+    assert len(images) == 1
+    assert Path(images[0]).is_file()
