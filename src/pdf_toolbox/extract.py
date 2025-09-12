@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import logging
 from pathlib import Path
 from threading import Event
 
@@ -11,14 +10,13 @@ import fitz  # type: ignore
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     parse_page_spec,
     raise_if_cancelled,
     sane_output_dir,
     update_metadata,
 )
-
-logger = logging.getLogger(__name__)
 
 
 @action(category="PDF")

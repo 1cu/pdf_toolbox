@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import io
-import logging
 from pathlib import Path
 from threading import Event
 from typing import TypedDict
@@ -14,13 +13,12 @@ from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     raise_if_cancelled,
     sane_output_dir,
     save_pdf,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class QualitySetting(TypedDict):

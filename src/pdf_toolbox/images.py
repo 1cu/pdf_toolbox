@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import logging
 import warnings
 from pathlib import Path
 from threading import Event
@@ -14,13 +13,12 @@ from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     parse_page_spec,
     raise_if_cancelled,
     sane_output_dir,
 )
-
-logger = logging.getLogger(__name__)
 
 # Supported output formats for PDF rendering; WebP offers
 # smaller files with good quality.
