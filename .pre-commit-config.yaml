@@ -30,14 +30,13 @@ repos:
     language: system
     pass_filenames: false
     always_run: true
-- repo: https://github.com/executablebooks/mdformat
-  rev: 0.7.22
-  hooks:
   - id: mdformat
-    additional_dependencies: [mdformat-gfm]
-- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.9.0
-  hooks:
+    name: mdformat
+    entry: mdformat
+    language: system
+    types: [markdown]
   - id: pretty-format-yaml
-    args: [--autofix]
-    additional_dependencies: [setuptools]
+    name: pretty-format-yaml
+    entry: pretty-format-yaml --autofix
+    language: system
+    types: [yaml]
