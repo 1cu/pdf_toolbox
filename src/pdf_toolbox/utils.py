@@ -43,6 +43,14 @@ def configure_logging(
         handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
     logger.addHandler(handler)
+
+    # forward warnings.warn() calls through the logging system
+    logging.captureWarnings(True)
+    wlog = logging.getLogger("py.warnings")
+    wlog.setLevel(numeric)
+    wlog.handlers.clear()
+    wlog.addHandler(handler)
+    wlog.propagate = False
     return logger
 
 
