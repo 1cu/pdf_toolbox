@@ -10,6 +10,7 @@ compression and are only downscaled if necessary, with a warning emitted when
 resizing occurs.
 
 ## Table of Contents
+
 - [Configuration](#configuration)
 - [Optimization](#optimization)
 - [Development](#development)

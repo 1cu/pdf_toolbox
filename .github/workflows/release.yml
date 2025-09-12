@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+    - v*
 
 permissions:
   contents: write
@@ -16,68 +16,68 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install .
-          pip install pyinstaller
-      - name: Get version
-        id: version
-        shell: bash  # ensure consistent GITHUB_OUTPUT handling on Windows
-        run: echo "version=$(python scripts/get_version.py)" >> "$GITHUB_OUTPUT"
-      - name: Build executable (macOS)
-        if: runner.os == 'macOS'
-        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w src/pdf_toolbox/gui.py
-      - name: Build executable (Windows)
-        if: runner.os == 'Windows'
-        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -F -w --collect-all PySide6 src/pdf_toolbox/gui.py
-      - name: Package executable (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          cd dist
-          zip -r ../pdf_toolbox-${{ steps.version.outputs.version }}-macos.zip pdf_toolbox-${{ steps.version.outputs.version }}.app
-      - name: Package executable (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Compress-Archive -Path dist\pdf_toolbox-${{ steps.version.outputs.version }}.exe -DestinationPath pdf_toolbox-${{ steps.version.outputs.version }}-windows.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pdf_toolbox-${{ steps.version.outputs.version }}-${{ runner.os }}
-          path: pdf_toolbox-*.zip
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+        pip install pyinstaller
+    - name: Get version
+      id: version
+      shell: bash    # ensure consistent GITHUB_OUTPUT handling on Windows
+      run: echo "version=$(python scripts/get_version.py)" >> "$GITHUB_OUTPUT"
+    - name: Build executable (macOS)
+      if: runner.os == 'macOS'
+      run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w src/pdf_toolbox/gui.py
+    - name: Build executable (Windows)
+      if: runner.os == 'Windows'
+      run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -F -w --collect-all PySide6 src/pdf_toolbox/gui.py
+    - name: Package executable (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        cd dist
+        zip -r ../pdf_toolbox-${{ steps.version.outputs.version }}-macos.zip pdf_toolbox-${{ steps.version.outputs.version }}.app
+    - name: Package executable (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: Compress-Archive -Path dist\pdf_toolbox-${{ steps.version.outputs.version }}.exe -DestinationPath pdf_toolbox-${{ steps.version.outputs.version }}-windows.zip
+    - uses: actions/upload-artifact@v4
+      with:
+        name: pdf_toolbox-${{ steps.version.outputs.version }}-${{ runner.os }}
+        path: pdf_toolbox-*.zip
 
   publish:
     runs-on: ubuntu-latest
     needs: build-exe
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build
-      - name: Build package
-        run: python -m build
-      - name: Download executables
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-      - name: Create GitHub release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ github.ref_name }}
-          generateReleaseNotes: true
-          artifacts: "dist/*,artifacts/*"
-          allowUpdates: true
-      - name: Prune old tags and releases
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          MAX_RELEASES: 3
-        run: python scripts/prune_releases.py
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+    - name: Build package
+      run: python -m build
+    - name: Download executables
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        merge-multiple: true
+    - name: Create GitHub release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ github.ref_name }}
+        generateReleaseNotes: true
+        artifacts: dist/*,artifacts/*
+        allowUpdates: true
+    - name: Prune old tags and releases
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        MAX_RELEASES: 3
+      run: python scripts/prune_releases.py
