@@ -80,10 +80,12 @@ def test_build_form_handles_pep604_union(app, monkeypatch):
     win = gui.MainWindow()
     try:
         win.build_form(act)
+        win.show()
         combo, spin = win.current_widgets["dpi"]
         assert combo.currentText() == "High"
         assert not spin.isVisible()
         combo.setCurrentText("Custom")
+        QApplication.processEvents()
         assert spin.isVisible()
     finally:
         win.close()
