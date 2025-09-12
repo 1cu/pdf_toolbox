@@ -4,6 +4,9 @@
 - Bump the `version` in `pyproject.toml` once per pull request, not for every commit.
 - Install `pre-commit` hooks with `pre-commit install` so code is validated.
 - Always run `pre-commit run --all-files` before committing changes.
+- If the run reformats files, stage the changes and re-run
+  `pre-commit run --files <updated files>` to verify the hooks pass without
+  reprocessing the entire repository. Subsequent runs are fast thanks to caching.
 - Write descriptive commit messages: start with a short imperative summary
   (\<=72 characters), leave a blank line, then provide detailed context and
   rationale. Avoid generic messages like "fix tests".
