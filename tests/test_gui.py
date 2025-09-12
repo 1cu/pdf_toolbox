@@ -80,10 +80,27 @@ def test_build_form_handles_pep604_union(app, monkeypatch):
     win = gui.MainWindow()
     try:
         win.build_form(act)
+        win.show()
         combo, spin = win.current_widgets["dpi"]
         assert combo.currentText() == "High"
         assert not spin.isVisible()
         combo.setCurrentText("Custom")
+        QApplication.processEvents()
         assert spin.isVisible()
+    finally:
+        win.close()
+
+
+def test_float_none_spinbox_range(app, monkeypatch):
+    def sample(max_size_mb: float | None = None) -> None:
+        pass
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    win = gui.MainWindow()
+    try:
+        win.build_form(act)
+        spin = win.current_widgets["max_size_mb"]
+        assert spin.maximum() > 99
     finally:
         win.close()

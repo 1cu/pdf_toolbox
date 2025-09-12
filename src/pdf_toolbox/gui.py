@@ -313,6 +313,7 @@ class MainWindow(QMainWindow):
                     self.current_widgets[param.name] = (combo, spin)
                     continue
 
+            args = set(get_args(ann))
             if ann is bool:
                 widget = QCheckBox()
                 if param.default is True:
@@ -324,6 +325,17 @@ class MainWindow(QMainWindow):
                     widget.setValue(int(param.default))
             elif ann is float:
                 widget = QDoubleSpinBox()
+                widget.setMaximum(1_000_000_000)
+                if param.default not in (inspect._empty, None):
+                    widget.setValue(float(param.default))
+            elif origin in (Union, types.UnionType) and args <= {int, type(None)}:
+                widget = QSpinBox()
+                widget.setMaximum(10000)
+                if param.default not in (inspect._empty, None):
+                    widget.setValue(int(param.default))
+            elif origin in (Union, types.UnionType) and args <= {float, type(None)}:
+                widget = QDoubleSpinBox()
+                widget.setMaximum(1_000_000_000)
                 if param.default not in (inspect._empty, None):
                     widget.setValue(float(param.default))
             elif origin is Literal:
@@ -400,9 +412,11 @@ class MainWindow(QMainWindow):
             elif isinstance(widget, QCheckBox):
                 kwargs[name] = widget.isChecked()
             elif isinstance(widget, QSpinBox):
-                kwargs[name] = int(widget.value())
+                val = int(widget.value())
+                kwargs[name] = None if optional and val == 0 else val
             elif isinstance(widget, QDoubleSpinBox):
-                kwargs[name] = float(widget.value())
+                val = float(widget.value())
+                kwargs[name] = None if optional and val == 0 else val
         return kwargs
 
     def on_info(self) -> None:  # pragma: no cover - GUI
