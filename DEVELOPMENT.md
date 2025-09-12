@@ -38,7 +38,7 @@ python -m pdf_toolbox.gui
 
 ## Pre-commit hooks
 
-The configuration uses `language: system` so hooks run in the active virtual environment. Markdown documentation and YAML configuration files are automatically formatted. Hooks lint, format, type-check, and run tests on every commit, even if you only edit documentation. Test coverage must reach at least 95% for each module (excluding `pdf_toolbox/gui.py`), and the hooks enforce this threshold. Ruff applies an extensive rule set, covering bugbear, pyupgrade, naming, builtins, comprehensions, tidy imports, return-value checks, common simplifications, docstring style, security checks, and Pylint-inspired rules. Activate the `.venv` before installing or running them:
+The configuration uses `language: system` so hooks run in the active virtual environment. Markdown documentation and YAML configuration files are automatically formatted with `mdformat` and `pretty-format-yaml` to avoid introducing a Node.js dependency like Prettier. Hooks lint, format, type-check, and run tests on every commit, even if you only edit documentation. Test coverage must reach at least 95% for each module (excluding `pdf_toolbox/gui.py`), and the hooks enforce this threshold. Ruff applies an extensive rule set, covering bugbear, pyupgrade, naming, builtins, comprehensions, tidy imports, return-value checks, common simplifications, docstring style, security checks, and Pylint-inspired rules. Activate the `.venv` before installing or running them:
 
 ```bash
 pre-commit install
@@ -58,15 +58,15 @@ The release workflow runs only when a version tag (matching `v*`) is pushed. Thi
 
 To cut a new release:
 
-1. Update the version in `pyproject.toml`.
+<ol>
+  <li>Update the version in `pyproject.toml`.</li>
+  <li>Commit the change.</li>
+  <li>Create and push a matching tag, for example:</li>
+</ol>
 
-1. Commit the change.
-
-1. Create and push a matching tag, for example:
-
-   ```bash
-   git tag v0.2.62
-   git push origin v0.2.62
-   ```
+```bash
+git tag v0.2.62
+git push origin v0.2.62
+```
 
 The workflow will build the package and publish a GitHub release for that tag.
