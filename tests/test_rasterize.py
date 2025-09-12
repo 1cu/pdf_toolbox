@@ -226,6 +226,39 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_binary_search(tmp_path, fmt, monkeypatch):
+    import io
+    import fitz
+
+    def fake_save(self, fp, format=None, quality=None, **kwargs):
+        data = b"x" * (quality * 1000)
+        if isinstance(fp, io.BytesIO):
+            fp.write(data)
+        else:
+            with open(fp, "wb") as f:
+                f.write(data)
+
+    monkeypatch.setattr(Image.Image, "save", fake_save)
+
+    doc = fitz.open()
+    doc.new_page()
+    pdf_path = tmp_path / "doc.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    limit_mb = (90_000 - 1) / (1024 * 1024)
+    limited = pdf_to_images(
+        str(pdf_path),
+        image_format=fmt,
+        quality=95,
+        max_size_mb=limit_mb,
+        out_dir=str(tmp_path / "out"),
+    )[0]
+    limited_size = Path(limited).stat().st_size
+    assert 85_000 < limited_size < 95_000
+
+
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
 def test_pdf_to_images_max_size_too_small_raises(tmp_path, fmt):
     import os
     import fitz
