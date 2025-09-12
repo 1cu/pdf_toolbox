@@ -16,6 +16,16 @@ def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
         assert isinstance(out, str)
 
 
+def test_pdf_to_images_svg(sample_pdf, tmp_path):
+    outputs = pdf_to_images(
+        sample_pdf, image_format="SVG", dpi="Low (72 dpi)", out_dir=str(tmp_path)
+    )
+    assert len(outputs) == 3
+    for out in outputs:
+        assert out.endswith(".svg")
+        assert Path(out).exists()
+
+
 def test_pdf_to_images_invalid_page(sample_pdf):
     with pytest.raises(ValueError, match="page 5 out of range"):
         pdf_to_images(sample_pdf, pages="5")

@@ -23,7 +23,7 @@ from pdf_toolbox.utils import (
 )
 
 # Include WebP for better quality/size tradeoffs
-SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP"]
+SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
@@ -82,13 +82,13 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     input_pdf: str,
     pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",
-    image_format: Literal["PNG", "JPEG", "TIFF", "WEBP"] = "PNG",
+    image_format: Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"] = "PNG",
     quality: int | QualityChoice = "High (95)",
     max_size_mb: float | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:
-    """Rasterize a PDF into images.
+    """Render PDF pages to images.
 
     Each page of ``input_pdf`` specified by ``pages`` is rendered to the chosen
     image format. ``pages`` accepts comma separated ranges like ``"1-3,5"``;
@@ -130,6 +130,12 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
             with _unlimited_int_str_digits():
                 page = doc.load_page(page_no - 1)
                 matrix = fitz.Matrix(zoom, zoom)
+                if fmt == "SVG":
+                    svg = page.get_svg_image(matrix=matrix)
+                    out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
+                    out_path.write_text(svg, encoding="utf-8")
+                    outputs.append(str(out_path))
+                    continue
                 pix = page.get_pixmap(matrix=matrix)
                 if pix.colorspace is None or pix.colorspace.n not in (
                     1,
