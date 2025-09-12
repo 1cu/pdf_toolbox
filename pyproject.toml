@@ -38,8 +38,23 @@ line-length = 88
 target-version = "py313"
 
 [tool.ruff.lint]
-extend-select = ["W", "B", "UP", "N", "I", "A", "C4", "RET", "SIM", "TID", "RUF", "D", "S", "PL"]
-extend-ignore = ["E402"]
+extend-select = [
+  "W",
+  "B",
+  "UP",
+  "N",
+  "I",
+  "A",
+  "C4",
+  "RET",
+  "SIM",
+  "TID252",
+  "RUF",
+  "D",
+  "S",
+  "PL",
+]
+extend-ignore = ["E402", "D203", "D213"]
 
 [tool.mypy]
 ignore_missing_imports = true
