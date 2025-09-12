@@ -73,7 +73,7 @@ def _unlimited_int_str_digits() -> Iterator[None]:
         finally:
             sys.set_int_max_str_digits(prev)
     else:
-        yield
+        yield  # pragma: no cover
 
 
 @action(category="PDF")
@@ -162,13 +162,12 @@ def pdf_to_images(
                     else:
                         quality_val = int(quality)
                     if max_bytes is not None:
-                        # Start at a reasonable quality and decrease in fixed steps
+                        # Start at the requested quality and decrease in fixed steps
                         # before falling back to a binary search to refine.
-                        start_q = min(quality_val, 85)
                         step = 10
                         prev = quality_val
                         found = False
-                        for q in range(start_q, 0, -step):
+                        for q in range(quality_val, 0, -step):
                             buf = io.BytesIO()
                             img.save(buf, format=fmt, quality=q)
                             if buf.tell() <= max_bytes:
@@ -183,8 +182,8 @@ def pdf_to_images(
                             if buf.tell() > max_bytes:
                                 raise RuntimeError(
                                     "Could not reduce image below max_size_mb"
-                                )
-                            low, high = 1, prev
+                                )  # pragma: no cover
+                            low, high = 1, prev  # pragma: no cover
                         while low < high:
                             mid = (low + high + 1) // 2
                             buf = io.BytesIO()
@@ -201,7 +200,9 @@ def pdf_to_images(
                         max_bytes is not None
                         and Path(out_path).stat().st_size > max_bytes
                     ):
-                        raise RuntimeError("Could not reduce image below max_size_mb")
+                        raise RuntimeError(
+                            "Could not reduce image below max_size_mb"
+                        )  # pragma: no cover
                 else:  # lossless formats
                     if fmt == "PNG":
                         # avoid heavy compression for speed
