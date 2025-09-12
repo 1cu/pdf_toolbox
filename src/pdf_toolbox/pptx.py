@@ -1,9 +1,11 @@
+"""PowerPoint conversion helpers."""
+
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Literal
 import sys
+from pathlib import Path
 from threading import Event
+from typing import Literal
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
@@ -13,7 +15,7 @@ from pdf_toolbox.utils import (
 )
 
 
-def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + PowerPoint
+def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + PowerPoint  # noqa: PLR0913
     pptx_path: str,
     image_format: Literal["PNG", "JPEG", "TIFF"],
     width: int = 3840,
@@ -22,8 +24,8 @@ def _pptx_to_images_via_powerpoint(  # pragma: no cover - requires Windows + Pow
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:
-    """Helper: export slides via PowerPoint."""
-    import win32com.client  # type: ignore
+    """Export slides via PowerPoint."""
+    import win32com.client  # type: ignore  # noqa: PLC0415
 
     fmt = image_format.upper()
     export_map = {"PNG": "PNG", "JPEG": "JPG", "TIFF": "TIF"}
@@ -62,7 +64,7 @@ else:
 
 
 @_register_action
-def pptx_to_images_via_powerpoint(
+def pptx_to_images_via_powerpoint(  # noqa: PLR0913
     pptx_path: str,
     image_format: Literal["PNG", "JPEG", "TIFF"] = "PNG",
     width: int = 3840,

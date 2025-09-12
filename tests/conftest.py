@@ -1,9 +1,10 @@
 import json
-import fitz  # type: ignore
-from PIL import Image
-import pytest
 
-import pdf_toolbox.utils as utils
+import fitz  # type: ignore
+import pytest
+from PIL import Image
+
+from pdf_toolbox import utils
 
 
 @pytest.fixture

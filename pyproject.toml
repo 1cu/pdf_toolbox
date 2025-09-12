@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.2.62"
+version = "0.2.64"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -35,8 +35,10 @@ where = ["src"]
 
 [tool.ruff]
 line-length = 88
+target-version = "py313"
 
 [tool.ruff.lint]
+extend-select = ["W", "B", "UP", "N", "I", "A", "C4", "RET", "SIM", "TID", "RUF", "D", "S", "PL"]
 extend-ignore = ["E402"]
 
 [tool.mypy]
@@ -51,3 +53,6 @@ omit = ["*/pdf_toolbox/gui.py"]
 show_missing = true
 fail_under = 95
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004", "D103", "D100", "PLC0415", "S106"]
+"scripts/check_coverage.py" = ["S314"]

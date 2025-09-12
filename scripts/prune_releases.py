@@ -13,15 +13,16 @@ import os
 import urllib.request
 
 API_URL = "https://api.github.com"  # Base URL for GitHub REST API
+HTTP_NO_CONTENT = 204
 
 
 def _request(method: str, url: str, token: str) -> list | dict | None:
     """Perform an HTTP request and return parsed JSON if available."""
-    req = urllib.request.Request(url, method=method)
+    req = urllib.request.Request(url, method=method)  # noqa: S310
     req.add_header("Authorization", f"token {token}")
     req.add_header("Accept", "application/vnd.github+json")
-    with urllib.request.urlopen(req) as response:  # noqa: S310 - trusted URL
-        if response.status != 204:
+    with urllib.request.urlopen(req) as response:  # noqa: S310
+        if response.status != HTTP_NO_CONTENT:
             return json.load(response)
     return None
 

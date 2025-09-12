@@ -1,17 +1,16 @@
-from __future__ import annotations
-
 """Common utilities for PDF toolbox modules."""
 
-from pathlib import Path
+from __future__ import annotations
+
 import importlib
 import json
 import sys
-from typing import Iterable
+from collections.abc import Iterable
+from pathlib import Path
 from threading import Event
 
-from platformdirs import user_config_dir
 import fitz  # type: ignore
-
+from platformdirs import user_config_dir
 
 REQUIRED_LIBS: Iterable[str] = (
     "fitz",
@@ -37,7 +36,6 @@ def _load_author_info() -> tuple[str, str]:
     ``pdf_toolbox_config.json`` located in the user's configuration directory.
     A ``RuntimeError`` is raised if the configuration is missing or incomplete.
     """
-
     try:
         data = json.loads(CONFIG_FILE.read_text())
         author = data["author"]
@@ -55,7 +53,6 @@ def ensure_libs() -> None:
     Raises a ``RuntimeError`` if a library is missing so callers can
     present a helpful message to the user.
     """
-
     missing: list[str] = []
     for mod in REQUIRED_LIBS:
         if mod == "win32com.client" and sys.platform != "win32":
@@ -83,13 +80,12 @@ def parse_page_spec(spec: str | None, total: int) -> list[int]:
     A ``ValueError`` is raised if the specification is invalid or references
     pages outside ``1..total``.
     """
-
     if not spec:
         return list(range(1, total + 1))
 
     pages: set[int] = set()
-    for part in spec.split(","):
-        part = part.strip()
+    for raw_part in spec.split(","):
+        part = raw_part.strip()
         if not part:
             continue
         if "-" in part:
@@ -121,7 +117,6 @@ def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
     If ``out_dir`` is ``None`` the directory of ``base_path`` is returned.
     The directory is created if it does not yet exist.
     """
-
     base = Path(base_path)
     target = Path(out_dir) if out_dir else base.parent
     if target.suffix:
@@ -132,7 +127,6 @@ def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
 
 def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
     """Update metadata with a custom note."""
-
     metadata = dict(fitz_doc.metadata or {})
     if note:
         existing_subject = metadata.get("subject") or ""
@@ -152,7 +146,6 @@ def raise_if_cancelled(
     resources. The function is excluded from coverage as it depends on
     timing-sensitive user interaction.
     """
-
     if cancel and cancel.is_set():
         if doc is not None:
             doc.close()
@@ -161,7 +154,6 @@ def raise_if_cancelled(
 
 def open_pdf(path: str | Path) -> fitz.Document:
     """Open ``path`` as a PDF document with friendly errors."""
-
     try:
         return fitz.open(str(path))
     except Exception as exc:  # pragma: no cover - best effort
@@ -176,7 +168,6 @@ def save_pdf(
     **save_kwargs,
 ) -> None:
     """Save ``doc`` to ``out_path`` updating metadata and closing it."""
-
     update_metadata(doc, note)
     try:
         doc.save(str(out_path), **save_kwargs)
@@ -188,10 +179,10 @@ def save_pdf(
 
 __all__ = [
     "ensure_libs",
-    "sane_output_dir",
-    "update_metadata",
+    "open_pdf",
     "parse_page_spec",
     "raise_if_cancelled",
-    "open_pdf",
+    "sane_output_dir",
     "save_pdf",
+    "update_metadata",
 ]
