@@ -30,6 +30,10 @@ from pdf_toolbox.utils import (
 # smaller files with good quality and is now treated the same across input types.
 IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
+# ``python-pptx`` reports slide dimensions in English Metric Units (EMU).
+# There are 914,400 EMUs in one inch.
+EMU_PER_INCH = 914_400
+
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
 DPI_PRESETS: dict[str, int] = {
@@ -267,6 +271,8 @@ def pdf_to_images(  # noqa: PLR0913
     pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",
     image_format: Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"] = "PNG",
+    width: int | None = None,
+    height: int | None = None,
     quality: int | QualityChoice = "High (95)",
     max_size_mb: float | None = None,
     out_dir: str | None = None,
@@ -278,21 +284,30 @@ def pdf_to_images(  # noqa: PLR0913
     image format. ``pages`` accepts comma separated ranges like ``"1-3,5"``;
     ``None`` selects all pages. Supported formats are listed in
     :data:`IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
-    :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
-    quality but also larger files. ``quality`` is only used for JPEG and WebP
-    output. ``max_size_mb`` limits the resulting JPEG or WebP files by reducing
-    image quality and scales down PNG or TIFF images to roughly fit within the
-    given size, emitting a warning when this fallback is used. Images are written
-    to ``out_dir`` or the PDF's directory and the paths are returned.
+    :data:`DPI_PRESETS` or any integer value. Alternatively, ``width`` and
+    ``height`` may be supplied to scale pages to specific pixel dimensions; both
+    must be given together. ``quality`` is only used for JPEG and WebP output.
+    ``max_size_mb`` limits the resulting JPEG or WebP files by reducing image
+    quality and scales down PNG or TIFF images to roughly fit within the given
+    size, emitting a warning when this fallback is used. Images are written to
+    ``out_dir`` or the PDF's directory and the paths are returned.
     """
     doc = open_pdf(input_pdf)
     with doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
+        dpi_val: int | DpiChoice = dpi
+        if width is not None or height is not None:
+            if width is None or height is None:
+                raise ValueError("width and height must be provided together")
+            first = doc.load_page(0)
+            w_in = first.rect.width / 72
+            h_in = first.rect.height / 72
+            dpi_val = round(max(width / w_in, height / h_in))
         return _render_doc_pages(
             input_pdf,
             doc,
             page_numbers,
-            dpi,
+            dpi_val,
             image_format,
             quality=quality,
             max_size_mb=max_size_mb,
@@ -335,8 +350,8 @@ def pptx_to_images(  # noqa: PLR0913
     slide_h = prs.slide_height
     if slide_w is None or slide_h is None:  # pragma: no cover - defensive
         raise RuntimeError("Presentation has no slide dimensions")
-    slide_w_in = slide_w / 914400
-    slide_h_in = slide_h / 914400
+    slide_w_in = slide_w / EMU_PER_INCH
+    slide_h_in = slide_h / EMU_PER_INCH
     dpi_x = width / slide_w_in
     dpi_y = height / slide_h_in
     dpi = round(max(dpi_x, dpi_y))

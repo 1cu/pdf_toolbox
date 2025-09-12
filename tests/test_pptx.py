@@ -24,7 +24,7 @@ def test_pptx_to_images_invalid_format(tmp_path):
         pptx_to_images(str(pptx_path), image_format="BMP")
 
 
-@pytest.mark.parametrize("fmt", ["PNG", "WEBP"])
+@pytest.mark.parametrize("fmt", ["PNG", "WEBP", "SVG"])
 def test_pptx_to_images_converts(tmp_path, monkeypatch, sample_pdf, fmt):
     pptx_path = tmp_path / "sample.pptx"
     prs = Presentation()
@@ -48,4 +48,6 @@ def test_pptx_to_images_converts(tmp_path, monkeypatch, sample_pdf, fmt):
         str(pptx_path), image_format=fmt, slides="1", out_dir=str(out_dir)
     )
     assert len(images) == 1
-    assert Path(images[0]).is_file()
+    out_path = Path(images[0])
+    assert out_path.is_file()
+    assert out_path.suffix == f".{fmt.lower()}"
