@@ -225,6 +225,68 @@ def test_pdf_to_images_max_size_reduces_quality(tmp_path, fmt):
     assert limited_size < base_size
 
 
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_too_small_raises(tmp_path, fmt):
+    import os
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    with pytest.raises(RuntimeError, match="Could not reduce image below max_size_mb"):
+        pdf_to_images(
+            str(pdf_path),
+            image_format=fmt,
+            out_dir=str(tmp_path),
+            max_size_mb=1e-6,
+        )
+
+
+@pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+def test_pdf_to_images_max_size_under_limit_keeps_quality(tmp_path, fmt):
+    import os
+    import fitz
+
+    width = height = 100
+    img_path = tmp_path / "noise.png"
+    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
+        img_path
+    )
+    doc = fitz.open()
+    page = doc.new_page(width=width, height=height)
+    rect = fitz.Rect(0, 0, width, height)
+    page.insert_image(rect, filename=str(img_path))
+    pdf_path = tmp_path / "noise.pdf"
+    doc.save(pdf_path)
+    doc.close()
+
+    base = pdf_to_images(str(pdf_path), image_format=fmt, out_dir=str(tmp_path))[0]
+    base_size = Path(base).stat().st_size
+    zoom = 300 / 72
+    width_px = math.ceil(width * zoom)
+    height_px = math.ceil(height * zoom)
+    uncompressed = width_px * height_px * 3
+    limit_mb = uncompressed * 2 / (1024 * 1024)
+    limited = pdf_to_images(
+        str(pdf_path),
+        image_format=fmt,
+        out_dir=str(tmp_path / "limited"),
+        max_size_mb=limit_mb,
+    )[0]
+    limited_size = Path(limited).stat().st_size
+    assert limited_size == base_size
+
+
 @pytest.mark.parametrize("fmt", ["PNG", "TIFF"])
 def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     import os

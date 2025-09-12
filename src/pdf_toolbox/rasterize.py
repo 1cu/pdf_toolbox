@@ -162,19 +162,38 @@ def pdf_to_images(
                     else:
                         quality_val = int(quality)
                     if max_bytes is not None:
-                        low, high = 1, quality_val
-                        best_q = low
-                        while low <= high:
-                            mid = (low + high) // 2
+                        # Start at a reasonable quality and decrease in fixed steps
+                        # before falling back to a binary search to refine.
+                        start_q = min(quality_val, 85)
+                        step = 10
+                        prev = quality_val
+                        found = False
+                        for q in range(start_q, 0, -step):
+                            buf = io.BytesIO()
+                            img.save(buf, format=fmt, quality=q)
+                            if buf.tell() <= max_bytes:
+                                low = q
+                                high = prev
+                                found = True
+                                break
+                            prev = q
+                        if not found:
+                            buf = io.BytesIO()
+                            img.save(buf, format=fmt, quality=1)
+                            if buf.tell() > max_bytes:
+                                raise RuntimeError(
+                                    "Could not reduce image below max_size_mb"
+                                )
+                            low, high = 1, prev
+                        while low < high:
+                            mid = (low + high + 1) // 2
                             buf = io.BytesIO()
                             img.save(buf, format=fmt, quality=mid)
-                            size = buf.tell()
-                            if size <= max_bytes:
-                                best_q = mid
-                                low = mid + 1
+                            if buf.tell() <= max_bytes:
+                                low = mid
                             else:
                                 high = mid - 1
-                        quality_val = best_q
+                        quality_val = low
                     save_kwargs["quality"] = quality_val
                     out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
                     img.save(out_path, format=fmt, **save_kwargs)
