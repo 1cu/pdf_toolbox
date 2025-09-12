@@ -1,4 +1,4 @@
-"""Render PDF pages to raster images."""
+"""Render PDF pages and PPTX slides to images."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from pdf_toolbox.utils import (
 )
 
 # Include WebP for better quality/size tradeoffs
-SUPPORTED_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
+PDF_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 PPTX_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "SVG"]
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
@@ -98,7 +98,7 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     Each page of ``input_pdf`` specified by ``pages`` is rendered to the chosen
     image format. ``pages`` accepts comma separated ranges like ``"1-3,5"``;
     ``None`` selects all pages. Supported formats are listed in
-    :data:`SUPPORTED_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
+    :data:`PDF_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
     :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
     quality but also larger files. ``quality`` is only used for JPEG and WebP
     output. ``max_size_mb`` limits the resulting JPEG or WebP files by reducing
@@ -118,9 +118,9 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     zoom = dpi_value / 72  # default PDF resolution is 72 dpi
 
     fmt = image_format.upper()
-    if fmt not in SUPPORTED_IMAGE_FORMATS:
+    if fmt not in PDF_IMAGE_FORMATS:
         raise ValueError(
-            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(SUPPORTED_IMAGE_FORMATS)}"
+            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(PDF_IMAGE_FORMATS)}"
         )
     ext = fmt.lower()
     max_bytes = int(max_size_mb * 1024 * 1024) if max_size_mb else None

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pptx import Presentation
 
-from pdf_toolbox.rasterize import pptx_to_images
+from pdf_toolbox.pdf_pptx import pptx_to_images
 
 
 @pytest.mark.parametrize("fmt", ["PNG", "JPEG", "TIFF", "SVG"])
