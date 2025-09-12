@@ -117,7 +117,15 @@ def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
         )
 
     assert len(outputs) == 1
-    assert Path(outputs[0]).exists()
+    out_path = Path(outputs[0])
+    assert out_path.exists()
+    img = Image.open(out_path)
+    assert out_path.stat().st_size <= 30 * 1024 * 1024
+    # original dimensions at 600 dpi without scaling
+    expected_w = math.ceil(fitz.paper_rect("letter").width * 600 / 72)
+    expected_h = math.ceil(fitz.paper_rect("letter").height * 600 / 72)
+    assert img.width < expected_w
+    assert img.height < expected_h
     assert sys.get_int_max_str_digits() == 4300
 
 
