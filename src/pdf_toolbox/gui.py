@@ -1,17 +1,20 @@
+"""Qt-based GUI for PDF Toolbox."""
+
 from __future__ import annotations
 
+import html
+import inspect
 import json
 import sys
-import inspect
-import html
 import types
 import webbrowser
-from threading import Event
+from contextlib import suppress
 from pathlib import Path
+from threading import Event
 from typing import Any, Literal, Union, get_args, get_origin
 
-from pdf_toolbox.actions import Action, list_actions
 from pdf_toolbox import utils
+from pdf_toolbox.actions import Action, list_actions
 
 CONFIG_PATH = utils.CONFIG_FILE
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -28,16 +31,16 @@ DEFAULT_CONFIG = {
 
 
 def load_config() -> dict:
+    """Load configuration from disk."""
     cfg = DEFAULT_CONFIG.copy()
     if CONFIG_PATH.exists():
-        try:
+        with suppress(Exception):
             cfg.update(json.loads(CONFIG_PATH.read_text()))
-        except Exception:
-            pass
     return cfg
 
 
 def save_config(cfg: dict) -> None:
+    """Persist configuration to disk."""
     CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
 
 
@@ -46,10 +49,10 @@ try:  # pragma: no cover - optional import
     from PySide6.QtWidgets import (
         QApplication,
         QCheckBox,
+        QComboBox,
         QDialog,
         QDialogButtonBox,
         QDoubleSpinBox,
-        QComboBox,
         QFileDialog,
         QFormLayout,
         QHBoxLayout,
@@ -79,7 +82,10 @@ except Exception as exc:  # pragma: no cover - headless
 if QT_AVAILABLE:
 
     class FileEdit(QLineEdit):
+        """Widget for selecting files or directories."""
+
         def __init__(self, cfg: dict, directory: bool = False, multi: bool = False):
+            """Initialize the widget."""
             super().__init__()
             self.cfg = cfg
             self.directory = directory
@@ -87,6 +93,7 @@ if QT_AVAILABLE:
             self.setAcceptDrops(True)
 
         def browse(self) -> None:
+            """Open a file selection dialog."""
             initial = self.cfg.get("last_open_dir", str(Path.home()))
             if self.directory:
                 path = QFileDialog.getExistingDirectory(
@@ -109,11 +116,13 @@ if QT_AVAILABLE:
                     self.cfg["last_open_dir"] = str(Path(path).parent)
                     save_config(self.cfg)
 
-        def dragEnterEvent(self, e):  # pragma: no cover - GUI
+        def dragEnterEvent(self, e):  # pragma: no cover - GUI  # noqa: N802
+            """Accept file drops."""
             if e.mimeData().hasUrls():
                 e.acceptProposedAction()
 
-        def dropEvent(self, e):  # pragma: no cover - GUI
+        def dropEvent(self, e):  # pragma: no cover - GUI  # noqa: N802
+            """Handle dropped files."""
             paths = [url.toLocalFile() for url in e.mimeData().urls()]
             if not paths:
                 return
@@ -131,6 +140,7 @@ if QT_AVAILABLE:
         error = Signal(str)
 
         def __init__(self, func, kwargs: dict[str, Any]):
+            """Initialize the widget."""
             super().__init__()
             self.func = func
             self.kwargs = kwargs
@@ -141,6 +151,7 @@ if QT_AVAILABLE:
             self._cancel.set()
 
         def run(self) -> None:  # pragma: no cover - thread
+            """Execute the action in the background thread."""
             try:
                 if "cancel" in inspect.signature(self.func).parameters:
                     self.kwargs.setdefault("cancel", self._cancel)
@@ -152,14 +163,20 @@ if QT_AVAILABLE:
                     self.error.emit(str(exc))
 
     class ClickableLabel(QLabel):
+        """Label emitting a clicked signal."""
+
         clicked = Signal()
 
-        def mousePressEvent(self, event):  # pragma: no cover - GUI
+        def mousePressEvent(self, event):  # pragma: no cover - GUI  # noqa: N802
+            """Emit `clicked` when pressed."""
             self.clicked.emit()
             super().mousePressEvent(event)
 
     class MainWindow(QMainWindow):
-        def __init__(self) -> None:
+        """Main application window."""
+
+        def __init__(self) -> None:  # noqa: PLR0915
+            """Initialize the widget."""
             super().__init__()
             self.setWindowTitle("PDF Toolbox")
             self.cfg = load_config()
@@ -235,6 +252,7 @@ if QT_AVAILABLE:
             self.check_author()
 
         def update_status(self, text: str) -> None:
+            """Update status label and arrow."""
             self.status_text = text
             arrow = "▼" if self.log.isVisible() else "▶"
             self.status.setText(f"{text} {arrow}")
@@ -256,13 +274,15 @@ if QT_AVAILABLE:
         def on_item_clicked(
             self, item: QTreeWidgetItem
         ) -> None:  # pragma: no cover - GUI
+            """Populate form for the chosen action."""
             act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]
             if isinstance(act, Action):
                 self.current_action = act
                 self.build_form(act)
                 self.info_btn.setEnabled(bool(act.help))
 
-        def build_form(self, action: Action) -> None:
+        def build_form(self, action: Action) -> None:  # noqa: PLR0912, PLR0915
+            """Build form widgets for an action."""
             while self.form_layout.rowCount():
                 self.form_layout.removeRow(0)
             self.current_widgets.clear()
@@ -280,7 +300,7 @@ if QT_AVAILABLE:
                     if lit is not None:
                         combo = QComboBox()
                         choices = [str(x) for x in get_args(lit)]
-                        combo.addItems(choices + ["Custom"])
+                        combo.addItems([*choices, "Custom"])
                         spin = QSpinBox()
                         spin.setMaximum(10000)
                         spin.setVisible(False)
@@ -323,15 +343,14 @@ if QT_AVAILABLE:
                         widget.setCurrentText(str(param.default))
                 elif origin is list and get_args(ann) == (str,):
                     widget = FileEdit(self.cfg, multi=True)
+                elif any(k in lower for k in ["dir", "folder"]):
+                    widget = FileEdit(self.cfg, directory=True)
+                elif any(k in lower for k in ["file", "path", "input", "source"]):
+                    widget = FileEdit(self.cfg)
                 else:
-                    if any(k in lower for k in ["dir", "folder"]):
-                        widget = FileEdit(self.cfg, directory=True)
-                    elif any(k in lower for k in ["file", "path", "input", "source"]):
-                        widget = FileEdit(self.cfg)
-                    else:
-                        widget = QLineEdit()
-                        if param.default not in (inspect._empty, None):
-                            widget.setText(str(param.default))
+                    widget = QLineEdit()
+                    if param.default not in (inspect._empty, None):
+                        widget.setText(str(param.default))
 
                 if isinstance(widget, FileEdit):
                     container = QWidget()
@@ -348,7 +367,8 @@ if QT_AVAILABLE:
                     self.form_layout.addRow(param.name, widget)
                 self.current_widgets[param.name] = widget
 
-        def collect_args(self) -> dict[str, Any]:
+        def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912
+            """Collect current widget values."""
             if not self.current_action:
                 return {}
             params = {p.name: p for p in self.current_action.params}
@@ -395,6 +415,7 @@ if QT_AVAILABLE:
             return kwargs
 
         def on_info(self) -> None:  # pragma: no cover - GUI
+            """Show information about the selected action."""
             if not self.current_action:
                 return
             text = inspect.cleandoc(
@@ -413,6 +434,7 @@ if QT_AVAILABLE:
             msg.exec()
 
         def on_run(self) -> None:  # pragma: no cover - GUI
+            """Execute the selected action."""
             if not self.current_action:
                 return
             try:
@@ -444,13 +466,14 @@ if QT_AVAILABLE:
             self.run_btn.setText("Stop ❌")
 
         def on_finished(self, result: object) -> None:  # pragma: no cover - GUI
+            """Handle completion of the worker thread."""
             save_config(self.cfg)
             self.progress.setRange(0, 1)
             self.progress.setValue(1)
             self.run_btn.setText("Start")
             self.update_status("Fertig")
             if result:
-                if isinstance(result, (list, tuple)):
+                if isinstance(result, list | tuple):
                     text = "\n".join(map(str, result))
                 else:
                     text = str(result)
@@ -458,6 +481,7 @@ if QT_AVAILABLE:
             self.worker = None
 
         def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
+            """Display an error message."""
             self.log.setPlainText(msg)
             self.log.setVisible(True)
             self.progress.setRange(0, 1)
@@ -468,6 +492,7 @@ if QT_AVAILABLE:
             self.worker = None
 
         def toggle_log(self) -> None:  # pragma: no cover - GUI
+            """Show or hide the log window."""
             if self.log.isVisible():
                 self.log.setVisible(False)
                 self.resize(self.width(), self.base_height)
@@ -480,6 +505,7 @@ if QT_AVAILABLE:
             self.update_status(self.status_text)
 
         def on_author(self) -> None:  # pragma: no cover - GUI
+            """Prompt for author information."""
             dlg = QDialog(self)
             dlg.setWindowTitle("Autor/E-Mail")
             form = QFormLayout(dlg)
@@ -497,9 +523,11 @@ if QT_AVAILABLE:
                 save_config(self.cfg)
 
         def on_about(self) -> None:  # pragma: no cover - GUI
+            """Open the project website."""
             webbrowser.open("https://github.com/1cu/pdf_toolbox/")
 
         def check_author(self) -> None:
+            """Warn if author information is missing."""
             try:
                 utils._load_author_info()
             except RuntimeError:
@@ -512,6 +540,7 @@ if QT_AVAILABLE:
 
 
 def main() -> None:  # pragma: no cover - entry point
+    """Launch the GUI application."""
     if not QT_AVAILABLE:
         raise RuntimeError(f"PySide6 konnte nicht geladen werden: {QT_IMPORT_ERROR}")
     app = QApplication(sys.argv)

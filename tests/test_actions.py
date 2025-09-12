@@ -1,6 +1,6 @@
 import sys
 
-import pdf_toolbox.actions as actions
+from pdf_toolbox import actions
 from pdf_toolbox.actions import list_actions
 
 
@@ -37,6 +37,7 @@ def test_literal_parameters_resolved():
     pdf_dpi = next(p for p in pdf_act.params if p.name == "dpi").annotation
 
     from typing import Literal, get_args, get_origin
+
     from pdf_toolbox.rasterize import DPI_PRESETS
 
     assert get_origin(pdf_fmt) is Literal
@@ -86,14 +87,14 @@ def test_auto_discover_populates_registry():
     actions._discovered = False
     actions_list = list_actions()
     if had_attr is not None:
-        setattr(rasterize.pdf_to_images, "__pdf_toolbox_action__", had_attr)
+        rasterize.pdf_to_images.__pdf_toolbox_action__ = had_attr
     assert any(a.fqname == "pdf_toolbox.rasterize.pdf_to_images" for a in actions_list)
 
 
 def test_auto_discover_loader_toc(monkeypatch):
     """Discovery works when package loader exposes a ``toc`` attribute."""
-    import types
     import importlib.resources as ir
+    import types
 
     pkg = sys.modules["pdf_toolbox"]
     original_loader = pkg.__spec__.loader

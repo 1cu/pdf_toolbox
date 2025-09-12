@@ -6,7 +6,7 @@
 - Write descriptive commit messages: start with a short imperative summary
   (<=72 characters), leave a blank line, then provide detailed context and
   rationale. Avoid generic messages like "fix tests".
-- Run `pre-commit run --all-files` and `pytest` before committing changes.
+- Run `pre-commit run --all-files` before committing; it runs `pytest` automatically.
 - Maintain at least 95% test coverage for every module (excluding `pdf_toolbox/gui.py`).
   The `pre-commit` hook runs `pytest` with coverage and fails if any file falls below this threshold.
 - Use `python -m build` to create distributions when publishing a release.

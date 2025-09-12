@@ -1,3 +1,5 @@
+"""PDF page extraction utilities."""
+
 from __future__ import annotations
 
 import argparse
@@ -30,7 +32,6 @@ def extract_range(
     ``pages`` is empty all pages are extracted. Returns the path of the
     created PDF.
     """
-
     with open_pdf(input_pdf) as doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
         new_doc = fitz.open()
@@ -56,7 +57,6 @@ def split_pdf(
     cancel: Event | None = None,
 ) -> list[str]:
     """Split a PDF into parts of ``pages_per_file`` pages."""
-
     outputs: list[str] = []
     with open_pdf(input_pdf) as doc:
         for start in range(0, doc.page_count, pages_per_file):
