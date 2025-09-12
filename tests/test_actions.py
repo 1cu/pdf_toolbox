@@ -130,3 +130,34 @@ def test_register_module_ignores_nodoc_functions(monkeypatch):
     actions._discovered = False
     actions._register_module("dummy_mod")
     assert not actions._registry
+
+
+def test_image_action_param_alignment():
+    import inspect
+
+    from pdf_toolbox.pdf_pptx import pdf_to_images, pptx_to_images
+
+    pdf_params = list(inspect.signature(pdf_to_images).parameters)
+    pptx_params = list(inspect.signature(pptx_to_images).parameters)
+
+    assert pdf_params == [
+        "input_pdf",
+        "pages",
+        "dpi",
+        "image_format",
+        "width",
+        "height",
+        "quality",
+        "max_size_mb",
+        "out_dir",
+        "cancel",
+    ]
+    assert pptx_params == [
+        "pptx_path",
+        "slides",
+        "image_format",
+        "width",
+        "height",
+        "out_dir",
+        "cancel",
+    ]

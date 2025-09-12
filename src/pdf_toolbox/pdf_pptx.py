@@ -319,10 +319,10 @@ def pdf_to_images(  # noqa: PLR0913
 @action(category="Office")
 def pptx_to_images(  # noqa: PLR0913
     pptx_path: str,
+    slides: str | None = None,
     image_format: Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"] = "PNG",
     width: int = 3840,
     height: int = 2160,
-    slides: str | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:

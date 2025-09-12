@@ -7,8 +7,8 @@ import inspect
 import json
 import sys
 import types
-import webbrowser
 from contextlib import suppress
+from importlib import metadata
 from pathlib import Path
 from threading import Event
 from typing import Any, Literal, Union, get_args, get_origin
@@ -523,8 +523,18 @@ if QT_AVAILABLE:
                 save_config(self.cfg)
 
         def on_about(self) -> None:  # pragma: no cover - GUI
-            """Open the project website."""
-            webbrowser.open("https://github.com/1cu/pdf_toolbox/")
+            """Show version info and project link."""
+            ver = metadata.version("pdf-toolbox")
+            msg = QMessageBox(self)
+            msg.setWindowTitle("About")
+            msg.setTextFormat(Qt.TextFormat.RichText)
+            msg.setText(
+                f"<b>pdf_toolbox {ver}</b><br/>"
+                "<a href='https://github.com/1cu/pdf_toolbox/'>GitHub Repository</a>"
+            )
+            msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+            msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+            msg.exec()
 
         def check_author(self) -> None:
             """Warn if author information is missing."""
