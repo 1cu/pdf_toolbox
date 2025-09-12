@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.2.65"
+version = "0.2.66"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -12,6 +12,7 @@ dependencies = [
   "pillow",
   "pymupdf>=1.24",
   "python-docx",
+  "python-pptx",
   "pywin32>=306; sys_platform == 'win32'",
   "platformdirs",
 ]

@@ -41,28 +41,18 @@ def test_literal_parameters_resolved():
     from pdf_toolbox.rasterize import DPI_PRESETS
 
     assert get_origin(pdf_fmt) is Literal
-    assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP"}
+    assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
     dpi_args = get_args(pdf_dpi)
     assert int in dpi_args
     lit = next(a for a in dpi_args if get_origin(a) is Literal)
     assert set(get_args(lit)) == set(DPI_PRESETS.keys())
 
-    if sys.platform == "win32":
-        pptx_act = next(
-            a
-            for a in actions_list
-            if a.fqname == "pdf_toolbox.pptx.pptx_to_images_via_powerpoint"
-        )
-        pptx_fmt = next(
-            p for p in pptx_act.params if p.name == "image_format"
-        ).annotation
-        assert get_origin(pptx_fmt) is Literal
-        assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF"}
-    else:
-        assert not any(
-            a.fqname == "pdf_toolbox.pptx.pptx_to_images_via_powerpoint"
-            for a in actions_list
-        )
+    pptx_act = next(
+        a for a in actions_list if a.fqname == "pdf_toolbox.pptx.pptx_to_images"
+    )
+    pptx_fmt = next(p for p in pptx_act.params if p.name == "image_format").annotation
+    assert get_origin(pptx_fmt) is Literal
+    assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF", "SVG"}
 
 
 def test_format_name_plural_acronyms():
