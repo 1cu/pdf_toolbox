@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.2.65"
+version = "0.2.66"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -38,8 +38,23 @@ line-length = 88
 target-version = "py313"
 
 [tool.ruff.lint]
-extend-select = ["W", "B", "UP", "N", "I", "A", "C4", "RET", "SIM", "TID", "RUF", "D", "S", "PL"]
-extend-ignore = ["E402"]
+extend-select = [
+  "W",
+  "B",
+  "UP",
+  "N",
+  "I",
+  "A",
+  "C4",
+  "RET",
+  "SIM",
+  "TID252",
+  "RUF",
+  "D",
+  "S",
+  "PL",
+]
+extend-ignore = ["E402", "D203", "D213"]
 
 [tool.mypy]
 ignore_missing_imports = true
