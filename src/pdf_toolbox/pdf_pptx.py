@@ -2,23 +2,15 @@
 
 from __future__ import annotations
 
-import io
-import sys
 import tempfile
 import warnings
-from collections.abc import Iterator
-from contextlib import contextmanager
 from pathlib import Path
 from threading import Event
 from typing import Literal
 
-try:
-    import aspose.slides as aspose_slides
-    from aspose.slides.export import SaveFormat
-except Exception:  # pragma: no cover - optional dependency
-    aspose_slides = None  # type: ignore[assignment]
-    SaveFormat = None  # type: ignore[assignment]
+import aspose.slides as aspose_slides
 import fitz  # type: ignore
+from aspose.slides.export import SaveFormat
 from PIL import Image
 from pptx import Presentation as PptxPresentation
 
@@ -67,28 +59,6 @@ LOSSY_QUALITY_PRESETS: dict[str, int] = {
 
 QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
 
-SCALE_EPS = 0.01
-
-
-@contextmanager
-def _unlimited_int_str_digits() -> Iterator[None]:
-    """Temporarily disable Python's string-to-int digit limit.
-
-    Pillow may convert very large integers to strings when saving images,
-    which can exceed the default safety limit introduced in Python 3.11 and
-    trigger a ``ValueError``. This context manager lifts the restriction while
-    preserving the previous value.
-    """
-    if hasattr(sys, "set_int_max_str_digits"):
-        prev = sys.get_int_max_str_digits()
-        try:
-            sys.set_int_max_str_digits(0)
-            yield
-        finally:
-            sys.set_int_max_str_digits(prev)
-    else:
-        yield  # pragma: no cover
-
 
 def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
     input_path: str,
@@ -130,140 +100,54 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
 
     for page_no in page_numbers:
         raise_if_cancelled(cancel)  # pragma: no cover
-        with _unlimited_int_str_digits():
-            page = doc.load_page(page_no - 1)
-            matrix = fitz.Matrix(zoom, zoom)
-            if fmt == "SVG":
-                svg = page.get_svg_image(matrix=matrix)
-                out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
-                out_path.write_text(svg, encoding="utf-8")
-                outputs.append(str(out_path))
-                continue
-            pix = page.get_pixmap(matrix=matrix)
-            if pix.colorspace is None or pix.colorspace.n not in (
-                1,
-                3,
-            ):  # pragma: no cover
-                pix = fitz.Pixmap(fitz.csRGB, pix)
-            if pix.alpha:  # pragma: no cover
-                pix = fitz.Pixmap(pix, 0)
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-            save_kwargs = {}
-            if fmt in {"JPEG", "WEBP"}:
-                if isinstance(quality, str):
-                    try:
-                        quality_val = LOSSY_QUALITY_PRESETS[quality]
-                    except KeyError as exc:
-                        raise ValueError(f"Unknown quality preset '{quality}'") from exc
-                else:
-                    quality_val = int(quality)
-                if max_bytes is not None:
-                    # Start at the requested quality and decrease in fixed steps
-                    # before falling back to a binary search to refine.
-                    step = 10
-                    prev = quality_val
-                    found = False
-                    for q in range(quality_val, 0, -step):
-                        buf = io.BytesIO()
-                        img.save(buf, format=fmt, quality=q)
-                        if buf.tell() <= max_bytes:
-                            low = q
-                            high = prev
-                            found = True
-                            break
-                        prev = q
-                    if not found:
-                        buf = io.BytesIO()
-                        img.save(buf, format=fmt, quality=1)
-                        if buf.tell() > max_bytes:
-                            scale_low, scale_high = 0.0, 1.0
-                            best_lossy: Image.Image | None = None
-                            while scale_high - scale_low > SCALE_EPS:
-                                mid = (scale_low + scale_high) / 2
-                                resized = img.resize(
-                                    (
-                                        max(1, int(img.width * mid)),
-                                        max(1, int(img.height * mid)),
-                                    ),
-                                    Image.Resampling.LANCZOS,
-                                )
-                                buf = io.BytesIO()
-                                resized.save(buf, format=fmt, quality=1)
-                                if buf.tell() <= max_bytes:
-                                    best_lossy = resized  # pragma: no cover
-                                    scale_low = mid  # pragma: no cover
-                                else:
-                                    scale_high = mid
-                            if best_lossy is None:  # pragma: no cover
-                                raise RuntimeError(
-                                    "Could not reduce image below max_size_mb",
-                                )
-                                img = best_lossy  # pragma: no cover
-                                quality_val = 1  # pragma: no cover
-                                low = high = 1  # pragma: no cover
-                        else:
-                            low, high = 1, prev  # pragma: no cover
-                    while low < high:
-                        mid = (low + high + 1) // 2
-                        buf = io.BytesIO()
-                        img.save(buf, format=fmt, quality=mid)
-                        if buf.tell() <= max_bytes:
-                            low = mid
-                        else:
-                            high = mid - 1
-                    quality_val = low
-                save_kwargs["quality"] = quality_val
-                out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
-                img.save(out_path, format=fmt, **save_kwargs)
-                if max_bytes is not None and Path(out_path).stat().st_size > max_bytes:
-                    raise RuntimeError(
-                        "Could not reduce image below max_size_mb"
-                    )  # pragma: no cover
-            else:  # lossless formats
-                if fmt == "PNG":
-                    if max_bytes is None:
-                        save_kwargs["compress_level"] = 0
-                    else:
-                        save_kwargs["compress_level"] = 9
-                out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
-                if max_bytes is not None:
-                    buf = io.BytesIO()
-                    img.save(buf, format=fmt, **save_kwargs)
-                    if buf.tell() > max_bytes:
-                        warnings.warn(
-                            "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
-                            UserWarning,
-                            stacklevel=2,
-                        )
-                        scale_low, scale_high = 0.0, 1.0
-                        best_img: Image.Image | None = None
-                        while scale_high - scale_low > SCALE_EPS:
-                            mid = (scale_low + scale_high) / 2
-                            resized = img.resize(
-                                (
-                                    max(1, int(img.width * mid)),
-                                    max(1, int(img.height * mid)),
-                                ),
-                                Image.Resampling.LANCZOS,
-                            )
-                            buf = io.BytesIO()
-                            resized.save(buf, format=fmt, **save_kwargs)
-                            if buf.tell() <= max_bytes:
-                                best_img = resized
-                                scale_low = mid
-                            else:
-                                scale_high = mid
-                        if best_img is None:  # pragma: no cover
-                            raise RuntimeError(
-                                "Could not reduce image below max_size_mb",
-                            )
-                        img = best_img
-                        buf = io.BytesIO()
-                        img.save(buf, format=fmt, **save_kwargs)
-                    with open(out_path, "wb") as f:
-                        f.write(buf.getbuffer())
-                else:
-                    img.save(out_path, format=fmt, **save_kwargs)
+        page = doc.load_page(page_no - 1)
+        matrix = fitz.Matrix(zoom, zoom)
+        if fmt == "SVG":
+            svg = page.get_svg_image(matrix=matrix)
+            out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
+            out_path.write_text(svg, encoding="utf-8")
+            outputs.append(str(out_path))
+            continue
+        pix = page.get_pixmap(matrix=matrix)
+        if pix.colorspace is None or pix.colorspace.n not in (1, 3):  # pragma: no cover
+            pix = fitz.Pixmap(fitz.csRGB, pix)
+        if pix.alpha:  # pragma: no cover
+            pix = fitz.Pixmap(pix, 0)
+        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+
+        if max_bytes is not None:
+            bpp = 3
+            total = img.width * img.height * bpp
+            if total > max_bytes:
+                scale = (max_bytes / total) ** 0.5
+                new_size = (
+                    max(1, int(img.width * scale)),
+                    max(1, int(img.height * scale)),
+                )
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+                warnings.warn(
+                    "Image scaled down to meet max_size_mb; size is approximate",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        save_kwargs: dict[str, int] = {}
+        if fmt in {"JPEG", "WEBP"}:
+            if isinstance(quality, str):
+                try:
+                    quality_val = LOSSY_QUALITY_PRESETS[quality]
+                except KeyError as exc:
+                    raise ValueError(f"Unknown quality preset '{quality}'") from exc
+            else:
+                quality_val = int(quality)
+            save_kwargs["quality"] = quality_val
+        elif fmt == "PNG":
+            save_kwargs["compress_level"] = 0 if max_bytes is None else 9
+
+        out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
+        img.save(out_path, format=fmt, **save_kwargs)
+        if max_bytes is not None and Path(out_path).stat().st_size > max_bytes:
+            raise RuntimeError("Could not reduce image below max_size_mb")
 
         outputs.append(str(out_path))
     return outputs
@@ -297,7 +181,7 @@ def pdf_to_images(  # noqa: PLR0913
     ``out_dir`` or the PDF's directory and the paths are returned.
     """
     doc = open_pdf(input_pdf)
-    with doc, _unlimited_int_str_digits():
+    with doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
         dpi_val: int | DpiChoice = dpi
         if width is not None or height is not None:
@@ -342,9 +226,6 @@ def pptx_to_images(  # noqa: PLR0913
         raise ValueError(
             f"Unsupported image format '{image_format}'. Supported formats: {', '.join(IMAGE_FORMATS)}"
         )
-    if aspose_slides is None:
-        raise RuntimeError("aspose.slides is required for PPTX to images conversion")
-
     pptx = PptxPresentation(pptx_path)
     total = len(pptx.slides)
     slide_numbers = parse_page_spec(slides, total)
@@ -365,7 +246,7 @@ def pptx_to_images(  # noqa: PLR0913
         with aspose_slides.Presentation(pptx_path) as prs:  # type: ignore[union-attr]
             prs.save(str(pdf_path), SaveFormat.PDF)  # type: ignore[arg-type]
         doc = open_pdf(str(pdf_path))
-        with doc, _unlimited_int_str_digits():
+        with doc:
             return _render_doc_pages(
                 pptx_path,
                 doc,

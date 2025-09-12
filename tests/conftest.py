@@ -1,10 +1,54 @@
 import json
+import sys
+import types
 
 import fitz  # type: ignore
 import pytest
 from PIL import Image
 
 from pdf_toolbox import utils
+
+# Provide a lightweight stub for aspose.slides if the real library is absent.
+try:  # pragma: no cover - testing stub
+    import aspose.slides  # type: ignore  # noqa: F401
+except Exception:  # pragma: no cover
+    slides_mod = types.ModuleType("aspose.slides")
+
+    class Presentation:
+        """Stub presentation used for tests."""
+
+        def __init__(self, _path: str) -> None:  # pragma: no cover - stub
+            """Store the given path."""
+            self.path = _path
+
+        def __enter__(self):  # pragma: no cover - stub  # noqa: D105
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:  # pragma: no cover - stub
+            """Support context manager protocol."""
+            return
+
+        def save(self, out_path: str, fmt) -> None:  # pragma: no cover - stub
+            """Write a minimal PDF to ``out_path``."""
+            doc = fitz.open()
+            doc.new_page()
+            doc.save(out_path)
+            doc.close()
+
+    slides_mod.Presentation = Presentation  # type: ignore[attr-defined]
+    export_mod = types.ModuleType("aspose.slides.export")
+
+    class SaveFormat:  # pragma: no cover - stub
+        """Stub container for save format constants."""
+
+        PDF = object()
+
+    export_mod.SaveFormat = SaveFormat  # type: ignore[attr-defined]
+    aspose_pkg = types.ModuleType("aspose")
+    aspose_pkg.slides = slides_mod  # type: ignore[attr-defined]
+    sys.modules["aspose"] = aspose_pkg
+    sys.modules["aspose.slides"] = slides_mod
+    sys.modules["aspose.slides.export"] = export_mod
 
 
 @pytest.fixture
