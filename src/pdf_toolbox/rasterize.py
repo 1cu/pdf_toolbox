@@ -127,87 +127,88 @@ def pdf_to_images(
 
         for page_no in page_numbers:
             raise_if_cancelled(cancel)  # pragma: no cover
-            page = doc.load_page(page_no - 1)
-            matrix = fitz.Matrix(zoom, zoom)
-            if max_bytes is not None:
-                width_px = math.ceil(page.rect.width * zoom)
-                height_px = math.ceil(page.rect.height * zoom)
-                uncompressed = width_px * height_px * 3
-                if uncompressed > max_bytes:
-                    warnings.warn(
-                        "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
-                        UserWarning,
-                    )
-                    scale = math.sqrt(max_bytes / uncompressed)
-                    matrix = fitz.Matrix(zoom * scale, zoom * scale)
-            pix = page.get_pixmap(matrix=matrix)
-            if pix.colorspace is None or pix.colorspace.n not in (
-                1,
-                3,
-            ):  # pragma: no cover
-                pix = fitz.Pixmap(fitz.csRGB, pix)
-            if pix.alpha:  # pragma: no cover
-                pix = fitz.Pixmap(pix, 0)
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-            save_kwargs = {}
-            if fmt in {"JPEG", "WEBP"}:
-                if isinstance(quality, str):
-                    try:
-                        quality_val = LOSSY_QUALITY_PRESETS[quality]
-                    except KeyError as exc:
-                        raise ValueError(f"Unknown quality preset '{quality}'") from exc
-                else:
-                    quality_val = int(quality)
+            with _unlimited_int_str_digits():
+                page = doc.load_page(page_no - 1)
+                matrix = fitz.Matrix(zoom, zoom)
                 if max_bytes is not None:
-                    low, high = 1, quality_val
-                    best_q = low
-                    while low <= high:
-                        mid = (low + high) // 2
-                        buf = io.BytesIO()
-                        with _unlimited_int_str_digits():
-                            img.save(buf, format=fmt, quality=mid)
-                        size = buf.tell()
-                        if size <= max_bytes:
-                            best_q = mid
-                            low = mid + 1
-                        else:
-                            high = mid - 1
-                    quality_val = best_q
-                save_kwargs["quality"] = quality_val
-                out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
-                with _unlimited_int_str_digits():
-                    img.save(out_path, format=fmt, **save_kwargs)
-                if max_bytes is not None and Path(out_path).stat().st_size > max_bytes:
-                    raise RuntimeError("Could not reduce image below max_size_mb")
-            else:  # lossless formats
-                if fmt == "PNG":
-                    # avoid heavy compression for speed
-                    save_kwargs["compress_level"] = 0
-                out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
-                if max_bytes is not None:
-                    buf = io.BytesIO()
-                    with _unlimited_int_str_digits():
-                        img.save(buf, format=fmt, **save_kwargs)
-                    if buf.tell() > max_bytes:
-                        ratio = math.sqrt(max_bytes / buf.tell())
-                        img = img.resize(
-                            (
-                                max(1, int(img.width * ratio)),
-                                max(1, int(img.height * ratio)),
-                            ),
-                            Image.Resampling.LANCZOS,
+                    width_px = math.ceil(page.rect.width * zoom)
+                    height_px = math.ceil(page.rect.height * zoom)
+                    uncompressed = width_px * height_px * 3
+                    if uncompressed > max_bytes:
+                        warnings.warn(
+                            "max_size_mb with lossless formats will downscale image dimensions to meet the target size; use JPEG or WebP to keep dimensions",
+                            UserWarning,
                         )
+                        scale = math.sqrt(max_bytes / uncompressed)
+                        matrix = fitz.Matrix(zoom * scale, zoom * scale)
+                pix = page.get_pixmap(matrix=matrix)
+                if pix.colorspace is None or pix.colorspace.n not in (
+                    1,
+                    3,
+                ):  # pragma: no cover
+                    pix = fitz.Pixmap(fitz.csRGB, pix)
+                if pix.alpha:  # pragma: no cover
+                    pix = fitz.Pixmap(pix, 0)
+                img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                save_kwargs = {}
+                if fmt in {"JPEG", "WEBP"}:
+                    if isinstance(quality, str):
+                        try:
+                            quality_val = LOSSY_QUALITY_PRESETS[quality]
+                        except KeyError as exc:
+                            raise ValueError(
+                                f"Unknown quality preset '{quality}'"
+                            ) from exc
+                    else:
+                        quality_val = int(quality)
+                    if max_bytes is not None:
+                        low, high = 1, quality_val
+                        best_q = low
+                        while low <= high:
+                            mid = (low + high) // 2
+                            buf = io.BytesIO()
+                            img.save(buf, format=fmt, quality=mid)
+                            size = buf.tell()
+                            if size <= max_bytes:
+                                best_q = mid
+                                low = mid + 1
+                            else:
+                                high = mid - 1
+                        quality_val = best_q
+                    save_kwargs["quality"] = quality_val
+                    out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
+                    img.save(out_path, format=fmt, **save_kwargs)
+                    if (
+                        max_bytes is not None
+                        and Path(out_path).stat().st_size > max_bytes
+                    ):
+                        raise RuntimeError("Could not reduce image below max_size_mb")
+                else:  # lossless formats
+                    if fmt == "PNG":
+                        # avoid heavy compression for speed
+                        save_kwargs["compress_level"] = 0
+                    out_path = out_base / f"{Path(input_pdf).stem}_Page_{page_no}.{ext}"
+                    if max_bytes is not None:
                         buf = io.BytesIO()
-                        with _unlimited_int_str_digits():
-                            img.save(buf, format=fmt, **save_kwargs)
+                        img.save(buf, format=fmt, **save_kwargs)
                         if buf.tell() > max_bytes:
-                            raise RuntimeError(
-                                "Could not reduce image below max_size_mb"
+                            ratio = math.sqrt(max_bytes / buf.tell())
+                            img = img.resize(
+                                (
+                                    max(1, int(img.width * ratio)),
+                                    max(1, int(img.height * ratio)),
+                                ),
+                                Image.Resampling.LANCZOS,
                             )
-                    with open(out_path, "wb") as f:
-                        f.write(buf.getbuffer())
-                else:
-                    with _unlimited_int_str_digits():
+                            buf = io.BytesIO()
+                            img.save(buf, format=fmt, **save_kwargs)
+                            if buf.tell() > max_bytes:
+                                raise RuntimeError(
+                                    "Could not reduce image below max_size_mb"
+                                )
+                        with open(out_path, "wb") as f:
+                            f.write(buf.getbuffer())
+                    else:
                         img.save(out_path, format=fmt, **save_kwargs)
 
             outputs.append(str(out_path))
