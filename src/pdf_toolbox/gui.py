@@ -325,6 +325,7 @@ class MainWindow(QMainWindow):
                     widget.setValue(int(param.default))
             elif ann is float:
                 widget = QDoubleSpinBox()
+                widget.setMaximum(1_000_000_000)
                 if param.default not in (inspect._empty, None):
                     widget.setValue(float(param.default))
             elif origin in (Union, types.UnionType) and args <= {int, type(None)}:
@@ -334,6 +335,7 @@ class MainWindow(QMainWindow):
                     widget.setValue(int(param.default))
             elif origin in (Union, types.UnionType) and args <= {float, type(None)}:
                 widget = QDoubleSpinBox()
+                widget.setMaximum(1_000_000_000)
                 if param.default not in (inspect._empty, None):
                     widget.setValue(float(param.default))
             elif origin is Literal:
