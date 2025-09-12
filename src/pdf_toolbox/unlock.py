@@ -10,6 +10,7 @@ import fitz  # type: ignore
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     raise_if_cancelled,
     sane_output_dir,
@@ -26,6 +27,7 @@ def unlock_pdf(
 ) -> str:
     """Remove password protection from a PDF."""
     raise_if_cancelled(cancel)  # pragma: no cover
+    logger.info("Unlocking %s", input_pdf)
     doc = open_pdf(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
         raise ValueError("Invalid password")
@@ -39,6 +41,7 @@ def unlock_pdf(
         note=" | unlocked",
         encryption=fitz.PDF_ENCRYPT_NONE,
     )
+    logger.info("Unlocked PDF written to %s", out_path)
     return str(out_path)
 
 

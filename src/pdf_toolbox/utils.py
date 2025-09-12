@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import logging
 from collections.abc import Iterable
 from pathlib import Path
 from threading import Event
@@ -25,6 +26,36 @@ LIB_HINTS: dict[str, str] = {
 }
 # store configuration in a platform-specific user config directory
 CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
+
+# central logger for the project
+logger = logging.getLogger("pdf_toolbox")
+logger.propagate = False
+
+
+def configure_logging(
+    level: str = "INFO", handler: logging.Handler | None = None
+) -> logging.Logger:
+    """Configure and return the package logger."""
+    numeric = getattr(logging, level.upper(), logging.INFO)
+    logger.setLevel(numeric)
+    logger.handlers.clear()
+    if handler is None:
+        handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    logger.addHandler(handler)
+
+    # forward warnings.warn() calls through the logging system
+    logging.captureWarnings(True)
+    wlog = logging.getLogger("py.warnings")
+    wlog.setLevel(numeric)
+    wlog.handlers.clear()
+    wlog.addHandler(handler)
+    wlog.propagate = False
+    return logger
+
+
+# configure default logging on import
+configure_logging()
 
 
 def _load_author_info() -> tuple[str, str]:
@@ -174,7 +205,9 @@ def save_pdf(
 
 
 __all__ = [
+    "configure_logging",
     "ensure_libs",
+    "logger",
     "open_pdf",
     "parse_page_spec",
     "raise_if_cancelled",

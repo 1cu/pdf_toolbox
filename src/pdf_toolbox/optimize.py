@@ -13,6 +13,7 @@ from PIL import Image
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
+    logger,
     open_pdf,
     raise_if_cancelled,
     sane_output_dir,
@@ -81,6 +82,12 @@ def optimize_pdf(  # noqa: PLR0913
     out_path = out_dir_path / f"{input_path.stem}_optimized_{quality}.pdf"
 
     original_size = input_path.stat().st_size
+    logger.info(
+        "Optimizing %s with quality=%s (compress_images=%s)",
+        input_pdf,
+        quality,
+        compress_images,
+    )
     doc = open_pdf(input_pdf)
     raise_if_cancelled(cancel, doc)  # pragma: no cover
 
@@ -103,10 +110,18 @@ def optimize_pdf(  # noqa: PLR0913
 
     optimized_size = out_path.stat().st_size
     reduction = 1 - (optimized_size / original_size)
+    logger.info(
+        "Reduced size from %.1f kB to %.1f kB (%.1f%%)",
+        original_size / 1024,
+        optimized_size / 1024,
+        reduction * 100,
+    )
 
     if reduction < QUALITY_SETTINGS[quality]["min_reduction"] and not keep:
         out_path.unlink(missing_ok=True)
+        logger.info("Reduction below threshold; output discarded")
         return None, reduction
+    logger.info("Optimized PDF written to %s", out_path)
     return str(out_path), reduction
 
 

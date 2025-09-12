@@ -5,6 +5,7 @@ from __future__ import annotations
 import html
 import inspect
 import json
+import logging
 import sys
 import types
 from contextlib import suppress
@@ -25,6 +26,7 @@ DEFAULT_CONFIG = {
     "opt_quality": "default",
     "opt_compress_images": False,
     "split_pages": 1,
+    "log_level": "INFO",
 }
 
 
@@ -42,7 +44,7 @@ def save_config(cfg: dict) -> None:
     CONFIG_PATH.write_text(json.dumps(cfg, indent=2))
 
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import QObject, Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -72,6 +74,34 @@ from PySide6.QtWidgets import (
 
 QT_AVAILABLE = True
 QT_IMPORT_ERROR: Exception | None = None
+
+
+class QtLogHandler(QObject, logging.Handler):  # pragma: no cover - GUI helper
+    """Send log records to a ``QPlainTextEdit`` widget."""
+
+    message = Signal(str)
+
+    def __init__(self, widget: QPlainTextEdit, on_update):
+        """Initialize the handler."""
+        QObject.__init__(self)
+        logging.Handler.__init__(self)
+        self.widget = widget
+        self.on_update = on_update
+        self.message.connect(self._append)
+
+    def _append(self, msg: str) -> None:
+        self.widget.setVisible(True)
+        self.widget.appendPlainText(msg)
+        self.widget.verticalScrollBar().setValue(
+            self.widget.verticalScrollBar().maximum()
+        )
+        self.on_update()
+
+    def emit(  # type: ignore[override]  # pragma: no cover - GUI
+        self, record: logging.LogRecord
+    ) -> None:
+        """Send a log record to the widget."""
+        self.message.emit(self.format(record))
 
 
 class FileEdit(QLineEdit):
@@ -194,6 +224,11 @@ class MainWindow(QMainWindow):
         self.log.setMaximumBlockCount(10)
         self.log.setFixedHeight(self.log.fontMetrics().height() * 10 + 10)
         layout.addWidget(self.log)
+        self.status_text = "Ready"
+        self.log_handler = QtLogHandler(
+            self.log, lambda: self.update_status(self.status_text)
+        )
+        utils.configure_logging(self.cfg.get("log_level", "INFO"), self.log_handler)
         self.setCentralWidget(central)
 
         lbl = QLabel("Actions")
@@ -221,7 +256,6 @@ class MainWindow(QMainWindow):
         self.run_btn = QPushButton("Start")
         self.progress = QProgressBar()
         self.status = ClickableLabel("")
-        self.status_text = "Ready"
         bottom.addWidget(self.status)
         bottom.addWidget(self.progress, 1)
         bottom.addWidget(self.run_btn)
@@ -231,6 +265,7 @@ class MainWindow(QMainWindow):
         self.settings_btn.setText("⚙")
         settings_menu = QMenu(self)
         settings_menu.addAction("Autor", self.on_author)
+        settings_menu.addAction("Log Level", self.on_log_level)
         settings_menu.addAction("About", self.on_about)
         self.settings_btn.setMenu(settings_menu)
         self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]
@@ -482,13 +517,20 @@ class MainWindow(QMainWindow):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
-            self.log.setPlainText(text)
+            self.log.setVisible(True)
+            if self.log.toPlainText():
+                self.log.appendPlainText(text)
+            else:
+                self.log.setPlainText(text)
         self.worker = None
 
     def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
         """Display an error message."""
-        self.log.setPlainText(msg)
         self.log.setVisible(True)
+        if self.log.toPlainText():
+            self.log.appendPlainText(msg)
+        else:
+            self.log.setPlainText(msg)
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         self.run_btn.setText("Start")
@@ -526,6 +568,25 @@ class MainWindow(QMainWindow):
             self.cfg["author"] = author_edit.text().strip()
             self.cfg["email"] = email_edit.text().strip()
             save_config(self.cfg)
+
+    def on_log_level(self) -> None:  # pragma: no cover - GUI
+        """Adjust logging verbosity."""
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Log Level")
+        form = QFormLayout(dlg)
+        combo = QComboBox()
+        combo.addItems(["ERROR", "WARNING", "INFO", "DEBUG"])
+        combo.setCurrentText(self.cfg.get("log_level", "INFO"))
+        form.addRow("Level", combo)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]
+        form.addWidget(buttons)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
+            level = combo.currentText()
+            self.cfg["log_level"] = level
+            save_config(self.cfg)
+            utils.configure_logging(level, self.log_handler)
 
     def on_about(self) -> None:  # pragma: no cover - GUI
         """Show version info and project link."""
