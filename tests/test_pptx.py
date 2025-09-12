@@ -8,7 +8,7 @@ from pptx import Presentation
 from pdf_toolbox.pdf_pptx import pptx_to_images
 
 
-@pytest.mark.parametrize("fmt", ["PNG", "JPEG", "TIFF", "SVG"])
+@pytest.mark.parametrize("fmt", ["PNG", "JPEG", "TIFF", "SVG", "WEBP"])
 def test_pptx_to_images_requires_libreoffice(tmp_path, fmt, monkeypatch):
     pptx_path = tmp_path / "dummy.pptx"
     Presentation().save(pptx_path)
@@ -24,7 +24,8 @@ def test_pptx_to_images_invalid_format(tmp_path):
         pptx_to_images(str(pptx_path), image_format="BMP")
 
 
-def test_pptx_to_images_converts(tmp_path, monkeypatch, sample_pdf):
+@pytest.mark.parametrize("fmt", ["PNG", "WEBP"])
+def test_pptx_to_images_converts(tmp_path, monkeypatch, sample_pdf, fmt):
     pptx_path = tmp_path / "sample.pptx"
     prs = Presentation()
     prs.slides.add_slide(prs.slide_layouts[5])
@@ -44,7 +45,7 @@ def test_pptx_to_images_converts(tmp_path, monkeypatch, sample_pdf):
 
     out_dir = tmp_path / "out"
     images = pptx_to_images(
-        str(pptx_path), image_format="PNG", slides="1", out_dir=str(out_dir)
+        str(pptx_path), image_format=fmt, slides="1", out_dir=str(out_dir)
     )
     assert len(images) == 1
     assert Path(images[0]).is_file()

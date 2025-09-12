@@ -26,9 +26,9 @@ from pdf_toolbox.utils import (
     sane_output_dir,
 )
 
-# Include WebP for better quality/size tradeoffs
-PDF_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
-PPTX_IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "SVG"]
+# Supported output formats for both PDF and PPTX rendering; WebP offers
+# smaller files with good quality and is now treated the same across input types.
+IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
 # Preset DPI options exposed via the GUI. The key is the human readable label
 # presented to users while the value is the numeric DPI used for rendering.
@@ -98,7 +98,7 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     Each page of ``input_pdf`` specified by ``pages`` is rendered to the chosen
     image format. ``pages`` accepts comma separated ranges like ``"1-3,5"``;
     ``None`` selects all pages. Supported formats are listed in
-    :data:`PDF_IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
+    :data:`IMAGE_FORMATS`. ``dpi`` may be one of the labels defined in
     :data:`DPI_PRESETS` or any integer DPI value; higher values yield higher
     quality but also larger files. ``quality`` is only used for JPEG and WebP
     output. ``max_size_mb`` limits the resulting JPEG or WebP files by reducing
@@ -118,9 +118,9 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
     zoom = dpi_value / 72  # default PDF resolution is 72 dpi
 
     fmt = image_format.upper()
-    if fmt not in PDF_IMAGE_FORMATS:
+    if fmt not in IMAGE_FORMATS:
         raise ValueError(
-            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(PDF_IMAGE_FORMATS)}"
+            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(IMAGE_FORMATS)}"
         )
     ext = fmt.lower()
     max_bytes = int(max_size_mb * 1024 * 1024) if max_size_mb else None
@@ -279,7 +279,7 @@ def pdf_to_images(  # noqa: PLR0913, PLR0912, PLR0915
 @action(category="Office")
 def pptx_to_images(  # noqa: PLR0913
     pptx_path: str,
-    image_format: Literal["PNG", "JPEG", "TIFF", "SVG"] = "PNG",
+    image_format: Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"] = "PNG",
     width: int = 3840,
     height: int = 2160,
     slides: str | None = None,
@@ -289,14 +289,15 @@ def pptx_to_images(  # noqa: PLR0913
     """Export slides of a PPTX presentation as images using LibreOffice.
 
     LibreOffice renders ``pptx_path`` to a temporary PDF and
-    :func:`pdf_to_images` performs the actual image generation.
-    ``width`` and ``height`` specify the target pixel dimensions for each
-    slide; ``slides`` may be a comma-separated list or range like ``"1,3-5"``.
+    :func:`pdf_to_images` performs the actual image generation. Supported
+    formats are listed in :data:`IMAGE_FORMATS`. ``width`` and ``height``
+    specify the target pixel dimensions for each slide; ``slides`` may be a
+    comma-separated list or range like ``"1,3-5"``.
     """
     fmt = image_format.upper()
-    if fmt not in PPTX_IMAGE_FORMATS:
+    if fmt not in IMAGE_FORMATS:
         raise ValueError(
-            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(PPTX_IMAGE_FORMATS)}"
+            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(IMAGE_FORMATS)}"
         )
     exe = shutil.which("libreoffice") or shutil.which("soffice")
     if exe is None:

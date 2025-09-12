@@ -52,7 +52,7 @@ def test_literal_parameters_resolved():
     )
     pptx_fmt = next(p for p in pptx_act.params if p.name == "image_format").annotation
     assert get_origin(pptx_fmt) is Literal
-    assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF", "SVG"}
+    assert set(get_args(pptx_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
 
 
 def test_format_name_plural_acronyms():
