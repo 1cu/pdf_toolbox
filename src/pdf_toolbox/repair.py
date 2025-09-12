@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from pathlib import Path
 from threading import Event
 
@@ -14,6 +15,8 @@ from pdf_toolbox.utils import (
     save_pdf,
 )
 
+logger = logging.getLogger(__name__)
+
 
 @action(category="PDF")
 def repair_pdf(
@@ -21,12 +24,14 @@ def repair_pdf(
 ) -> str:
     """Repair a PDF and clean up inconsistent data."""
     raise_if_cancelled(cancel)  # pragma: no cover
+    logger.info("Repairing %s", input_pdf)
     doc = open_pdf(input_pdf)
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_repaired.pdf"
     )
     raise_if_cancelled(cancel, doc)  # pragma: no cover
     save_pdf(doc, out_path, note=" | repaired", clean=True, deflate=True, garbage=4)
+    logger.info("Repaired PDF written to %s", out_path)
     return str(out_path)
 
 
