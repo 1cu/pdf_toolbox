@@ -139,6 +139,19 @@ def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
     assert sys.get_int_max_str_digits() == 4300
 
 
+def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
+    outputs = pdf_to_images(
+        sample_pdf,
+        width=413,
+        height=585,
+        image_format="PNG",
+        out_dir=str(tmp_path),
+    )
+    assert len(outputs) == 3
+    img = Image.open(outputs[0])
+    assert img.size == (414, 585)
+
+
 def test_pdf_to_images_png_30mb_limit_no_digit_error(tmp_path):
     import sys
 
