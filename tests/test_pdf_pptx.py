@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pdf_toolbox.rasterize import DPI_PRESETS, pdf_to_images
+from pdf_toolbox.pdf_pptx import DPI_PRESETS, pdf_to_images
 
 
 def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
@@ -14,6 +14,16 @@ def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
     for out in outputs:
         assert Path(out).exists()
         assert isinstance(out, str)
+
+
+def test_pdf_to_images_svg(sample_pdf, tmp_path):
+    outputs = pdf_to_images(
+        sample_pdf, image_format="SVG", dpi="Low (72 dpi)", out_dir=str(tmp_path)
+    )
+    assert len(outputs) == 3
+    for out in outputs:
+        assert out.endswith(".svg")
+        assert Path(out).exists()
 
 
 def test_pdf_to_images_invalid_page(sample_pdf):
@@ -127,6 +137,19 @@ def test_pdf_to_images_high_dpi_with_max_size(tmp_path):
     assert img.width == expected_w
     assert img.height == expected_h
     assert sys.get_int_max_str_digits() == 4300
+
+
+def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
+    outputs = pdf_to_images(
+        sample_pdf,
+        width=413,
+        height=585,
+        image_format="PNG",
+        out_dir=str(tmp_path),
+    )
+    assert len(outputs) == 3
+    img = Image.open(outputs[0])
+    assert img.size == (414, 585)
 
 
 def test_pdf_to_images_png_30mb_limit_no_digit_error(tmp_path):
