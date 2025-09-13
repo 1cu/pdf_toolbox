@@ -25,15 +25,15 @@ def _scan_referenced_keys(root: Path) -> tuple[set[str], set[str]]:
 
 def test_locales_complete_and_consistent():
     root = Path(__file__).resolve().parents[1]
-    en = _load_locale(root, "en")
-    de = _load_locale(root, "de")
+    locales_dir = root / "src" / "pdf_toolbox" / "locales"
+    locales = {p.stem: _load_locale(root, p.stem) for p in locales_dir.glob("*.json")}
+    assert locales, "no locales found"
 
-    # same keys in en/de
+    first = next(iter(locales.values()))
     for grp in ("strings", "labels"):
-        assert set(en[grp].keys()) == set(de[grp].keys())
+        base = set(first[grp].keys())
+        for data in locales.values():
+            assert set(data[grp].keys()) == base
 
-    ref_strings, ref_labels = _scan_referenced_keys(root)
-    # exact sets for strings: no obsolete, no missing
-    assert set(en["strings"]) == ref_strings
-    # labels are dynamic; ensure parity between locales only
-    assert set(en["labels"]) == set(de["labels"])  # not compared to ref_labels
+    ref_strings, _ = _scan_referenced_keys(root)
+    assert set(first["strings"].keys()) == ref_strings

@@ -8,9 +8,8 @@ from pathlib import Path
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QFileDialog, QLabel, QLineEdit, QPlainTextEdit
 
+from pdf_toolbox.gui.config import save_config
 from pdf_toolbox.i18n import tr
-
-from .config import save_config
 
 
 class QtLogHandler(QObject, logging.Handler):  # pragma: no cover - GUI helper

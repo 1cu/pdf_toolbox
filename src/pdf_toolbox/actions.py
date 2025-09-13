@@ -108,6 +108,7 @@ _EXCLUDE = {
     "pdf_toolbox.gui.dialogs",
     "pdf_toolbox.utils",
     "pdf_toolbox.__init__",
+    "pdf_toolbox.i18n",
     "pdf_toolbox.validation",
 }
 

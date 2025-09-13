@@ -206,6 +206,7 @@ def batch_optimize_pdfs(  # noqa: PLR0913
             compress_images=compress_images,
             keep=keep,
             out_dir=str(out_dir),
+            cancel=cancel,
         )
         if out:
             outputs.append(out)

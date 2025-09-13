@@ -35,13 +35,12 @@ from PySide6.QtWidgets import (
 )
 
 from pdf_toolbox.actions import Action
+from pdf_toolbox.gui.config import load_config, save_config
+from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
+from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.utils import configure_logging
-
-from .config import load_config, save_config
-from .widgets import ClickableLabel, FileEdit, QtLogHandler
-from .worker import Worker
 
 
 class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
@@ -139,7 +138,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
 
     def _populate_actions(self) -> None:
         cats: dict[str, QTreeWidgetItem] = {}
-        from . import list_actions as _list_actions
+        from pdf_toolbox.gui import list_actions as _list_actions
 
         for act in _list_actions():
             cat_name = act.category or "General"
@@ -290,16 +289,20 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                 if widget.multi:
                     paths = [p for p in text.split(";") if p]
                     if not paths and not optional:
-                        raise ValueError(tr("field_cannot_be_empty", name=name))
+                        raise ValueError(
+                            tr("field_cannot_be_empty", name=tr_label(name))
+                        )
                     kwargs[name] = paths
                 else:
                     if not text and not optional:
-                        raise ValueError(tr("field_cannot_be_empty", name=name))
+                        raise ValueError(
+                            tr("field_cannot_be_empty", name=tr_label(name))
+                        )
                     kwargs[name] = text or None
             elif isinstance(widget, QLineEdit):
                 val = widget.text().strip()
                 if not val and not optional:
-                    raise ValueError(tr("field_cannot_be_empty", name=name))
+                    raise ValueError(tr("field_cannot_be_empty", name=tr_label(name)))
                 kwargs[name] = val or None
             elif isinstance(widget, QComboBox):
                 kwargs[name] = widget.currentText()
