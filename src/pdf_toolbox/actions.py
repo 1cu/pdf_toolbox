@@ -71,7 +71,7 @@ def _format_name(func_name: str) -> str:  # pragma: no cover - trivial
 
 
 def action(name: str | None = None, category: str | None = None):
-    """Register a function as a command-line action."""
+    """Register a function as an action."""
 
     def deco(fn):
         act = build_action(fn, name=name, category=category)
@@ -97,8 +97,6 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
             )
         )
     module_name = fn.__module__
-    if module_name.startswith("pdf_toolbox.builtin."):
-        module_name = "pdf_toolbox." + module_name.split(".", 2)[2]
     return Action(
         fqname=f"{module_name}.{fn.__name__}",
         key=name or fn.__name__,
@@ -130,6 +128,8 @@ def _register_module(mod_name: str) -> None:
         if obj.__name__.startswith("_"):
             continue
         if getattr(obj, "__pdf_toolbox_action__", False):
+            act = build_action(obj)
+            _registry.setdefault(act.fqname, act)
             continue
         if not any([obj.__doc__, obj.__annotations__]):
             continue
@@ -165,6 +165,10 @@ def _auto_discover(pkg: str = "pdf_toolbox.builtin") -> None:
             if mod_name.startswith(pkg_mod.__name__ + "."):
                 with suppress(Exception):
                     _register_module(mod_name)
+    if not _registry:  # pragma: no cover - explicit __all__ fallback
+        for name in getattr(pkg_mod, "__all__", []):
+            with suppress(Exception):
+                _register_module(f"{pkg_mod.__name__}.{name}")
     _discovered = True
 
 

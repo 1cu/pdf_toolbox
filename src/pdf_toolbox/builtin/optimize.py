@@ -10,7 +10,6 @@ Internal helper:
 
 from __future__ import annotations
 
-import argparse
 import io
 from collections.abc import Callable
 from contextlib import suppress
@@ -105,7 +104,7 @@ def optimize_pdf(  # noqa: PLR0913
 
     Examples:
         >>> # Optimize a PDF with image compression and observe progress
-        >>> from pdf_toolbox.optimize import optimize_pdf
+        >>> from pdf_toolbox.builtin.optimize import optimize_pdf
         >>> def on_progress(c, t):
         ...     print(f"{c}/{t}")
         >>> out, reduction = optimize_pdf(
@@ -185,7 +184,7 @@ def batch_optimize_pdfs(  # noqa: PLR0913
     """Optimize all PDFs in a directory and return output paths.
 
     Examples:
-        >>> from pdf_toolbox.optimize import batch_optimize_pdfs
+        >>> from pdf_toolbox.builtin.optimize import batch_optimize_pdfs
         >>> outs = batch_optimize_pdfs("/path/to/dir", quality="ebook", compress_images=True)
         >>> isinstance(outs, list)
         True
@@ -211,18 +210,3 @@ def batch_optimize_pdfs(  # noqa: PLR0913
         if out:
             outputs.append(out)
     return outputs
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Optimize PDF")
-    parser.add_argument("input_pdf")
-    parser.add_argument(
-        "quality", nargs="?", default="default", choices=QUALITY_SETTINGS.keys()
-    )
-    parser.add_argument("--compress-images", action="store_true")
-    parser.add_argument("--keep", action="store_true")
-    parser.add_argument("--out-dir")
-    args = parser.parse_args()
-    optimize_pdf(
-        args.input_pdf, args.quality, args.compress_images, args.keep, args.out_dir
-    )
