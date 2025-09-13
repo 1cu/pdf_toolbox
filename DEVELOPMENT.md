@@ -60,9 +60,6 @@ pre-commit run lint --all-files    # linters and static analysis
 pre-commit run tests --all-files   # test suite
 ```
 
-Meta hooks add group headings in the output so it's easy to see which
-class of checks is running when executing the full pre-commit suite.
-
 Bandit performs static security checks during pre-commit. Dependency
 vulnerability auditing is omitted because the project is not published on
 PyPI.

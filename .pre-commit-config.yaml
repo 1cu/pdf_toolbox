@@ -1,15 +1,4 @@
 repos:
-  - repo: meta
-    hooks:
-      - id: check-hooks-apply
-      - id: check-useless-excludes
-
-  - repo: meta
-    hooks:
-      - id: identity
-        name: "formatters"
-        pass_filenames: false
-
   - repo: local
     hooks:
       - id: ruff-format
@@ -35,14 +24,6 @@ repos:
         exclude: ^\.pre-commit-config\.yaml$
         alias: format
 
-  - repo: meta
-    hooks:
-      - id: identity
-        name: "linters"
-        pass_filenames: false
-
-  - repo: local
-    hooks:
       - id: ruff
         name: ruff
         entry: ruff check --fix
@@ -66,14 +47,6 @@ repos:
         pass_filenames: false
         alias: lint
 
-  - repo: meta
-    hooks:
-      - id: identity
-        name: "tests"
-        pass_filenames: false
-
-  - repo: local
-    hooks:
       - id: pytest
         name: pytest with coverage
         entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
