@@ -2,35 +2,35 @@ repos:
   - repo: local
     hooks:
       - id: ruff-format
-        name: "Ruff:\t\t\tFormat Python"
+        name: "format: ruff"
         entry: ruff format
         language: system
         types: [python]
         alias: format
 
       - id: mdformat
-        name: "mdformat:\t\tFormat Markdown"
+        name: "format: mdformat"
         entry: mdformat
         language: system
         types: [markdown]
         alias: format
 
       - id: pretty-format-yaml
-        name: "Pretty-format-yaml:\tFormat YAML"
+        name: "format: pretty-format-yaml"
         entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
         language: system
         types: [yaml]
         alias: format
 
       - id: ruff
-        name: "Ruff:\t\t\tLint Python"
+        name: "lint: ruff"
         entry: ruff check --fix
         language: system
         types: [python]
         alias: lint
 
       - id: mypy
-        name: "mypy:\t\t\tType-check"
+        name: "lint: mypy"
         entry: mypy --config-file=pyproject.toml .
         language: system
         types: [python]
@@ -38,7 +38,7 @@ repos:
         alias: lint
 
       - id: bandit
-        name: "Bandit:\t\t\tScan for security issues"
+        name: "lint: bandit"
         entry: bandit -q -r src scripts
         language: system
         types: [python]
@@ -46,7 +46,7 @@ repos:
         alias: lint
 
       - id: pytest
-        name: "pytest:\t\t\tRun tests with coverage"
+        name: "tests: pytest"
         entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
         language: system
         types: [python]
@@ -54,10 +54,9 @@ repos:
         alias: tests
 
       - id: coverage-per-file
-        name: "Check-coverage:\t\tEnforce per-file coverage"
+        name: "tests: check-coverage"
         entry: python scripts/check_coverage.py
         language: system
         types: [python]
         pass_filenames: false
         alias: tests
-
