@@ -6,7 +6,7 @@ import argparse
 import io
 from pathlib import Path
 from threading import Event
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 import fitz  # type: ignore
 from PIL import Image
@@ -29,7 +29,10 @@ class QualitySetting(TypedDict):
     min_reduction: float
 
 
-QUALITY_SETTINGS: dict[str, QualitySetting] = {
+QualityChoice = Literal["screen", "ebook", "printer", "prepress", "default"]
+
+
+QUALITY_SETTINGS: dict[QualityChoice, QualitySetting] = {
     "screen": {"pdf_quality": 50, "image_quality": 40, "min_reduction": 0.3},
     "ebook": {"pdf_quality": 75, "image_quality": 60, "min_reduction": 0.2},
     "printer": {"pdf_quality": 90, "image_quality": 85, "min_reduction": 0.1},
@@ -66,7 +69,7 @@ def _compress_images(
 @action(category="PDF")
 def optimize_pdf(  # noqa: PLR0913
     input_pdf: str,
-    quality: str = "default",
+    quality: QualityChoice = "default",
     compress_images: bool = False,
     keep: bool = True,
     out_dir: str | None = None,
