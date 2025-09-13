@@ -16,6 +16,8 @@ from contextlib import suppress
 from importlib import resources
 from typing import Any
 
+_LC_MESSAGES: int = getattr(locale, "LC_MESSAGES", locale.LC_CTYPE)
+
 _LANG = "en"
 _CACHE: dict[str, dict] = {}
 
@@ -38,7 +40,7 @@ def autodetect() -> str:  # pragma: no cover - env-dependent
     """Return language code inferred from the OS locale."""
     lang = ""
     with suppress(Exception):
-        lang = (locale.getlocale(locale.LC_MESSAGES)[0] or "").lower()
+        lang = (locale.getlocale(_LC_MESSAGES)[0] or "").lower()
     if not lang:
         with suppress(Exception):
             lang = (locale.getdefaultlocale()[0] or "").lower()
