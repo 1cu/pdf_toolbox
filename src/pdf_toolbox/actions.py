@@ -100,9 +100,15 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
 
 _EXCLUDE = {
     "pdf_toolbox.actions",
-    "pdf_toolbox.gui",
+    "pdf_toolbox.gui",  # exclude package root
+    "pdf_toolbox.gui.config",
+    "pdf_toolbox.gui.main_window",
+    "pdf_toolbox.gui.widgets",
+    "pdf_toolbox.gui.worker",
+    "pdf_toolbox.gui.dialogs",
     "pdf_toolbox.utils",
     "pdf_toolbox.__init__",
+    "pdf_toolbox.validation",
 }
 
 

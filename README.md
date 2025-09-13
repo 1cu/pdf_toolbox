@@ -33,7 +33,14 @@ Since the file resides outside the repository it remains private and is not trac
 
 ## Optimization
 
-`optimize_pdf` supports several quality presets (e.g. `screen`, `ebook`). Each preset now also controls the internal compression level by mapping a `pdf_quality` value to the `compression_effort` passed to `fitz.Document.save`. Lower quality values therefore result in higher compression and smaller output files.
+`optimize_pdf` (action) supports several quality presets (e.g. `screen`, `ebook`). Each preset also controls the internal compression level by mapping a `pdf_quality` value to the `compression_effort` passed to `fitz.Document.save`. Lower quality values therefore result in higher compression and smaller output files.
+
+See the function docstrings (e.g., via your IDE) for examples and details.
+The GUI uses the progress-enabled optimize action for improved responsiveness.
+
+Internationalization: The GUI supports English and German for common UI strings.
+Language is auto-detected but can be overridden programmatically using
+`pdf_toolbox.i18n.set_language("de")`.
 
 ## Development
 

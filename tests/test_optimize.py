@@ -42,3 +42,16 @@ def test_remove_output_on_small_reduction(sample_pdf, tmp_path, monkeypatch):
     out, reduction = optimize_pdf(sample_pdf, keep=False, out_dir=str(tmp_path))
     assert out is None
     assert reduction < 1.0
+
+
+def test_optimize_pdf_internal_path(tmp_path):
+    import fitz  # type: ignore
+
+    p = tmp_path / "in.pdf"
+    d = fitz.open()
+    d.new_page()
+    d.save(p)
+    d.close()
+    out, reduction = optimize_pdf(str(p))
+    assert out is not None
+    assert reduction <= 1

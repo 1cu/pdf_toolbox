@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.5.5"
+version = "0.6.0"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -66,7 +66,13 @@ exclude = ["build/"]
 
 [tool.coverage.run]
 source = ["pdf_toolbox"]
-omit = ["*/pdf_toolbox/gui.py"]
+omit = [
+  # Exclude GUI-only modules but keep headless helpers covered
+  "*/pdf_toolbox/gui/main_window.py",
+  "*/pdf_toolbox/gui/widgets.py",
+  "*/pdf_toolbox/gui/worker.py",
+  "*/pdf_toolbox/gui/dialogs.py",
+]
 
 [tool.coverage.report]
 show_missing = true
@@ -75,3 +81,4 @@ fail_under = 95
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004", "D103", "D100", "PLC0415", "S106"]
 "scripts/check_coverage.py" = ["S314"]
+"src/pdf_toolbox/gui/*.py" = ["D", "PLC0415", "PLC0414"]
