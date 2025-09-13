@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   build-exe:
+    env:
+      QT_QPA_PLATFORM: offscreen
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -50,6 +52,8 @@ jobs:
           path: pdf_toolbox-*.zip
 
   publish:
+    env:
+      QT_QPA_PLATFORM: offscreen
     runs-on: ubuntu-latest
     needs: build-exe
     steps:

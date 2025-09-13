@@ -4,6 +4,8 @@
 - Bump the `version` in `pyproject.toml` once per pull request, not for every commit.
 - Install `pre-commit` hooks with `pre-commit install` so code is validated.
 - Always run `pre-commit run --all-files` before committing changes.
+- Export `QT_QPA_PLATFORM=offscreen` when running tests or pre-commit so Qt
+  uses its headless backend.
 - Let `pre-commit` finish even if it takes a while; security scans may need
   network access and can run for several minutes.
 - If the run reformats files, stage the changes and re-run
