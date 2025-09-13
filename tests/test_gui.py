@@ -104,3 +104,17 @@ def test_float_none_spinbox_range(app, monkeypatch):
         assert spin.maximum() > 99
     finally:
         win.close()
+
+
+def test_build_form_hides_cancel(app, monkeypatch):
+    def sample(path: str, cancel=None) -> None:  # pragma: no cover - GUI helper
+        pass
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    win = gui.MainWindow()
+    try:
+        win.build_form(act)
+        assert "cancel" not in win.current_widgets
+    finally:
+        win.close()
