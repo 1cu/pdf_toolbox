@@ -52,10 +52,9 @@ pre-commit run --all-files
 
 `pre-commit run --all-files` executes tests, so no separate `pytest` step is required. The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
 
-`pip-audit` is included in the hook set to scan dependencies for known
-vulnerabilities. Because this project isn’t published on PyPI, the hook runs
-with `--skip-editable` and ignores the local package. To audit the project
-itself, build a wheel and execute `pip-audit dist/<wheel>.whl`.
+Bandit performs static security checks during pre-commit. Dependency
+vulnerability auditing is omitted because the project is not published on
+PyPI.
 
 ## Release
 

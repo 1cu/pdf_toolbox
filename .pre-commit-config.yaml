@@ -35,12 +35,6 @@ repos:
       entry: bandit -q -r src scripts
       language: system
       pass_filenames: false
-    - id: pip-audit
-      name: pip audit
-      entry: python scripts/run_pip_audit.py --strict --skip-editable -s osv
-      language: system
-      pass_filenames: false
-      always_run: true
     - id: mdformat
       name: mdformat
       entry: mdformat

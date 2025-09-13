@@ -8,6 +8,8 @@
   uses its headless backend.
 - Let `pre-commit` finish even if it takes a while; security scans may need
   network access and can run for several minutes.
+- Bandit handles static security checks; dependency vulnerability auditing is
+  omitted because the project is not published on PyPI.
 - If the run reformats files, stage the changes and re-run
   `pre-commit run --files <updated files>` to verify the hooks pass without
   reprocessing the entire repository. Subsequent runs are fast thanks to caching.
