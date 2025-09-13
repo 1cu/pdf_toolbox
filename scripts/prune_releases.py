@@ -10,20 +10,33 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.request
+from urllib.error import HTTPError, URLError
 
 API_URL = "https://api.github.com"  # Base URL for GitHub REST API
 HTTP_NO_CONTENT = 204
+TIMEOUT = 10
+RETRIES = 3
 
 
-def _request(method: str, url: str, token: str) -> list | dict | None:
+def _request(
+    method: str, url: str, token: str, *, timeout: float = TIMEOUT
+) -> list | dict | None:
     """Perform an HTTP request and return parsed JSON if available."""
     req = urllib.request.Request(url, method=method)  # noqa: S310
     req.add_header("Authorization", f"token {token}")
     req.add_header("Accept", "application/vnd.github+json")
-    with urllib.request.urlopen(req) as response:  # noqa: S310
-        if response.status != HTTP_NO_CONTENT:
-            return json.load(response)
+    for attempt in range(RETRIES):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as response:  # noqa: S310  # nosec B310
+                if response.status != HTTP_NO_CONTENT:
+                    return json.load(response)
+            return None
+        except (HTTPError, URLError) as exc:
+            if attempt == RETRIES - 1:
+                raise RuntimeError(f"{method} {url} failed") from exc
+            time.sleep(2**attempt)
     return None
 
 
