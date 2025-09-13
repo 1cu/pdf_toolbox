@@ -37,7 +37,7 @@ repos:
       pass_filenames: false
     - id: pip-audit
       name: pip audit
-      entry: pip-audit --strict
+      entry: pip-audit --strict --skip-editable
       language: system
       pass_filenames: false
       always_run: true

@@ -8,6 +8,8 @@ permissions:
 
 jobs:
   build:
+    env:
+      QT_QPA_PLATFORM: offscreen
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
