@@ -37,7 +37,7 @@ repos:
       pass_filenames: false
     - id: pip-audit
       name: pip audit
-      entry: pip-audit --strict --skip-editable
+      entry: python scripts/run_pip_audit.py --strict --skip-editable -s osv
       language: system
       pass_filenames: false
       always_run: true
