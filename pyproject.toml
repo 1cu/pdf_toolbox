@@ -28,8 +28,6 @@ dev = [
   "build",
   "coverage",
   "bandit",
-  "pip-audit",
-  "certifi",
 ]
 
 [tool.setuptools]
