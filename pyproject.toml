@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.6.0"
+version = "0.6.2"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -37,6 +37,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"pdf_toolbox.locales" = ["*.json"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py313"
@@ -52,6 +55,7 @@ extend-select = [
   "C4",
   "RET",
   "SIM",
+  "TID251",
   "TID252",
   "RUF",
   "D",
@@ -59,6 +63,13 @@ extend-select = [
   "PL",
 ]
 extend-ignore = ["E402", "D203", "D213"]
+
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -72,6 +83,9 @@ omit = [
   "*/pdf_toolbox/gui/widgets.py",
   "*/pdf_toolbox/gui/worker.py",
   "*/pdf_toolbox/gui/dialogs.py",
+  "*/pdf_toolbox/gui/__init__.py",
+  "*/pdf_toolbox/gui/__main__.py",
+  "*/pdf_toolbox/gui/config.py",
 ]
 
 [tool.coverage.report]

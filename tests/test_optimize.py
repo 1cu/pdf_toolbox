@@ -33,8 +33,10 @@ def test_invalid_quality_raises(sample_pdf):
 
 
 def test_compress_images(pdf_with_image, tmp_path):
-    out, _ = optimize_pdf(pdf_with_image, compress_images=True, out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output, _ = optimize_pdf(
+        pdf_with_image, compress_images=True, out_dir=str(tmp_path)
+    )
+    assert Path(output).exists()
 
 
 def test_remove_output_on_small_reduction(sample_pdf, tmp_path, monkeypatch):
@@ -47,11 +49,11 @@ def test_remove_output_on_small_reduction(sample_pdf, tmp_path, monkeypatch):
 def test_optimize_pdf_internal_path(tmp_path):
     import fitz  # type: ignore
 
-    p = tmp_path / "in.pdf"
-    d = fitz.open()
-    d.new_page()
-    d.save(p)
-    d.close()
-    out, reduction = optimize_pdf(str(p))
-    assert out is not None
+    pdf_path = tmp_path / "in.pdf"
+    document = fitz.open()
+    document.new_page()
+    document.save(pdf_path)
+    document.close()
+    output, reduction = optimize_pdf(str(pdf_path))
+    assert output is not None
     assert reduction <= 1

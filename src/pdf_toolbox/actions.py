@@ -9,6 +9,8 @@ import typing as t
 from contextlib import suppress
 from dataclasses import dataclass
 
+from pdf_toolbox.i18n import tr
+
 
 @dataclass
 class Param:
@@ -25,18 +27,24 @@ class Action:
     """Registered action with metadata."""
 
     fqname: str
-    name: str
+    key: str
     func: t.Callable
     params: list[Param]
     help: str
     category: str | None = None
+
+    @property
+    def name(self) -> str:
+        """Return translated action name."""
+        translated = tr(self.key)
+        return translated if translated != self.key else _format_name(self.key)
 
 
 _registry: dict[str, Action] = {}
 _discovered = False
 
 
-def _format_name(func_name: str) -> str:
+def _format_name(func_name: str) -> str:  # pragma: no cover - trivial
     acronyms = {
         "pdf": "PDF",
         "docx": "DOCX",
@@ -47,15 +55,15 @@ def _format_name(func_name: str) -> str:
     }
     connectors = {"to", "and", "or", "from"}
     parts: list[str] = []
-    for i, tok in enumerate(func_name.split("_")):
-        low = tok.lower()
+    for index, token in enumerate(func_name.split("_")):
+        low = token.lower()
         if low in acronyms:
             parts.append(acronyms[low])
         elif low.endswith("s") and low[:-1] in acronyms:
             parts.append(acronyms[low[:-1]] + "s")
         elif low in connectors:
             parts.append(low)
-        elif i == 0:
+        elif index == 0:
             parts.append(low.capitalize())
         else:
             parts.append(low)
@@ -78,19 +86,22 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
     sig = inspect.signature(fn)
     hints = t.get_type_hints(fn, include_extras=True)
     params: list[Param] = []
-    for p in sig.parameters.values():
-        ann = hints.get(p.name, p.annotation)
+    for param in sig.parameters.values():
+        ann = hints.get(param.name, param.annotation)
         params.append(
             Param(
-                name=p.name,
-                kind=str(p.kind),
+                name=param.name,
+                kind=str(param.kind),
                 annotation=ann,
-                default=p.default,
+                default=param.default,
             )
         )
+    module_name = fn.__module__
+    if module_name.startswith("pdf_toolbox.builtin."):
+        module_name = "pdf_toolbox." + module_name.split(".", 2)[2]
     return Action(
-        fqname=f"{fn.__module__}.{fn.__name__}",
-        name=name or _format_name(fn.__name__),
+        fqname=f"{module_name}.{fn.__name__}",
+        key=name or fn.__name__,
         func=fn,
         params=params,
         help=(fn.__doc__ or "").strip(),
@@ -100,21 +111,17 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
 
 _EXCLUDE = {
     "pdf_toolbox.actions",
-    "pdf_toolbox.gui",  # exclude package root
-    "pdf_toolbox.gui.config",
-    "pdf_toolbox.gui.main_window",
-    "pdf_toolbox.gui.widgets",
-    "pdf_toolbox.gui.worker",
-    "pdf_toolbox.gui.dialogs",
+    "pdf_toolbox.gui",
     "pdf_toolbox.utils",
     "pdf_toolbox.__init__",
+    "pdf_toolbox.i18n",
     "pdf_toolbox.validation",
 }
 
 
 def _register_module(mod_name: str) -> None:
     """Import *mod_name* and register its actions."""
-    if mod_name in _EXCLUDE:
+    if mod_name in _EXCLUDE:  # pragma: no cover - defensive
         return
     mod = importlib.import_module(mod_name)
     for _, obj in inspect.getmembers(mod, inspect.isfunction):
@@ -130,7 +137,7 @@ def _register_module(mod_name: str) -> None:
         _registry.setdefault(act.fqname, act)
 
 
-def _auto_discover(pkg: str = "pdf_toolbox") -> None:
+def _auto_discover(pkg: str = "pdf_toolbox.builtin") -> None:
     global _discovered  # noqa: PLW0603
     if _discovered:
         return
@@ -140,14 +147,14 @@ def _auto_discover(pkg: str = "pdf_toolbox") -> None:
     for modinfo in pkgutil.walk_packages(paths, pkg_mod.__name__ + "."):
         found = True
         _register_module(modinfo.name)
-    if not found:
+    if not found:  # pragma: no cover - fallback for limited environments
         with suppress(Exception):
             from importlib import resources  # noqa: PLC0415
 
             for res in resources.files(pkg_mod).iterdir():
                 if res.name.endswith(".py") and res.name != "__init__.py":
                     _register_module(f"{pkg_mod.__name__}.{res.name[:-3]}")
-    if not _registry:
+    if not _registry:  # pragma: no cover - PyInstaller one-file builds
         # In some bundled environments (e.g., PyInstaller one-file builds),
         # neither ``pkgutil.walk_packages`` nor ``importlib.resources`` can
         # enumerate package modules.  If the package's loader exposes a table

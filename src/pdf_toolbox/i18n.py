@@ -12,8 +12,11 @@ from __future__ import annotations
 
 import json
 import locale
+from contextlib import suppress
 from importlib import resources
 from typing import Any
+
+_LC_MESSAGES: int = getattr(locale, "LC_MESSAGES", locale.LC_CTYPE)
 
 _LANG = "en"
 _CACHE: dict[str, dict] = {}
@@ -35,8 +38,13 @@ def set_language(lang: str | None) -> None:
 
 def autodetect() -> str:  # pragma: no cover - env-dependent
     """Return language code inferred from the OS locale."""
-    lang, _ = locale.getlocale()  # type: ignore[assignment]
-    if isinstance(lang, str) and lang.lower().startswith("de"):
+    lang = ""
+    with suppress(Exception):
+        lang = (locale.getlocale(_LC_MESSAGES)[0] or "").lower()
+    if not lang:
+        with suppress(Exception):
+            lang = (locale.getdefaultlocale()[0] or "").lower()
+    if isinstance(lang, str) and lang.startswith("de"):
         return "de"
     return "en"
 

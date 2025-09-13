@@ -11,7 +11,9 @@ def run_cli(module: str, argv: list[str], monkeypatch) -> None:
 
 def test_docx_cli(pdf_with_image, tmp_path, monkeypatch):
     run_cli(
-        "docx", ["docx.py", pdf_with_image, "--out-dir", str(tmp_path)], monkeypatch
+        "docx",
+        ["docx.py", pdf_with_image, "--out-dir", str(tmp_path)],
+        monkeypatch,
     )
     assert (tmp_path / f"{Path(pdf_with_image).stem}.docx").exists()
 
