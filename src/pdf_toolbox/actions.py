@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib
 import inspect
-import pkgutil
 import typing as t
 from contextlib import suppress
 from dataclasses import dataclass
@@ -70,12 +69,22 @@ def _format_name(func_name: str) -> str:  # pragma: no cover - trivial
     return " ".join(parts)
 
 
-def action(name: str | None = None, category: str | None = None):
-    """Register a function as an action."""
+def action(
+    name: str | None = None,
+    *,
+    category: str | None = None,
+    visible: bool = True,
+):
+    """Register *fn* as an action.
+
+    Only functions decorated with :func:`action` are considered actions. The
+    ``visible`` flag controls whether the action is returned by
+    :func:`list_actions`.
+    """
 
     def deco(fn):
         act = build_action(fn, name=name, category=category)
-        fn.__pdf_toolbox_action__ = True  # type: ignore[attr-defined]
+        fn.__pdf_toolbox_action__ = visible  # type: ignore[attr-defined]
         _registry[act.fqname] = act
         return fn
 
@@ -118,64 +127,36 @@ _EXCLUDE = {
 
 
 def _register_module(mod_name: str) -> None:
-    """Import *mod_name* and register its actions."""
+    """Import *mod_name* so that decorated actions register themselves."""
     if mod_name in _EXCLUDE:  # pragma: no cover - defensive
         return
     mod = importlib.import_module(mod_name)
     for _, obj in inspect.getmembers(mod, inspect.isfunction):
-        if obj.__module__ != mod_name:
-            continue
-        if obj.__name__.startswith("_"):
-            continue
         if getattr(obj, "__pdf_toolbox_action__", False):
             act = build_action(obj)
             _registry.setdefault(act.fqname, act)
-            continue
-        if not any([obj.__doc__, obj.__annotations__]):
-            continue
-        act = build_action(obj)
-        _registry.setdefault(act.fqname, act)
 
 
-def _auto_discover(pkg: str = "pdf_toolbox.builtin") -> None:
+def _auto_discover() -> None:
     global _discovered  # noqa: PLW0603
     if _discovered:
         return
-    pkg_mod = importlib.import_module(pkg)
-    paths = getattr(pkg_mod, "__path__", [])
-    found = False
-    for modinfo in pkgutil.walk_packages(paths, pkg_mod.__name__ + "."):
-        found = True
-        _register_module(modinfo.name)
-    if not found:  # pragma: no cover - fallback for limited environments
-        with suppress(Exception):
-            from importlib import resources  # noqa: PLC0415
+    from pdf_toolbox import builtin  # noqa: PLC0415
 
-            for res in resources.files(pkg_mod).iterdir():
-                if res.name.endswith(".py") and res.name != "__init__.py":
-                    _register_module(f"{pkg_mod.__name__}.{res.name[:-3]}")
-    if not _registry:  # pragma: no cover - PyInstaller one-file builds
-        # In some bundled environments (e.g., PyInstaller one-file builds),
-        # neither ``pkgutil.walk_packages`` nor ``importlib.resources`` can
-        # enumerate package modules.  If the package's loader exposes a table
-        # of contents (PyInstaller's ``toc`` attribute), use it to discover
-        # available modules.
-        toc = getattr(getattr(pkg_mod.__spec__, "loader", None), "toc", [])
-        for mod_name in toc:
-            if mod_name.startswith(pkg_mod.__name__ + "."):
-                with suppress(Exception):
-                    _register_module(mod_name)
-    if not _registry:  # pragma: no cover - explicit __all__ fallback
-        for name in getattr(pkg_mod, "__all__", []):
-            with suppress(Exception):
-                _register_module(f"{pkg_mod.__name__}.{name}")
+    for name in getattr(builtin, "__all__", []):
+        with suppress(Exception):  # pragma: no cover - optional deps
+            _register_module(f"{builtin.__name__}.{name}")
     _discovered = True
 
 
 def list_actions() -> list[Action]:
     """Return all discovered actions."""
     _auto_discover()
-    return list(_registry.values())
+    return [
+        act
+        for act in _registry.values()
+        if getattr(act.func, "__pdf_toolbox_action__", False)
+    ]
 
 
 __all__ = ["Action", "Param", "action", "list_actions"]

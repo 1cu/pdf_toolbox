@@ -44,6 +44,15 @@ Internationalization: The GUI supports English and German for common UI strings.
 Language is auto-detected but can be overridden programmatically using
 `pdf_toolbox.i18n.set_language("de")`.
 
+### Design Notes
+
+- Actions are registered explicitly via an `@action` decorator; only decorated
+  callables appear in the GUI.
+- Author configuration is cached and missing or malformed files fall back to
+  empty strings.
+- Page rendering streams directly to disk to keep memory usage low.
+- User-supplied paths are validated to prevent directory traversal.
+
 ## Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for environment setup, contributing, and release instructions.
