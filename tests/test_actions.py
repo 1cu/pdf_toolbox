@@ -121,6 +121,33 @@ def test_auto_discover_loader_toc(monkeypatch):
         actions._discovered = False
 
 
+def test_builtin_import_registers_actions():
+    """Importing pdf_toolbox.builtin loads actions without discovery."""
+    import importlib
+
+    # Ensure builtin modules are re-imported
+    saved = {
+        name: mod
+        for name, mod in sys.modules.items()
+        if name.startswith("pdf_toolbox.builtin")
+    }
+    for name in list(saved):
+        sys.modules.pop(name)
+
+    actions._registry.clear()
+    actions._discovered = False
+
+    importlib.import_module("pdf_toolbox.builtin")
+    assert any(
+        act.fqname == "pdf_toolbox.images.pdf_to_images"
+        for act in actions._registry.values()
+    )
+
+    sys.modules.update(saved)
+    actions._registry.clear()
+    actions._discovered = False
+
+
 def test_register_module_ignores_nodoc_functions(monkeypatch):
     import types
 
