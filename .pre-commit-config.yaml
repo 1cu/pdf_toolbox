@@ -54,6 +54,14 @@ repos:
         pass_filenames: false
         alias: lint
 
+      - id: check-locales
+        name: "lint: check-locales"
+        entry: python scripts/check_locales.py
+        language: system
+        types: [json]
+        pass_filenames: false
+        alias: lint
+
       - id: pytest
         name: "tests: pytest"
         entry: pytest -v --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
@@ -70,10 +78,3 @@ repos:
         pass_filenames: false
         alias: tests
 
-      - id: check-locales
-        name: "lint: check-locales"
-        entry: python scripts/check_locales.py
-        language: system
-        types: [json]
-        pass_filenames: false
-        alias: lint
