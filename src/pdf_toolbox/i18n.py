@@ -26,11 +26,12 @@ def set_language(lang: str | None) -> None:
     """Set current UI language to 'en', 'de', or system default."""
     global _LANG  # noqa: PLW0603
     if not lang:
-        _LANG = "en"
+        _LANG = autodetect()
         return
-    if lang.lower().startswith("de"):
+    low = lang.lower()
+    if low.startswith("de"):
         _LANG = "de"
-    elif lang.lower().startswith("en"):
+    elif low.startswith("en"):
         _LANG = "en"
     else:
         _LANG = autodetect()
