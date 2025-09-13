@@ -15,7 +15,7 @@ resizing occurs.
 ## Table of Contents
 
 - [Configuration](#configuration)
-- [Optimization](#optimization)
+- [Optimisation](#optimisation)
 - [Development](#development)
 
 ## Configuration
@@ -31,12 +31,14 @@ resizing occurs.
 
 Since the file resides outside the repository it remains private and is not tracked by Git.
 
-## Optimization
+## Optimisation
 
-`optimize_pdf` (action) supports several quality presets (e.g. `screen`, `ebook`). Each preset also controls the internal compression level by mapping a `pdf_quality` value to the `compression_effort` passed to `fitz.Document.save`. Lower quality values therefore result in higher compression and smaller output files.
+`optimise_pdf` (action) supports several quality presets (e.g. `screen`, `ebook`). Each preset also controls the internal compression level by mapping a `pdf_quality` value to the `compression_effort` passed to `fitz.Document.save`. Lower quality values therefore result in higher compression and smaller output files.
+
+After running, the action logs the optimised PDF path and the percentage size change.
 
 See the function docstrings (e.g., via your IDE) for examples and details.
-The GUI uses the progress-enabled optimize action for improved responsiveness.
+The GUI uses the progress-enabled optimise action for improved responsiveness.
 
 Internationalization: The GUI supports English and German for common UI strings.
 Language is auto-detected but can be overridden programmatically using
