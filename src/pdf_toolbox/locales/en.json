@@ -1,0 +1,32 @@
+{
+  "strings": {
+    "about": "About",
+    "actions": "Actions",
+    "author": "Author",
+    "author_email": "Author/Email",
+    "cancelled": "Cancelled",
+    "config_missing_author_email": "pdf_toolbox_config.json must define 'author' and 'email'.",
+    "done": "Done",
+    "email": "Email",
+    "english": "English",
+    "error": "Error",
+    "field_cannot_be_empty": "Field '{name}' cannot be empty.",
+    "german": "Deutsch",
+    "language": "Language",
+    "log_level": "Log Level",
+    "running": "Running...",
+    "select_directory": "Select directory",
+    "select_file": "Select file",
+    "select_files": "Select files",
+    "start": "Start",
+    "stop": "Stop",
+    "system": "System",
+    "warning": "Warning"
+  },
+  "labels": {
+    "input_pdf": "Input PDF",
+    "max_size_mb": "Max Size (MB)",
+    "out_dir": "Output Directory",
+    "output_dir": "Output Directory"
+  }
+}

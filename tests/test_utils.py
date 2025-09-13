@@ -6,6 +6,7 @@ import fitz  # type: ignore
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
 
+from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.utils import (
     ensure_libs,
     open_pdf,
@@ -84,6 +85,22 @@ def test_ensure_libs_missing_hint(monkeypatch):
 def test_ensure_libs_ok(monkeypatch):
     monkeypatch.setattr("pdf_toolbox.utils.REQUIRED_LIBS", ["sys"], raising=False)
     ensure_libs()
+
+
+def test_i18n_tr_basic():
+    set_language("de")
+    try:
+        assert tr("actions") == "Aktionen"
+        assert "Name" in tr("field_cannot_be_empty", name="Name")
+        # Missing kwargs fallback formatting path (should not raise)
+        assert isinstance(tr("Field '{name}' cannot be empty."), str)
+    finally:
+        set_language("en")
+
+
+def test_i18n_set_language_none_defaults_to_en():
+    set_language(None)
+    assert tr("actions") == "Actions"
 
 
 def test_parse_page_spec_examples():

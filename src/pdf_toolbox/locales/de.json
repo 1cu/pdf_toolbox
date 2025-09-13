@@ -1,0 +1,32 @@
+{
+  "strings": {
+    "about": "Über",
+    "actions": "Aktionen",
+    "author": "Autor",
+    "author_email": "Autor/E-Mail",
+    "cancelled": "Abgebrochen",
+    "config_missing_author_email": "pdf_toolbox_config.json muss 'author' und 'email' enthalten.",
+    "done": "Fertig",
+    "email": "E-Mail",
+    "english": "Englisch",
+    "error": "Fehler",
+    "field_cannot_be_empty": "Feld '{name}' darf nicht leer sein.",
+    "german": "Deutsch",
+    "language": "Sprache",
+    "log_level": "Log Level",
+    "running": "Läuft...",
+    "select_directory": "Verzeichnis auswählen",
+    "select_file": "Datei auswählen",
+    "select_files": "Dateien auswählen",
+    "start": "Start",
+    "stop": "Stop",
+    "system": "System",
+    "warning": "Hinweis"
+  },
+  "labels": {
+    "input_pdf": "Eingabe PDF",
+    "max_size_mb": "Maximale Größe (MB)",
+    "out_dir": "Ausgabeverzeichnis",
+    "output_dir": "Ausgabeverzeichnis"
+  }
+}
