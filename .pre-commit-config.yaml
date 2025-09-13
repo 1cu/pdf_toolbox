@@ -21,7 +21,6 @@ repos:
         entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
         language: system
         types: [yaml]
-        exclude: ^\.pre-commit-config\.yaml$
         alias: format
 
       - id: ruff
