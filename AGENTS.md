@@ -3,7 +3,10 @@
 - Ensure the virtual environment is activated and dependencies installed with `pip install -e '.[dev]'`.
 - Bump the `version` in `pyproject.toml` once per pull request, not for every commit.
 - Install `pre-commit` hooks with `pre-commit install` so code is validated.
-- Always run `pre-commit run --all-files` before committing changes.
+- Always run `pre-commit run --all-files` before committing changes; this
+  runs formatters, linters, tests, and security scans.
+- Do not run `pytest` separately—the test suite executes as part of
+  `pre-commit`.
 - Export `QT_QPA_PLATFORM=offscreen` when running tests or pre-commit so Qt
   uses its headless backend.
 - Let `pre-commit` finish even if it takes a while; security scans may need
