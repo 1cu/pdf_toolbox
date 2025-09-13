@@ -97,8 +97,6 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
             )
         )
     module_name = fn.__module__
-    if module_name.startswith("pdf_toolbox.builtin."):
-        module_name = "pdf_toolbox." + module_name.split(".", 2)[2]
     return Action(
         fqname=f"{module_name}.{fn.__name__}",
         key=name or fn.__name__,

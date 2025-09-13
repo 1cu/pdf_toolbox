@@ -16,7 +16,7 @@ def test_decorator_preserves_category():
     opt_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.optimize.optimize_pdf"
+        if action_obj.fqname == "pdf_toolbox.builtin.optimize.optimize_pdf"
     )
     assert opt_action.category == "PDF"
 
@@ -26,7 +26,7 @@ def test_action_name_formatting():
     image_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        if action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
     )
     assert image_action.name == "PDF to Images"
 
@@ -36,7 +36,7 @@ def test_literal_parameters_resolved():
     pdf_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        if action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
     )
 
     pdf_format_ann = next(
@@ -82,7 +82,7 @@ def test_auto_discover_populates_registry():
     if had_attr is not None:
         images.pdf_to_images.__pdf_toolbox_action__ = had_attr
     assert any(
-        action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
         for action_obj in actions_list
     )
 
@@ -111,7 +111,7 @@ def test_auto_discover_loader_toc(monkeypatch):
     try:
         actions.list_actions()
         assert any(
-            action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+            action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
             for action_obj in actions._registry.values()
         )
     finally:
@@ -139,7 +139,7 @@ def test_builtin_import_registers_actions():
 
     importlib.import_module("pdf_toolbox.builtin")
     assert any(
-        act.fqname == "pdf_toolbox.images.pdf_to_images"
+        act.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
         for act in actions._registry.values()
     )
 
