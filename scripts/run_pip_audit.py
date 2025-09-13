@@ -17,9 +17,11 @@ def main(argv: list[str]) -> int:
     """Run ``pip-audit`` forwarding arguments and handling common failures.
 
     The function configures ``certifi``'s CA bundle so audits don't fail due to
-    missing system certificates. It also converts SSL and editable-install
-    errors into a successful exit code so pre-commit can continue in
-    disconnected or development environments.
+    missing system certificates. ``pip-audit`` cannot check packages that are
+    installed in editable mode and not published on PyPI, so the wrapper also
+    converts those "editable" errors into a successful exit code. That allows
+    dependency scanning to proceed during development; to audit the project
+    itself, build a wheel and run ``pip-audit`` on that artifact.
     """
     cert_path = certifi.where()
     os.environ.setdefault("PIP_CERT", cert_path)
@@ -40,7 +42,11 @@ def main(argv: list[str]) -> int:
             return 0
         if "distribution marked as editable" in stderr:
             print(
-                "pip-audit skipped: project installed in editable mode",
+                "pip-audit skipped: project installed in editable mode and not on PyPI",
+                file=sys.stderr,
+            )
+            print(
+                "build a wheel and run 'pip-audit <wheel>' to audit the project itself",
                 file=sys.stderr,
             )
             return 0
