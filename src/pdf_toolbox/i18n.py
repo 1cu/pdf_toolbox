@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import locale
+from contextlib import suppress
 from importlib import resources
 from typing import Any
 
@@ -35,8 +36,13 @@ def set_language(lang: str | None) -> None:
 
 def autodetect() -> str:  # pragma: no cover - env-dependent
     """Return language code inferred from the OS locale."""
-    lang, _ = locale.getlocale()  # type: ignore[assignment]
-    if isinstance(lang, str) and lang.lower().startswith("de"):
+    lang = ""
+    with suppress(Exception):
+        lang = (locale.getlocale(locale.LC_MESSAGES)[0] or "").lower()
+    if not lang:
+        with suppress(Exception):
+            lang = (locale.getdefaultlocale()[0] or "").lower()
+    if isinstance(lang, str) and lang.startswith("de"):
         return "de"
     return "en"
 

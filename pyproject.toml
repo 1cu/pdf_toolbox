@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.6.0"
+version = "0.6.1"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -52,6 +52,7 @@ extend-select = [
   "C4",
   "RET",
   "SIM",
+  "TID251",
   "TID252",
   "RUF",
   "D",
@@ -72,6 +73,9 @@ omit = [
   "*/pdf_toolbox/gui/widgets.py",
   "*/pdf_toolbox/gui/worker.py",
   "*/pdf_toolbox/gui/dialogs.py",
+  "*/pdf_toolbox/gui/__init__.py",
+  "*/pdf_toolbox/gui/__main__.py",
+  "*/pdf_toolbox/gui/config.py",
 ]
 
 [tool.coverage.report]

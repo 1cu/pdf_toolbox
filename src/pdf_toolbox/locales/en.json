@@ -5,7 +5,7 @@
     "author": "Author",
     "author_email": "Author/Email",
     "cancelled": "Cancelled",
-    "config_missing_author_email": "pdf_toolbox_config.json must define 'author' and 'email'.",
+    "config_missing_author_email": "Author and email must be set in Settings.",
     "done": "Done",
     "email": "Email",
     "english": "English",
