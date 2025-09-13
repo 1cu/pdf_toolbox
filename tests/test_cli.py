@@ -11,7 +11,7 @@ def run_cli(module: str, argv: list[str], monkeypatch) -> None:
 
 def test_docx_cli(pdf_with_image, tmp_path, monkeypatch):
     run_cli(
-        "builtin.docx",
+        "docx",
         ["docx.py", pdf_with_image, "--out-dir", str(tmp_path)],
         monkeypatch,
     )
@@ -20,7 +20,7 @@ def test_docx_cli(pdf_with_image, tmp_path, monkeypatch):
 
 def test_extract_cli_extract(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "builtin.extract",
+        "extract",
         [
             "extract.py",
             sample_pdf,
@@ -36,7 +36,7 @@ def test_extract_cli_extract(sample_pdf, tmp_path, monkeypatch):
 
 def test_extract_cli_split(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "builtin.extract",
+        "extract",
         [
             "extract.py",
             sample_pdf,
@@ -52,7 +52,7 @@ def test_extract_cli_split(sample_pdf, tmp_path, monkeypatch):
 
 def test_optimize_cli(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "builtin.optimize",
+        "optimize",
         ["optimize.py", sample_pdf, "--keep", "--out-dir", str(tmp_path)],
         monkeypatch,
     )
@@ -61,7 +61,7 @@ def test_optimize_cli(sample_pdf, tmp_path, monkeypatch):
 
 def test_repair_cli(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "builtin.repair",
+        "repair",
         ["repair.py", sample_pdf, "--out-dir", str(tmp_path)],
         monkeypatch,
     )
@@ -70,7 +70,7 @@ def test_repair_cli(sample_pdf, tmp_path, monkeypatch):
 
 def test_unlock_cli(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "builtin.unlock",
+        "unlock",
         ["unlock.py", sample_pdf, "--out-dir", str(tmp_path)],
         monkeypatch,
     )
