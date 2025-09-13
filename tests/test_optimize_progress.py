@@ -6,24 +6,28 @@ from pdf_toolbox.optimize import optimize_pdf
 
 
 def _pdf_with_pages(path, pages=2):
-    d = fitz.open()
-    for i in range(pages):
-        p = d.new_page()
-        p.insert_text((72, 72), f"Page {i + 1}")
-    d.save(path)
-    d.close()
+    document = fitz.open()
+    for page_index in range(pages):
+        page = document.new_page()
+        page.insert_text((72, 72), f"Page {page_index + 1}")
+
+    document.save(path)
+    document.close()
 
 
 def test_optimize_with_progress_no_compress(tmp_path):
-    pdf = tmp_path / "in.pdf"
-    _pdf_with_pages(pdf, pages=2)
+    pdf_path = tmp_path / "in.pdf"
+    _pdf_with_pages(pdf_path, pages=2)
     seen: list[tuple[int, int]] = []
 
-    def cb(c, t):
-        seen.append((c, t))
+    def callback(current, total):
+        seen.append((current, total))
 
     out, ratio = optimize_pdf(
-        str(pdf), compress_images=False, out_dir=str(tmp_path), progress_callback=cb
+        str(pdf_path),
+        compress_images=False,
+        out_dir=str(tmp_path),
+        progress_callback=callback,
     )
     assert (
         out and (tmp_path / out).exists()
@@ -36,15 +40,18 @@ def test_optimize_with_progress_no_compress(tmp_path):
 
 
 def test_optimize_with_progress_with_compress(tmp_path):
-    pdf = tmp_path / "in.pdf"
-    _pdf_with_pages(pdf, pages=3)
+    pdf_path = tmp_path / "in.pdf"
+    _pdf_with_pages(pdf_path, pages=3)
     seen: list[tuple[int, int]] = []
 
-    def cb(c, t):
-        seen.append((c, t))
+    def callback(current, total):
+        seen.append((current, total))
 
     out, ratio = optimize_pdf(
-        str(pdf), compress_images=True, out_dir=str(tmp_path), progress_callback=cb
+        str(pdf_path),
+        compress_images=True,
+        out_dir=str(tmp_path),
+        progress_callback=callback,
     )
     assert (
         out and (tmp_path / out).exists()

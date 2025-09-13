@@ -4,9 +4,9 @@ from pdf_toolbox.validation import validate_config, validate_pdf_path
 
 
 def test_validate_pdf_path_ok(tmp_path):
-    p = tmp_path / "a.pdf"
-    p.write_text("data")
-    assert validate_pdf_path(str(p)) == p
+    pdf_path = tmp_path / "a.pdf"
+    pdf_path.write_text("data")
+    assert validate_pdf_path(str(pdf_path)) == pdf_path
 
 
 def test_validate_pdf_path_rejects_missing(tmp_path):
@@ -15,22 +15,22 @@ def test_validate_pdf_path_rejects_missing(tmp_path):
 
 
 def test_validate_pdf_path_rejects_dir(tmp_path):
-    d = tmp_path / "d"
-    d.mkdir()
+    directory = tmp_path / "d"
+    directory.mkdir()
     with pytest.raises(IsADirectoryError):
-        validate_pdf_path(d)
+        validate_pdf_path(directory)
 
 
 def test_validate_pdf_path_rejects_non_pdf(tmp_path):
-    p = tmp_path / "a.png"
-    p.write_text("data")
+    pdf_path = tmp_path / "a.png"
+    pdf_path.write_text("data")
     with pytest.raises(ValueError):
-        validate_pdf_path(p)
+        validate_pdf_path(pdf_path)
 
 
 def test_validate_config_ok():
-    cfg = {"author": "A", "email": "a@example.com"}
-    assert validate_config(cfg) == cfg
+    config = {"author": "A", "email": "a@example.com"}
+    assert validate_config(config) == config
 
 
 def test_validate_config_missing():

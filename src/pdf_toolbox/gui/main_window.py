@@ -180,77 +180,86 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             from typing import Union
 
             if get_origin(ann) in (types.UnionType, Union) and int in get_args(ann):  # type: ignore[attr-defined]
-                # Union of int and Literal[...] -> (combo presets, custom spin)
-                combo = QComboBox()
-                spin = QSpinBox()
-                # Extract Literal choices
-                lit = next(
+                literal = next(
                     (
-                        a
-                        for a in get_args(ann)
-                        if getattr(a, "__origin__", None) is Literal
+                        arg
+                        for arg in get_args(ann)
+                        if getattr(arg, "__origin__", None) is Literal
                     ),
                     None,
                 )
-                choices = list(get_args(lit)) if lit else []
-                combo.addItems([*choices, "Custom"])
+                if literal:
+                    combo_box = QComboBox()
+                    spin_box = QSpinBox()
+                    choices = list(get_args(literal))
+                    combo_box.addItems([*choices, "Custom"])
+                    if isinstance(param.default, str) and param.default in choices:
+                        combo_box.setCurrentText(param.default)
+                    spin_box.setVisible(combo_box.currentText() == "Custom")
+                    combo_box.currentTextChanged.connect(
+                        lambda text_value, sb=spin_box: sb.setVisible(
+                            text_value == "Custom"
+                        )
+                    )
+                    widget = (combo_box, spin_box)
+                else:
+                    spin_box = QSpinBox()
+                    spin_box.setMinimum(0)
+                    spin_box.setMaximum(10_000)
+                    if isinstance(param.default, int):
+                        spin_box.setValue(param.default)
+                    widget = spin_box
+            elif getattr(ann, "__origin__", None) is Literal:
+                combo_box = QComboBox()
+                choices = list(get_args(ann))
+                combo_box.addItems(choices)
                 if isinstance(param.default, str) and param.default in choices:
-                    combo.setCurrentText(param.default)
-                # default index 0 otherwise
-                spin.setVisible(combo.currentText() == "Custom")
-                combo.currentTextChanged.connect(
-                    lambda t, s=spin: s.setVisible(t == "Custom")
-                )
-                widget = (combo, spin)
+                    combo_box.setCurrentText(param.default)
+                widget = combo_box
             elif lower in {"input_pdf", "input_path", "pptx_path", "path"}:
                 widget = FileEdit(self.cfg)
             elif lower in {"out_dir", "output_dir"}:
                 widget = FileEdit(self.cfg, directory=True)
             elif lower in {"paths", "files"}:
                 widget = FileEdit(self.cfg, multi=True)
-            elif lower in {"quality", "image_format", "dpi"}:
-                combo = QComboBox()
-                combo.setEditable(False)
-                # options populated by default; tests don't depend on exact values here
-                widget = combo
             elif lower in {"max_size_mb"}:
-                ds = QDoubleSpinBox()
-                ds.setMinimum(0)
-                ds.setMaximum(10_000)
-                widget = ds
+                double_spin = QDoubleSpinBox()
+                double_spin.setMinimum(0)
+                double_spin.setMaximum(10_000)
+                widget = double_spin
             elif lower in {"split_pages", "pages_per_file"}:
-                s = QSpinBox()
-                s.setMinimum(1)
-                s.setMaximum(9999)
-                s.setValue(int(self.cfg.get("split_pages", 1)))
-                widget = s
+                spin_box = QSpinBox()
+                spin_box.setMinimum(1)
+                spin_box.setMaximum(9999)
+                spin_box.setValue(int(self.cfg.get("split_pages", 1)))
+                widget = spin_box
             elif isinstance(param.default, bool):
-                cb = QCheckBox()
-                cb.setChecked(bool(param.default))
-                widget = cb
+                check_box = QCheckBox()
+                check_box.setChecked(bool(param.default))
+                widget = check_box
             else:
                 widget = QLineEdit()
 
             # Wrap composite/file widgets in a container with a button/row
             if isinstance(widget, tuple):
-                combo, spin = widget
+                combo_box, spin_box = widget
                 container = QWidget()
-                h = QHBoxLayout(container)
-                h.setContentsMargins(0, 0, 0, 0)
-                h.addWidget(combo)
-                h.addWidget(spin)
-                h.setStretch(0, 1)
+                layout = QHBoxLayout(container)
+                layout.setContentsMargins(0, 0, 0, 0)
+                layout.addWidget(combo_box)
+                layout.addWidget(spin_box)
+                layout.setStretch(0, 1)
                 self.form_layout.addRow(self._pretty_label(param.name), container)
             elif isinstance(widget, FileEdit):
                 container = QWidget()
-                h = QHBoxLayout(container)
-                h.setContentsMargins(0, 0, 0, 0)
+                layout = QHBoxLayout(container)
+                layout.setContentsMargins(0, 0, 0, 0)
                 widget.setMinimumWidth(400)
-                h.addWidget(widget)
+                layout.addWidget(widget)
                 btn = QPushButton("...")
                 btn.clicked.connect(widget.browse)
-                h.addWidget(btn)
-                h.setStretch(0, 1)
+                layout.addWidget(btn)
+                layout.setStretch(0, 1)
                 self.form_layout.addRow(self._pretty_label(param.name), container)
             else:
                 self.form_layout.addRow(self._pretty_label(param.name), widget)  # type: ignore[arg-type]
@@ -259,7 +268,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
     def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912
         if not self.current_action:
             return {}
-        params = {p.name: p for p in self.current_action.params}
+        params = {param.name: param for param in self.current_action.params}
         kwargs: dict[str, Any] = {}
         for name, widget in self.current_widgets.items():
             param = params.get(name)
@@ -281,13 +290,13 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             )
 
             if isinstance(widget, tuple):
-                combo, spin = widget
-                val = combo.currentText()
-                kwargs[name] = int(spin.value()) if val == "Custom" else val
+                combo_box, spin_box = widget
+                value = combo_box.currentText()
+                kwargs[name] = int(spin_box.value()) if value == "Custom" else value
             elif isinstance(widget, FileEdit):
                 text = widget.text().strip()
                 if widget.multi:
-                    paths = [p for p in text.split(";") if p]
+                    paths = [file_path for file_path in text.split(";") if file_path]
                     if not paths and not optional:
                         raise ValueError(
                             tr("field_cannot_be_empty", name=tr_label(name))
@@ -309,11 +318,11 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             elif isinstance(widget, QCheckBox):
                 kwargs[name] = widget.isChecked()
             elif isinstance(widget, QSpinBox):
-                val = int(widget.value())
-                kwargs[name] = None if optional and val == 0 else val
+                val_int = int(widget.value())
+                kwargs[name] = None if optional and val_int == 0 else val_int
             elif isinstance(widget, QDoubleSpinBox):
-                val = float(widget.value())
-                kwargs[name] = None if optional and val == 0 else val
+                val_float = float(widget.value())
+                kwargs[name] = None if optional and val_float == 0 else val_float
         return kwargs
 
     def _pretty_label(self, name: str) -> str:
@@ -323,9 +332,11 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             parts = name.replace("_", " ").split()
             up = {"pdf", "png", "jpeg", "tiff", "webp", "docx"}
             words: list[str] = []
-            for p in parts:
-                low = p.lower()
-                words.append(low.upper() if low in up else (p.capitalize() if p else p))
+        for part in parts:
+            low = part.lower()
+            words.append(
+                low.upper() if low in up else (part.capitalize() if part else part)
+            )
             label = " ".join(words)
         return tr(label)
 
@@ -472,8 +483,8 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
         if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
-            inv = {v: k for k, v in mapping.items()}
-            choice = inv.get(combo.currentText(), "system")
+            inverse = {value: key for key, value in mapping.items()}
+            choice = inverse.get(combo.currentText(), "system")
             self.cfg["language"] = choice
             save_config(self.cfg)
             set_language(None if choice == "system" else choice)

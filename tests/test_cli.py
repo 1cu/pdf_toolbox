@@ -11,14 +11,16 @@ def run_cli(module: str, argv: list[str], monkeypatch) -> None:
 
 def test_docx_cli(pdf_with_image, tmp_path, monkeypatch):
     run_cli(
-        "docx", ["docx.py", pdf_with_image, "--out-dir", str(tmp_path)], monkeypatch
+        "builtin.docx",
+        ["docx.py", pdf_with_image, "--out-dir", str(tmp_path)],
+        monkeypatch,
     )
     assert (tmp_path / f"{Path(pdf_with_image).stem}.docx").exists()
 
 
 def test_extract_cli_extract(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "extract",
+        "builtin.extract",
         [
             "extract.py",
             sample_pdf,
@@ -34,7 +36,7 @@ def test_extract_cli_extract(sample_pdf, tmp_path, monkeypatch):
 
 def test_extract_cli_split(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "extract",
+        "builtin.extract",
         [
             "extract.py",
             sample_pdf,
@@ -50,7 +52,7 @@ def test_extract_cli_split(sample_pdf, tmp_path, monkeypatch):
 
 def test_optimize_cli(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "optimize",
+        "builtin.optimize",
         ["optimize.py", sample_pdf, "--keep", "--out-dir", str(tmp_path)],
         monkeypatch,
     )
@@ -59,7 +61,7 @@ def test_optimize_cli(sample_pdf, tmp_path, monkeypatch):
 
 def test_repair_cli(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "repair",
+        "builtin.repair",
         ["repair.py", sample_pdf, "--out-dir", str(tmp_path)],
         monkeypatch,
     )
@@ -68,7 +70,7 @@ def test_repair_cli(sample_pdf, tmp_path, monkeypatch):
 
 def test_unlock_cli(sample_pdf, tmp_path, monkeypatch):
     run_cli(
-        "unlock",
+        "builtin.unlock",
         ["unlock.py", sample_pdf, "--out-dir", str(tmp_path)],
         monkeypatch,
     )
