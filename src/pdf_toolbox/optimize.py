@@ -1,9 +1,19 @@
-"""PDF optimization utilities."""
+"""PDF optimization utilities.
+
+Public APIs:
+- ``optimize_pdf``: default action with optional progress callback.
+- ``batch_optimize_pdfs``: run optimization on all PDFs in a directory.
+
+Internal helper:
+- (none)
+"""
 
 from __future__ import annotations
 
 import argparse
 import io
+from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
 from threading import Event
 from typing import Literal, TypedDict
@@ -42,9 +52,15 @@ QUALITY_SETTINGS: dict[QualityChoice, QualitySetting] = {
 
 
 def _compress_images(
-    doc: fitz.Document, image_quality: int, cancel: Event | None = None
-) -> None:
-    for page in doc:
+    doc: fitz.Document,
+    image_quality: int,
+    cancel: Event | None = None,
+    *,
+    progress_cb: Callable[[int, int], None] | None = None,
+    progress_offset: int = 0,
+) -> int:
+    total = len(doc)
+    for current, page in enumerate(doc, start=1):  # type: ignore[assignment]
         raise_if_cancelled(cancel)  # pragma: no cover
         for img in page.get_images(full=True):
             raise_if_cancelled(cancel)  # pragma: no cover
@@ -64,6 +80,12 @@ def _compress_images(
                         doc.update_stream(xref, buf.getvalue())
             finally:
                 del pix
+        if progress_cb:
+            progress_cb(progress_offset + current, progress_offset + total)
+    return total
+
+
+## (no private duplicate of optimize logic)
 
 
 @action(category="PDF")
@@ -74,11 +96,27 @@ def optimize_pdf(  # noqa: PLR0913
     keep: bool = True,
     out_dir: str | None = None,
     cancel: Event | None = None,
+    progress_callback: Callable[[int, int], None] | None = None,
 ) -> tuple[str | None, float]:
-    """Optimize ``input_pdf`` and return (output_path, reduction_ratio)."""
+    """Optimize a PDF with progress updates.
+
+    Calls ``progress_callback(current, total)`` as work advances. The total is
+    computed as the number of pages when ``compress_images`` is enabled.
+
+    Examples:
+        >>> # Optimize a PDF with image compression and observe progress
+        >>> from pdf_toolbox.optimize import optimize_pdf
+        >>> def on_progress(c, t):
+        ...     print(f"{c}/{t}")
+        >>> out, reduction = optimize_pdf(
+        ...     "input.pdf", quality="ebook", compress_images=True, progress_callback=on_progress
+        ... )
+        >>> isinstance(out, str)
+        True
+
+    """
     if quality not in QUALITY_SETTINGS:
         raise ValueError("unknown quality")
-
     settings = QUALITY_SETTINGS[quality]
     input_path = Path(input_pdf)
     out_dir_path = sane_output_dir(input_path, out_dir)
@@ -92,40 +130,86 @@ def optimize_pdf(  # noqa: PLR0913
         compress_images,
     )
     doc = open_pdf(input_pdf)
-    raise_if_cancelled(cancel, doc)  # pragma: no cover
+    saved = False
+    try:
+        raise_if_cancelled(cancel, doc)  # pragma: no cover
 
-    if compress_images:
-        _compress_images(doc, settings["image_quality"], cancel)
+        progress_total = len(doc) if compress_images else 1
+        if compress_images:
+            _compress_images(
+                doc,
+                settings["image_quality"],
+                cancel,
+                progress_cb=progress_callback,
+                progress_offset=0,
+            )
+        if progress_callback:
+            progress_callback(progress_total, progress_total)
 
-    raise_if_cancelled(cancel, doc)  # pragma: no cover
+        raise_if_cancelled(cancel, doc)  # pragma: no cover
 
-    pdf_quality = settings["pdf_quality"]
-    compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
-    save_pdf(
-        doc,
-        out_path,
-        note=" | optimized",
-        garbage=3,
-        deflate=True,
-        clean=True,
-        compression_effort=compression_effort,
-    )
+        pdf_quality = settings["pdf_quality"]
+        compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
+        save_pdf(
+            doc,
+            out_path,
+            note=" | optimized",
+            garbage=3,
+            deflate=True,
+            clean=True,
+            compression_effort=compression_effort,
+        )
+        saved = True
+    finally:
+        if not saved:
+            with suppress(Exception):
+                doc.close()
 
     optimized_size = out_path.stat().st_size
     reduction = 1 - (optimized_size / original_size)
-    logger.info(
-        "Reduced size from %.1f kB to %.1f kB (%.1f%%)",
-        original_size / 1024,
-        optimized_size / 1024,
-        reduction * 100,
-    )
-
     if reduction < QUALITY_SETTINGS[quality]["min_reduction"] and not keep:
         out_path.unlink(missing_ok=True)
-        logger.info("Reduction below threshold; output discarded")
         return None, reduction
-    logger.info("Optimized PDF written to %s", out_path)
     return str(out_path), reduction
+
+
+@action(category="PDF")
+def batch_optimize_pdfs(  # noqa: PLR0913
+    input_dir: str,
+    output_dir: str | None = None,
+    quality: QualityChoice = "default",
+    compress_images: bool = False,
+    keep: bool = True,
+    cancel: Event | None = None,
+) -> list[str]:
+    """Optimize all PDFs in a directory and return output paths.
+
+    Examples:
+        >>> from pdf_toolbox.optimize import batch_optimize_pdfs
+        >>> outs = batch_optimize_pdfs("/path/to/dir", quality="ebook", compress_images=True)
+        >>> isinstance(outs, list)
+        True
+
+    """
+    in_dir = Path(input_dir)
+    if not in_dir.exists() or not in_dir.is_dir():
+        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+    out_dir = Path(output_dir) if output_dir else in_dir / "optimized"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    outputs: list[str] = []
+    for pdf in sorted(in_dir.glob("*.pdf")):
+        raise_if_cancelled(cancel)  # pragma: no cover
+        out, _ = optimize_pdf(
+            str(pdf),
+            quality=quality,
+            compress_images=compress_images,
+            keep=keep,
+            out_dir=str(out_dir),
+        )
+        if out:
+            outputs.append(out)
+    return outputs
 
 
 if __name__ == "__main__":

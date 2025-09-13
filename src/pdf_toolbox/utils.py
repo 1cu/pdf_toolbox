@@ -12,6 +12,8 @@ from threading import Event
 import fitz  # type: ignore
 from platformdirs import user_config_dir
 
+from .validation import validate_config
+
 # Modules required at runtime; PowerPoint COM is no longer needed
 REQUIRED_LIBS: Iterable[str] = (
     "fitz",
@@ -67,6 +69,8 @@ def _load_author_info() -> tuple[str, str]:
     """
     try:
         data = json.loads(CONFIG_FILE.read_text())
+        # Validate presence of required fields with a stable message.
+        validate_config(data)
         author = data["author"]
         email = data["email"]
     except Exception as exc:  # pragma: no cover - best effort
