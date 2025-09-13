@@ -20,8 +20,8 @@ def helper():
 """
     )
     monkeypatch.syspath_prepend(tmp_path)
-    actions._registry.clear()
-    actions._discovered = True
+    monkeypatch.setattr(actions, "_registry", {}, raising=False)
+    monkeypatch.setattr(actions, "_discovered", True, raising=False)
     sys.modules.pop("dummy_mod", None)
     __import__("dummy_mod")
     listed = {a.fqname for a in actions.list_actions()}
@@ -41,8 +41,8 @@ def hidden():
 """
     )
     monkeypatch.syspath_prepend(tmp_path)
-    actions._registry.clear()
-    actions._discovered = True
+    monkeypatch.setattr(actions, "_registry", {}, raising=False)
+    monkeypatch.setattr(actions, "_discovered", True, raising=False)
     sys.modules.pop("dummy_hidden", None)
     __import__("dummy_hidden")
     listed = {a.fqname for a in actions.list_actions()}
