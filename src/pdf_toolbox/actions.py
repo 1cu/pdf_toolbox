@@ -130,6 +130,8 @@ def _register_module(mod_name: str) -> None:
         if obj.__name__.startswith("_"):
             continue
         if getattr(obj, "__pdf_toolbox_action__", False):
+            act = build_action(obj)
+            _registry.setdefault(act.fqname, act)
             continue
         if not any([obj.__doc__, obj.__annotations__]):
             continue
