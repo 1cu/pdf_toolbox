@@ -71,7 +71,7 @@ def _format_name(func_name: str) -> str:  # pragma: no cover - trivial
 
 
 def action(name: str | None = None, category: str | None = None):
-    """Register a function as a command-line action."""
+    """Register a function as an action."""
 
     def deco(fn):
         act = build_action(fn, name=name, category=category)

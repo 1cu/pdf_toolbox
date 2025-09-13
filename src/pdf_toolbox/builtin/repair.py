@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 from threading import Event
 
@@ -31,11 +30,3 @@ def repair_pdf(
     save_pdf(doc, out_path, note=" | repaired", clean=True, deflate=True, garbage=4)
     logger.info("Repaired PDF written to %s", out_path)
     return str(out_path)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Repair PDF")
-    parser.add_argument("input_pdf")
-    parser.add_argument("--out-dir")
-    args = parser.parse_args()
-    repair_pdf(args.input_pdf, args.out_dir)

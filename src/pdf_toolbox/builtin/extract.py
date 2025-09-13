@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 from threading import Event
 
@@ -78,23 +77,3 @@ def split_pdf(
             logger.info("Created %s", out_path)
             outputs.append(str(out_path))
     return outputs
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="PDF page extraction")
-    parser.add_argument("input_pdf")
-    sub = parser.add_subparsers(dest="cmd", required=True)
-
-    p_ex = sub.add_parser("extract")
-    p_ex.add_argument("pages")
-    p_ex.add_argument("--out-dir")
-
-    p_split = sub.add_parser("split")
-    p_split.add_argument("pages", type=int)
-    p_split.add_argument("--out-dir")
-
-    args = parser.parse_args()
-    if args.cmd == "extract":
-        extract_range(args.input_pdf, args.pages, args.out_dir)
-    else:
-        split_pdf(args.input_pdf, args.pages, args.out_dir)

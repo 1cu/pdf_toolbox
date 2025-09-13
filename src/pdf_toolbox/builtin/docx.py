@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import io
 from pathlib import Path
 from threading import Event
@@ -58,11 +57,3 @@ def pdf_to_docx(
     docx_doc.save(str(out_path))
     logger.info("DOCX written to %s", out_path)
     return str(out_path)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="PDF to Word")
-    parser.add_argument("input_pdf")
-    parser.add_argument("--out-dir")
-    args = parser.parse_args()
-    pdf_to_docx(args.input_pdf, args.out_dir)

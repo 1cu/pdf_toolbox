@@ -2,7 +2,7 @@ from pathlib import Path
 
 import fitz  # type: ignore
 
-from pdf_toolbox.optimize import optimize_pdf
+from pdf_toolbox.builtin.optimize import optimize_pdf
 
 
 def _pdf_with_pages(path, pages=2):

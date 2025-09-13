@@ -3,10 +3,10 @@ from pathlib import Path
 import fitz  # type: ignore
 import pytest
 
-from pdf_toolbox.docx import pdf_to_docx
-from pdf_toolbox.images import pdf_to_images
-from pdf_toolbox.repair import repair_pdf
-from pdf_toolbox.unlock import unlock_pdf
+from pdf_toolbox.builtin.docx import pdf_to_docx
+from pdf_toolbox.builtin.images import pdf_to_images
+from pdf_toolbox.builtin.repair import repair_pdf
+from pdf_toolbox.builtin.unlock import unlock_pdf
 
 
 def test_pdf_to_images_png(sample_pdf, tmp_path):

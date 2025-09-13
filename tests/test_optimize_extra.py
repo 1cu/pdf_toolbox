@@ -6,7 +6,7 @@ import fitz  # type: ignore
 import pytest
 from PIL import Image
 
-from pdf_toolbox.optimize import batch_optimize_pdfs, optimize_pdf
+from pdf_toolbox.builtin.optimize import batch_optimize_pdfs, optimize_pdf
 
 
 def test_optimize_pdf_cancellation_cleans_up(tmp_path):
@@ -50,7 +50,7 @@ def test_optimize_with_progress_threshold_and_cancel(tmp_path, monkeypatch):
 
     # Exercise keep=False branch in progress variant
     monkeypatch.setattr(
-        "pdf_toolbox.optimize.QUALITY_SETTINGS",
+        "pdf_toolbox.builtin.optimize.QUALITY_SETTINGS",
         {"default": {"pdf_quality": 80, "image_quality": 75, "min_reduction": 1.0}},
     )
     output, _reduction = optimize_pdf(str(pdf_path), keep=False, out_dir=str(tmp_path))
