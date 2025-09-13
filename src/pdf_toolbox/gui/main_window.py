@@ -332,11 +332,11 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             parts = name.replace("_", " ").split()
             up = {"pdf", "png", "jpeg", "tiff", "webp", "docx"}
             words: list[str] = []
-        for part in parts:
-            low = part.lower()
-            words.append(
-                low.upper() if low in up else (part.capitalize() if part else part)
-            )
+            for part in parts:
+                low = part.lower()
+                words.append(
+                    low.upper() if low in up else (part.capitalize() if part else part)
+                )
             label = " ".join(words)
         return tr(label)
 
