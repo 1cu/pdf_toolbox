@@ -2,7 +2,7 @@ from pathlib import Path
 
 import fitz  # type: ignore
 
-from pdf_toolbox.builtin.optimize import optimize_pdf
+from pdf_toolbox.builtin.optimise import optimise_pdf
 
 
 def _pdf_with_pages(path, pages=2):
@@ -15,7 +15,7 @@ def _pdf_with_pages(path, pages=2):
     document.close()
 
 
-def test_optimize_with_progress_no_compress(tmp_path):
+def test_optimise_with_progress_no_compress(tmp_path):
     pdf_path = tmp_path / "in.pdf"
     _pdf_with_pages(pdf_path, pages=2)
     seen: list[tuple[int, int]] = []
@@ -23,7 +23,7 @@ def test_optimize_with_progress_no_compress(tmp_path):
     def callback(current, total):
         seen.append((current, total))
 
-    out, ratio = optimize_pdf(
+    out, ratio = optimise_pdf(
         str(pdf_path),
         compress_images=False,
         out_dir=str(tmp_path),
@@ -39,7 +39,7 @@ def test_optimize_with_progress_no_compress(tmp_path):
     assert seen and seen[-1][0] == seen[-1][1] == 1
 
 
-def test_optimize_with_progress_with_compress(tmp_path):
+def test_optimise_with_progress_with_compress(tmp_path):
     pdf_path = tmp_path / "in.pdf"
     _pdf_with_pages(pdf_path, pages=3)
     seen: list[tuple[int, int]] = []
@@ -47,7 +47,7 @@ def test_optimize_with_progress_with_compress(tmp_path):
     def callback(current, total):
         seen.append((current, total))
 
-    out, ratio = optimize_pdf(
+    out, ratio = optimise_pdf(
         str(pdf_path),
         compress_images=True,
         out_dir=str(tmp_path),
