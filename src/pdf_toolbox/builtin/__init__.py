@@ -14,7 +14,7 @@ __all__ = [
     "docx",
     "extract",
     "images",
-    "optimize",
+    "optimise",
     "repair",
     "unlock",
 ]

@@ -6,10 +6,10 @@ import fitz  # type: ignore
 import pytest
 from PIL import Image
 
-from pdf_toolbox.builtin.optimize import batch_optimize_pdfs, optimize_pdf
+from pdf_toolbox.builtin.optimise import batch_optimise_pdfs, optimise_pdf
 
 
-def test_optimize_pdf_cancellation_cleans_up(tmp_path):
+def test_optimise_pdf_cancellation_cleans_up(tmp_path):
     # Create simple PDF
     pdf_path = tmp_path / "in.pdf"
     document = fitz.open()
@@ -20,7 +20,7 @@ def test_optimize_pdf_cancellation_cleans_up(tmp_path):
     cancel = Event()
     cancel.set()
     with pytest.raises(RuntimeError):
-        optimize_pdf(str(pdf_path), cancel=cancel, out_dir=str(tmp_path))
+        optimise_pdf(str(pdf_path), cancel=cancel, out_dir=str(tmp_path))
 
 
 def test_compress_images_grayscale(tmp_path):
@@ -37,11 +37,11 @@ def test_compress_images_grayscale(tmp_path):
     document.save(pdf_path)
     document.close()
 
-    output, _ = optimize_pdf(str(pdf_path), compress_images=True, out_dir=str(tmp_path))
+    output, _ = optimise_pdf(str(pdf_path), compress_images=True, out_dir=str(tmp_path))
     assert Path(output).exists()
 
 
-def test_optimize_with_progress_threshold_and_cancel(tmp_path, monkeypatch):
+def test_optimise_with_progress_threshold_and_cancel(tmp_path, monkeypatch):
     pdf_path = tmp_path / "in.pdf"
     document = fitz.open()
     document.new_page()
@@ -50,19 +50,19 @@ def test_optimize_with_progress_threshold_and_cancel(tmp_path, monkeypatch):
 
     # Exercise keep=False branch in progress variant
     monkeypatch.setattr(
-        "pdf_toolbox.builtin.optimize.QUALITY_SETTINGS",
+        "pdf_toolbox.builtin.optimise.QUALITY_SETTINGS",
         {"default": {"pdf_quality": 80, "image_quality": 75, "min_reduction": 1.0}},
     )
-    output, _reduction = optimize_pdf(str(pdf_path), keep=False, out_dir=str(tmp_path))
+    output, _reduction = optimise_pdf(str(pdf_path), keep=False, out_dir=str(tmp_path))
     assert output is None
 
     # Now trigger cancellation early
     cancel = Event()
     cancel.set()
     with pytest.raises(RuntimeError):
-        optimize_pdf(str(pdf_path), cancel=cancel, out_dir=str(tmp_path))
+        optimise_pdf(str(pdf_path), cancel=cancel, out_dir=str(tmp_path))
 
 
-def test_batch_optimize_invalid_dir():
+def test_batch_optimise_invalid_dir():
     with pytest.raises(FileNotFoundError):
-        batch_optimize_pdfs("/path/does/not/exist/xyz")
+        batch_optimise_pdfs("/path/does/not/exist/xyz")
