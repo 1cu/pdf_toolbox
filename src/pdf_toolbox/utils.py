@@ -12,7 +12,7 @@ from threading import Event
 import fitz  # type: ignore
 from platformdirs import user_config_dir
 
-from .validation import validate_config
+from pdf_toolbox.validation import validate_config
 
 # Modules required at runtime; PowerPoint COM is no longer needed
 REQUIRED_LIBS: Iterable[str] = (

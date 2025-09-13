@@ -13,10 +13,9 @@ It also re-exports ``Action`` and ``list_actions`` so tests can monkeypatch
 
 from __future__ import annotations
 
+import pdf_toolbox.gui.config as _config
 from pdf_toolbox.actions import Action, list_actions
-
-from . import config as _config
-from .main_window import MainWindow
+from pdf_toolbox.gui.main_window import MainWindow
 
 # Re-export config with indirection so tests can monkeypatch gui.CONFIG_PATH
 CONFIG_PATH = _config.CONFIG_PATH

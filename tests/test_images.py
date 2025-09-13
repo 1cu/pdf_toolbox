@@ -11,9 +11,9 @@ from pdf_toolbox.images import DPI_PRESETS, pdf_to_images
 def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):
     outputs = pdf_to_images(sample_pdf, dpi="Low (72 dpi)", out_dir=str(tmp_path))
     assert len(outputs) == 3
-    for out in outputs:
-        assert Path(out).exists()
-        assert isinstance(out, str)
+    for output_path in outputs:
+        assert Path(output_path).exists()
+        assert isinstance(output_path, str)
 
 
 def test_pdf_to_images_requires_width_height(sample_pdf, tmp_path):
@@ -26,9 +26,9 @@ def test_pdf_to_images_svg(sample_pdf, tmp_path):
         sample_pdf, image_format="SVG", dpi="Low (72 dpi)", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
-    for out in outputs:
-        assert out.endswith(".svg")
-        assert Path(out).exists()
+    for output_path in outputs:
+        assert output_path.endswith(".svg")
+        assert Path(output_path).exists()
 
 
 def test_pdf_to_images_invalid_page(sample_pdf):
@@ -60,8 +60,8 @@ def test_pdf_to_images_selected_pages(sample_pdf, tmp_path):
         out_dir=str(tmp_path),
     )
     assert len(outputs) == 2
-    for out in outputs:
-        assert Path(out).exists()
+    for output_path in outputs:
+        assert Path(output_path).exists()
 
 
 def test_pdf_to_images_invalid_page_type(sample_pdf):
@@ -180,10 +180,10 @@ def test_pdf_to_images_invalid_page_range(sample_pdf):
 def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
     outputs = pdf_to_images(sample_pdf, out_dir=str(tmp_path), dpi="Low (72 dpi)")
     assert len(outputs) == 3
-    for out in outputs:
-        p = Path(out)
-        assert p.exists()
-        assert p.suffix.lower() == ".png"
+    for output_path in outputs:
+        path_obj = Path(output_path)
+        assert path_obj.exists()
+        assert path_obj.suffix.lower() == ".png"
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
@@ -370,7 +370,7 @@ def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, f
     base_size = Path(base).stat().st_size
     base_img = Image.open(base)
     limit_mb = base_size * 2 / (1024 * 1024)
-    with warnings.catch_warnings(record=True) as w:
+    with warnings.catch_warnings(record=True) as records:
         warnings.simplefilter("always")
         limited = pdf_to_images(
             str(pdf_path),
@@ -378,7 +378,7 @@ def test_pdf_to_images_max_size_lossless_no_warning_when_under_limit(tmp_path, f
             out_dir=str(limited_dir),
             max_size_mb=limit_mb,
         )[0]
-    assert not w
+    assert not records
     limited_size = Path(limited).stat().st_size
     limited_img = Image.open(limited)
     assert limited_size <= limit_mb * 1024 * 1024

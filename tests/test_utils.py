@@ -6,7 +6,7 @@ import fitz  # type: ignore
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
 
-from pdf_toolbox.i18n import set_language, tr
+from pdf_toolbox.i18n import label, set_language, tr
 from pdf_toolbox.utils import (
     ensure_libs,
     open_pdf,
@@ -101,6 +101,14 @@ def test_i18n_tr_basic():
 def test_i18n_set_language_none_defaults_to_en():
     set_language(None)
     assert tr("actions") == "Actions"
+
+
+def test_i18n_label_translation():
+    set_language("de")
+    try:
+        assert label("input_pdf") == "Eingabe PDF"
+    finally:
+        set_language("en")
 
 
 def test_parse_page_spec_examples():
