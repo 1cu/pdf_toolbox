@@ -4,7 +4,7 @@ Notes for contributing to PDF Toolbox. All Python modules live inside the `pdf_t
 
 GUI is split under `pdf_toolbox/gui/` into `config.py`, `widgets.py`, `worker.py`, and `main_window.py` with a thin facade in `pdf_toolbox/gui/__init__.py`. Headless helpers (`gui/config.py`, `gui/__init__.py`) are covered by tests; pure GUI modules are excluded from coverage in `pyproject.toml`.
 
-The default optimize action is `optimize_pdf` (with optional progress callback). A private helper `_optimize_pdf` contains core logic without progress.
+The default optimise action is `optimise_pdf` (with optional progress callback). A private helper `_optimise_pdf` contains core logic without progress.
 
 Internationalization: basic English/German translations are provided by `pdf_toolbox.i18n`. Use `i18n.tr()` for UI strings and `i18n.set_language()` to override auto-detection when testing.
 

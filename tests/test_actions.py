@@ -16,7 +16,7 @@ def test_decorator_preserves_category():
     opt_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.builtin.optimize.optimize_pdf"
+        if action_obj.fqname == "pdf_toolbox.builtin.optimise.optimise_pdf"
     )
     assert opt_action.category == "PDF"
 
