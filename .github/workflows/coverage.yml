@@ -1,0 +1,32 @@
+name: coverage
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v5.0.0
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: pip install -e '.[dev]'
+      - name: Run pre-commit
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: pre-commit run --all-files
+      - name: Check bytecode compilation
+        run: python -m compileall .
+      - name: Generate coverage badge
+        run: coverage-badge -o coverage.svg -f
+      - name: Commit coverage badge
+        uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # v6.0.1
+        with:
+          commit_message: "chore: update coverage badge"
+          file_pattern: coverage.svg

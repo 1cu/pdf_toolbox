@@ -2,35 +2,35 @@ repos:
   - repo: local
     hooks:
       - id: ruff-format
-        name: Format Python with Ruff
+        name: "Ruff:\tFormat Python"
         entry: ruff format
         language: system
         types: [python]
         alias: format
 
       - id: mdformat
-        name: Format Markdown with mdformat
+        name: "mdformat:\tFormat Markdown"
         entry: mdformat
         language: system
         types: [markdown]
         alias: format
 
       - id: pretty-format-yaml
-        name: Format YAML with pretty-format-yaml
+        name: "Pretty-format-yaml:\tFormat YAML"
         entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
         language: system
         types: [yaml]
         alias: format
 
       - id: ruff
-        name: Lint Python with Ruff
+        name: "Ruff:\tLint Python"
         entry: ruff check --fix
         language: system
         types: [python]
         alias: lint
 
       - id: mypy
-        name: Type-check with mypy
+        name: "mypy:\tType-check"
         entry: mypy --config-file=pyproject.toml .
         language: system
         types: [python]
@@ -38,7 +38,7 @@ repos:
         alias: lint
 
       - id: bandit
-        name: Scan for security issues with bandit
+        name: "Bandit:\tScan for security issues"
         entry: bandit -q -r src scripts
         language: system
         types: [python]
@@ -46,7 +46,7 @@ repos:
         alias: lint
 
       - id: pytest
-        name: Run tests with pytest and coverage
+        name: "pytest:\tRun tests with coverage"
         entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
         language: system
         types: [python]
@@ -54,7 +54,7 @@ repos:
         alias: tests
 
       - id: coverage-per-file
-        name: Check per-file coverage
+        name: "Check-coverage:\tEnforce per-file coverage"
         entry: python scripts/check_coverage.py
         language: system
         types: [python]
