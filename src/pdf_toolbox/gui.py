@@ -316,6 +316,8 @@ class MainWindow(QMainWindow):
         self.current_widgets.clear()
 
         for param in action.params:
+            if param.name == "cancel":
+                continue
             widget: QWidget
             ann = param.annotation
             origin = get_origin(ann)
