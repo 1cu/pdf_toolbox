@@ -16,7 +16,7 @@ def test_decorator_preserves_category():
     opt_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.optimize.optimize_pdf"
+        if action_obj.fqname == "pdf_toolbox.builtin.optimize.optimize_pdf"
     )
     assert opt_action.category == "PDF"
 
@@ -26,7 +26,7 @@ def test_action_name_formatting():
     image_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        if action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
     )
     assert image_action.name == "PDF to Images"
 
@@ -36,7 +36,7 @@ def test_literal_parameters_resolved():
     pdf_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        if action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
     )
 
     pdf_format_ann = next(
@@ -48,7 +48,7 @@ def test_literal_parameters_resolved():
 
     from typing import Literal, get_args, get_origin
 
-    from pdf_toolbox.images import DPI_PRESETS
+    from pdf_toolbox.builtin.images import DPI_PRESETS
 
     assert get_origin(pdf_format_ann) is Literal
     assert set(get_args(pdf_format_ann)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
@@ -71,7 +71,7 @@ def test_register_module_skips_undocumented(tmp_path, monkeypatch):
 
 
 def test_auto_discover_populates_registry():
-    from pdf_toolbox import images
+    from pdf_toolbox.builtin import images
 
     had_attr = getattr(images.pdf_to_images, "__pdf_toolbox_action__", None)
     if had_attr is not None:
@@ -82,7 +82,7 @@ def test_auto_discover_populates_registry():
     if had_attr is not None:
         images.pdf_to_images.__pdf_toolbox_action__ = had_attr
     assert any(
-        action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
         for action_obj in actions_list
     )
 
@@ -111,7 +111,7 @@ def test_auto_discover_loader_toc(monkeypatch):
     try:
         actions.list_actions()
         assert any(
-            action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+            action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
             for action_obj in actions._registry.values()
         )
     finally:
@@ -119,6 +119,33 @@ def test_auto_discover_loader_toc(monkeypatch):
         sys.modules.update(saved)
         actions._registry.clear()
         actions._discovered = False
+
+
+def test_builtin_import_registers_actions():
+    """Importing pdf_toolbox.builtin loads actions without discovery."""
+    import importlib
+
+    # Ensure builtin modules are re-imported
+    saved = {
+        name: mod
+        for name, mod in sys.modules.items()
+        if name.startswith("pdf_toolbox.builtin")
+    }
+    for name in list(saved):
+        sys.modules.pop(name)
+
+    actions._registry.clear()
+    actions._discovered = False
+
+    importlib.import_module("pdf_toolbox.builtin")
+    assert any(
+        act.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
+        for act in actions._registry.values()
+    )
+
+    sys.modules.update(saved)
+    actions._registry.clear()
+    actions._discovered = False
 
 
 def test_register_module_ignores_nodoc_functions(monkeypatch):

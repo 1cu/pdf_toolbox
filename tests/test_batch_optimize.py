@@ -3,7 +3,7 @@ from threading import Event, Thread
 import fitz  # type: ignore
 import pytest
 
-from pdf_toolbox.optimize import batch_optimize_pdfs
+from pdf_toolbox.builtin.optimize import batch_optimize_pdfs
 
 
 def _make_pdf(path):
