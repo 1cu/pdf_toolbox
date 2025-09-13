@@ -61,6 +61,12 @@ extend-select = [
   "D",
   "S",
   "PL",
+  "FURB",
+  "TRY",
+  "PTH",
+  "ARG",
+  "T20",
+  "PT",
 ]
 extend-ignore = ["E402", "D203", "D213"]
 
@@ -96,4 +102,3 @@ fail_under = 95
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004", "D103", "D100", "PLC0415", "S106"]
 "scripts/check_coverage.py" = ["S314"]
-"src/pdf_toolbox/gui/*.py" = ["D", "PLC0415", "PLC0414"]
