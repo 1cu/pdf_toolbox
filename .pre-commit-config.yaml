@@ -1,40 +1,13 @@
 repos:
 - repo: local
   hooks:
-    - id: ruff
-      name: ruff
-      entry: ruff check --fix
-      language: system
-      types: [python]
-      always_run: true
+    # Formatters
     - id: ruff-format
       name: ruff format
       entry: ruff format
       language: system
       types: [python]
       always_run: true
-    - id: mypy
-      name: mypy
-      entry: mypy --config-file=pyproject.toml .
-      language: system
-      pass_filenames: false
-      always_run: true
-    - id: pytest
-      name: pytest with coverage
-      entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
-      language: system
-      pass_filenames: false
-    - id: coverage-per-file
-      name: coverage per file
-      entry: python scripts/check_coverage.py
-      language: system
-      pass_filenames: false
-      always_run: true
-    - id: bandit
-      name: bandit
-      entry: bandit -q -r src scripts
-      language: system
-      pass_filenames: false
     - id: mdformat
       name: mdformat
       entry: mdformat
@@ -46,3 +19,35 @@ repos:
       language: system
       types: [yaml]
       exclude: ^\.pre-commit-config\.yaml$
+
+    # Linters and static analysis
+    - id: ruff
+      name: ruff
+      entry: ruff check --fix
+      language: system
+      types: [python]
+      always_run: true
+    - id: mypy
+      name: mypy
+      entry: mypy --config-file=pyproject.toml .
+      language: system
+      pass_filenames: false
+      always_run: true
+    - id: bandit
+      name: bandit
+      entry: bandit -q -r src scripts
+      language: system
+      pass_filenames: false
+
+    # Tests
+    - id: pytest
+      name: pytest with coverage
+      entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+      language: system
+      pass_filenames: false
+    - id: coverage-per-file
+      name: coverage per file
+      entry: python scripts/check_coverage.py
+      language: system
+      pass_filenames: false
+      always_run: true
