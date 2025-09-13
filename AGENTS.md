@@ -15,6 +15,9 @@
 - If the run reformats files, stage the changes and re-run
   `pre-commit run --files <updated files>` to verify the hooks pass without
   reprocessing the entire repository. Subsequent runs are fast thanks to caching.
+- Hooks that analyze Python code (ruff, mypy, bandit, tests) only trigger when
+  Python files change, so rerunning `pre-commit` on docs or config files skips
+  the heavier checks.
 - Write descriptive commit messages: start with a short imperative summary
   (\<=72 characters), leave a blank line, then provide detailed context and
   rationale. Avoid generic messages like "fix tests".
