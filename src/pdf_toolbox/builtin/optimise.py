@@ -1,8 +1,8 @@
-"""PDF optimization utilities.
+"""PDF optimisation utilities.
 
 Public APIs:
-- ``optimize_pdf``: default action with optional progress callback.
-- ``batch_optimize_pdfs``: run optimization on all PDFs in a directory.
+- ``optimise_pdf``: default action with optional progress callback.
+- ``batch_optimise_pdfs``: run optimisation on all PDFs in a directory.
 
 Internal helper:
 - (none)
@@ -84,11 +84,11 @@ def _compress_images(
     return total
 
 
-## (no private duplicate of optimize logic)
+## (no private duplicate of optimise logic)
 
 
 @action(category="PDF")
-def optimize_pdf(  # noqa: PLR0913
+def optimise_pdf(  # noqa: PLR0913
     input_pdf: str,
     quality: QualityChoice = "default",
     compress_images: bool = False,
@@ -97,17 +97,17 @@ def optimize_pdf(  # noqa: PLR0913
     cancel: Event | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> tuple[str | None, float]:
-    """Optimize a PDF with progress updates.
+    """Optimise a PDF with progress updates.
 
     Calls ``progress_callback(current, total)`` as work advances. The total is
     computed as the number of pages when ``compress_images`` is enabled.
 
     Examples:
-        >>> # Optimize a PDF with image compression and observe progress
-        >>> from pdf_toolbox.builtin.optimize import optimize_pdf
+        >>> # Optimise a PDF with image compression and observe progress
+        >>> from pdf_toolbox.builtin.optimise import optimise_pdf
         >>> def on_progress(c, t):
         ...     print(f"{c}/{t}")
-        >>> out, reduction = optimize_pdf(
+        >>> out, reduction = optimise_pdf(
         ...     "input.pdf", quality="ebook", compress_images=True, progress_callback=on_progress
         ... )
         >>> isinstance(out, str)
@@ -119,11 +119,11 @@ def optimize_pdf(  # noqa: PLR0913
     settings = QUALITY_SETTINGS[quality]
     input_path = Path(input_pdf)
     out_dir_path = sane_output_dir(input_path, out_dir)
-    out_path = out_dir_path / f"{input_path.stem}_optimized_{quality}.pdf"
+    out_path = out_dir_path / f"{input_path.stem}_optimised_{quality}.pdf"
 
     original_size = input_path.stat().st_size
     logger.info(
-        "Optimizing %s with quality=%s (compress_images=%s)",
+        "Optimising %s with quality=%s (compress_images=%s)",
         input_pdf,
         quality,
         compress_images,
@@ -152,7 +152,7 @@ def optimize_pdf(  # noqa: PLR0913
         save_pdf(
             doc,
             out_path,
-            note=" | optimized",
+            note=" | optimised",
             garbage=3,
             deflate=True,
             clean=True,
@@ -164,16 +164,25 @@ def optimize_pdf(  # noqa: PLR0913
             with suppress(Exception):
                 doc.close()
 
-    optimized_size = out_path.stat().st_size
-    reduction = 1 - (optimized_size / original_size)
+    optimised_size = out_path.stat().st_size
+    reduction = 1 - (optimised_size / original_size)
     if reduction < QUALITY_SETTINGS[quality]["min_reduction"] and not keep:
         out_path.unlink(missing_ok=True)
+        logger.info(
+            "Optimised PDF discarded; reduction %.2f%% below threshold",
+            reduction * 100,
+        )
         return None, reduction
+    logger.info(
+        "Optimised PDF written to %s (reduction %.2f%%)",
+        out_path,
+        reduction * 100,
+    )
     return str(out_path), reduction
 
 
 @action(category="PDF")
-def batch_optimize_pdfs(  # noqa: PLR0913
+def batch_optimise_pdfs(  # noqa: PLR0913
     input_dir: str,
     output_dir: str | None = None,
     quality: QualityChoice = "default",
@@ -181,11 +190,11 @@ def batch_optimize_pdfs(  # noqa: PLR0913
     keep: bool = True,
     cancel: Event | None = None,
 ) -> list[str]:
-    """Optimize all PDFs in a directory and return output paths.
+    """Optimise all PDFs in a directory and return output paths.
 
     Examples:
-        >>> from pdf_toolbox.builtin.optimize import batch_optimize_pdfs
-        >>> outs = batch_optimize_pdfs("/path/to/dir", quality="ebook", compress_images=True)
+        >>> from pdf_toolbox.builtin.optimise import batch_optimise_pdfs
+        >>> outs = batch_optimise_pdfs("/path/to/dir", quality="ebook", compress_images=True)
         >>> isinstance(outs, list)
         True
 
@@ -193,13 +202,13 @@ def batch_optimize_pdfs(  # noqa: PLR0913
     in_dir = Path(input_dir)
     if not in_dir.exists() or not in_dir.is_dir():
         raise FileNotFoundError(f"Input directory not found: {input_dir}")
-    out_dir = Path(output_dir) if output_dir else in_dir / "optimized"
+    out_dir = Path(output_dir) if output_dir else in_dir / "optimised"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     outputs: list[str] = []
     for pdf in sorted(in_dir.glob("*.pdf")):
         raise_if_cancelled(cancel)  # pragma: no cover
-        out, _ = optimize_pdf(
+        out, _ = optimise_pdf(
             str(pdf),
             quality=quality,
             compress_images=compress_images,

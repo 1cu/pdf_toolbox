@@ -73,9 +73,9 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.log.setMaximumBlockCount(10)
         self.log.setFixedHeight(self.log.fontMetrics().height() * 10 + 10)
         layout.addWidget(self.log)
-        self.status_text = "Ready"
+        self.status_key = "ready"
         self.log_handler = QtLogHandler(
-            self.log, lambda: self.update_status(self.status_text)
+            self.log, lambda: self.update_status(tr(self.status_key), self.status_key)
         )
         configure_logging(self.cfg.get("log_level", "INFO"), self.log_handler)
         self.setCentralWidget(central)
@@ -108,15 +108,18 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         bottom.addWidget(self.status)
         bottom.addWidget(self.progress, 1)
         bottom.addWidget(self.run_btn)
-        self.update_status(self.status_text)
+        self.update_status(tr("ready"), "ready")
 
         self.settings_btn = QToolButton()
         self.settings_btn.setText("⚙")
         settings_menu = QMenu(self)
-        settings_menu.addAction(tr("author"), self.on_author)
-        settings_menu.addAction(tr("log_level"), self.on_log_level)
-        settings_menu.addAction(tr("language"), self.on_language)
-        settings_menu.addAction(tr("about"), self.on_about)
+        self.action_author = settings_menu.addAction(tr("author"), self.on_author)
+        self.action_log_level = settings_menu.addAction(
+            tr("log_level"), self.on_log_level
+        )
+        self.action_language = settings_menu.addAction(tr("language"), self.on_language)
+        self.action_about = settings_menu.addAction(tr("about"), self.on_about)
+        self.settings_menu = settings_menu
         self.settings_btn.setMenu(settings_menu)
         self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]
         top_bar.addStretch()
@@ -131,8 +134,8 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.check_author()
         self.show()
 
-    def update_status(self, text: str) -> None:
-        self.status_text = text
+    def update_status(self, text: str, key: str | None = None) -> None:
+        self.status_key = key or text
         arrow = "▼" if self.log.isVisible() else "▶"
         self.status.setText(f"{text} {arrow}")
 
@@ -372,12 +375,12 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             self.worker = None
             self.progress.setRange(0, 1)
             self.progress.setValue(0)
-            self.update_status(tr("cancelled"))
+            self.update_status(tr("cancelled"), "cancelled")
             self.run_btn.setText(tr("start"))
             return
 
         self.progress.setRange(0, 0)
-        self.update_status(tr("running"))
+        self.update_status(tr("running"), "running")
         self.log.clear()
         self.log.setVisible(False)
         self.resize(self.width(), self.base_height)
@@ -392,7 +395,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.progress.setRange(0, 1)
         self.progress.setValue(1)
         self.run_btn.setText(tr("start"))
-        self.update_status(tr("done"))
+        self.update_status(tr("done"), "done")
         if result:
             if isinstance(result, list | tuple):
                 text = "\n".join(map(str, result))
@@ -414,7 +417,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         self.run_btn.setText(tr("start"))
-        self.update_status(tr("error"))
+        self.update_status(tr("error"), "error")
         self.resize(self.width(), self.base_height + self.log.height())
         self.worker = None
 
@@ -428,7 +431,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                 self.log.verticalScrollBar().maximum()
             )
             self.resize(self.width(), self.base_height + self.log.height())
-        self.update_status(self.status_text)
+        self.update_status(tr(self.status_key), self.status_key)
 
     def on_author(self) -> None:  # pragma: no cover - GUI
         dlg = QDialog(self)
@@ -489,8 +492,17 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             save_config(self.cfg)
             set_language(None if choice == "system" else choice)
             self.lbl_actions.setText(tr("actions"))
-            self.run_btn.setText(tr("start"))
-            self.update_status(self.status_text)
+            if self.worker and self.worker.isRunning():
+                self.run_btn.setText(tr("stop") + " ❌")
+            else:
+                self.run_btn.setText(tr("start"))
+            self.action_author.setText(tr("author"))
+            self.action_log_level.setText(tr("log_level"))
+            self.action_language.setText(tr("language"))
+            self.action_about.setText(tr("about"))
+            self.tree.clear()
+            self._populate_actions()
+            self.update_status(tr(self.status_key), self.status_key)
 
     def on_about(self) -> None:  # pragma: no cover - GUI
         """Show about dialog with version and link."""
