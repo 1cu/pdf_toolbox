@@ -21,6 +21,7 @@
 - Hooks that analyze Python code (ruff, mypy, bandit, tests) only trigger when
   Python files change, so rerunning `pre-commit` on docs or config files skips
   the heavier checks.
+- Use proper names for functions and variables - even in tests.
 - Write descriptive commit messages: start with a short imperative summary
   (\<=72 characters), leave a blank line, then provide detailed context and
   rationale. Avoid generic messages like "fix tests".

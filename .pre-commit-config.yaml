@@ -22,6 +22,15 @@ repos:
         types: [yaml]
         alias: format
 
+      - id: format-locales
+        name: "format: locales json"
+        entry: python scripts/format_locales.py
+        language: system
+        types: [json]
+        files: ^src/pdf_toolbox/locales/.*\.json$
+        pass_filenames: false
+        alias: format
+
       - id: ruff
         name: "lint: ruff"
         entry: ruff check --fix
@@ -60,3 +69,11 @@ repos:
         types: [python]
         pass_filenames: false
         alias: tests
+
+      - id: check-locales
+        name: "lint: check-locales"
+        entry: python scripts/check_locales.py
+        language: system
+        types: [json]
+        pass_filenames: false
+        alias: lint
