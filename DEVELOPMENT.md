@@ -52,6 +52,18 @@ pre-commit run --all-files
 
 `pre-commit run --all-files` executes tests, so no separate `pytest` step is required. The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
 
+Hooks share aliases so related groups can run independently:
+
+```bash
+pre-commit run format --all-files  # formatters
+pre-commit run lint --all-files    # linters and static analysis
+pre-commit run tests --all-files   # test suite
+```
+
+Bandit performs static security checks during pre-commit. Dependency
+vulnerability auditing is omitted because the project is not published on
+PyPI.
+
 ## Release
 
 The release workflow runs only when a version tag (matching `v*`) is pushed. This allows releases to be cut manually instead of on every commit.

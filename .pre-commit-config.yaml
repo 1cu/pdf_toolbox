@@ -1,43 +1,63 @@
 repos:
-- repo: local
-  hooks:
-    - id: ruff
-      name: ruff
-      entry: ruff check --fix
-      language: system
-      types: [python]
-      always_run: true
-    - id: ruff-format
-      name: ruff format
-      entry: ruff format
-      language: system
-      types: [python]
-      always_run: true
-    - id: mypy
-      name: mypy
-      entry: mypy --config-file=pyproject.toml .
-      language: system
-      pass_filenames: false
-      always_run: true
-    - id: pytest
-      name: pytest with coverage
-      entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
-      language: system
-      pass_filenames: false
-    - id: coverage-per-file
-      name: coverage per file
-      entry: python scripts/check_coverage.py
-      language: system
-      pass_filenames: false
-      always_run: true
-    - id: mdformat
-      name: mdformat
-      entry: mdformat
-      language: system
-      types: [markdown]
-    - id: pretty-format-yaml
-      name: pretty-format-yaml
-      entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
-      language: system
-      types: [yaml]
-      exclude: ^\.pre-commit-config\.yaml$
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: Format Python with Ruff
+        entry: ruff format
+        language: system
+        types: [python]
+        alias: format
+
+      - id: mdformat
+        name: Format Markdown with mdformat
+        entry: mdformat
+        language: system
+        types: [markdown]
+        alias: format
+
+      - id: pretty-format-yaml
+        name: Format YAML with pretty-format-yaml
+        entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
+        language: system
+        types: [yaml]
+        alias: format
+
+      - id: ruff
+        name: Lint Python with Ruff
+        entry: ruff check --fix
+        language: system
+        types: [python]
+        alias: lint
+
+      - id: mypy
+        name: Type-check with mypy
+        entry: mypy --config-file=pyproject.toml .
+        language: system
+        types: [python]
+        pass_filenames: false
+        alias: lint
+
+      - id: bandit
+        name: Scan for security issues with bandit
+        entry: bandit -q -r src scripts
+        language: system
+        types: [python]
+        pass_filenames: false
+        alias: lint
+
+      - id: pytest
+        name: Run tests with pytest and coverage
+        entry: pytest --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+        language: system
+        types: [python]
+        pass_filenames: false
+        alias: tests
+
+      - id: coverage-per-file
+        name: Check per-file coverage
+        entry: python scripts/check_coverage.py
+        language: system
+        types: [python]
+        pass_filenames: false
+        alias: tests
+

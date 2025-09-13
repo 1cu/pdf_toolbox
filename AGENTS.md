@@ -3,10 +3,24 @@
 - Ensure the virtual environment is activated and dependencies installed with `pip install -e '.[dev]'`.
 - Bump the `version` in `pyproject.toml` once per pull request, not for every commit.
 - Install `pre-commit` hooks with `pre-commit install` so code is validated.
-- Always run `pre-commit run --all-files` before committing changes.
+- Always run `pre-commit run --all-files` before committing changes; this
+  runs formatters, linters, tests, and security scans.
+- Do not run `pytest` separately—the test suite executes as part of
+  `pre-commit`.
+- Export `QT_QPA_PLATFORM=offscreen` when running tests or pre-commit so Qt
+  uses its headless backend.
+- Let `pre-commit` finish even if it takes a while; security scans may need
+  network access and can run for several minutes.
+- Hooks share aliases so you can run `pre-commit run format|lint|tests` to
+  execute formatters, linters, or tests independently.
+- Bandit handles static security checks; dependency vulnerability auditing is
+  omitted because the project is not published on PyPI.
 - If the run reformats files, stage the changes and re-run
   `pre-commit run --files <updated files>` to verify the hooks pass without
   reprocessing the entire repository. Subsequent runs are fast thanks to caching.
+- Hooks that analyze Python code (ruff, mypy, bandit, tests) only trigger when
+  Python files change, so rerunning `pre-commit` on docs or config files skips
+  the heavier checks.
 - Write descriptive commit messages: start with a short imperative summary
   (\<=72 characters), leave a blank line, then provide detailed context and
   rationale. Avoid generic messages like "fix tests".

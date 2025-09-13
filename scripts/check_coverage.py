@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import sys
 import tomllib
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405
 from fnmatch import fnmatch
 from pathlib import Path
 
@@ -34,7 +34,7 @@ def main() -> int:
         return 1
 
     threshold, omit_patterns = load_settings()
-    tree = ET.parse(xml_file)
+    tree = ET.parse(xml_file)  # nosec B314
     root = tree.getroot()
 
     total_rate = float(root.get("line-rate", "0"))
