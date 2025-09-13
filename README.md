@@ -1,6 +1,6 @@
 # PDF Toolbox
 
-![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![Coverage](./coverage.svg)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
 Utilities for manipulating PDF files. A Qt-based GUI discovers available functions dynamically and builds forms from their signatures. Launch it with `python -m pdf_toolbox.gui`.
