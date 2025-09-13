@@ -165,6 +165,10 @@ def _auto_discover(pkg: str = "pdf_toolbox.builtin") -> None:
             if mod_name.startswith(pkg_mod.__name__ + "."):
                 with suppress(Exception):
                     _register_module(mod_name)
+    if not _registry:  # pragma: no cover - explicit __all__ fallback
+        for name in getattr(pkg_mod, "__all__", []):
+            with suppress(Exception):
+                _register_module(f"{pkg_mod.__name__}.{name}")
     _discovered = True
 
 

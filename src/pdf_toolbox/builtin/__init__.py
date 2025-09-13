@@ -1,3 +1,10 @@
 """Builtin action modules for pdf_toolbox."""
 
-__all__: list[str] = []
+__all__ = [
+    "docx",
+    "extract",
+    "images",
+    "optimize",
+    "repair",
+    "unlock",
+]
