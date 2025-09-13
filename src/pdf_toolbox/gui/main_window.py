@@ -165,7 +165,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.current_widgets.clear()
 
         for param in action.params:
-            if param.name == "cancel":
+            if param.name in {"cancel", "progress_callback"}:
                 continue
             widget: (
                 QWidget
