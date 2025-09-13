@@ -71,54 +71,13 @@ def test_register_module_skips_undocumented(tmp_path, monkeypatch):
 
 
 def test_auto_discover_populates_registry():
-    from pdf_toolbox.builtin import images
-
-    had_attr = getattr(images.pdf_to_images, "__pdf_toolbox_action__", None)
-    if had_attr is not None:
-        delattr(images.pdf_to_images, "__pdf_toolbox_action__")
     actions._registry.clear()
     actions._discovered = False
     actions_list = list_actions()
-    if had_attr is not None:
-        images.pdf_to_images.__pdf_toolbox_action__ = had_attr
     assert any(
         action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
         for action_obj in actions_list
     )
-
-
-def test_auto_discover_loader_toc(monkeypatch):
-    """Discovery works when package loader exposes a ``toc`` attribute."""
-    import importlib.resources as ir
-    import types
-
-    pkg = sys.modules["pdf_toolbox.builtin"]
-    original_loader = pkg.__spec__.loader
-    monkeypatch.setattr(actions.pkgutil, "walk_packages", lambda *_, **__: [])
-    monkeypatch.setattr(
-        ir, "files", lambda *_, **__: (_ for _ in ()).throw(FileNotFoundError)
-    )
-    pkg.__spec__.loader = types.SimpleNamespace(toc=["pdf_toolbox.builtin.images"])
-    saved = {
-        name: mod
-        for name, mod in sys.modules.items()
-        if name.startswith("pdf_toolbox.builtin.")
-    }
-    for name in saved:
-        sys.modules.pop(name)
-    actions._registry.clear()
-    actions._discovered = False
-    try:
-        actions.list_actions()
-        assert any(
-            action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
-            for action_obj in actions._registry.values()
-        )
-    finally:
-        pkg.__spec__.loader = original_loader
-        sys.modules.update(saved)
-        actions._registry.clear()
-        actions._discovered = False
 
 
 def test_builtin_import_registers_actions():

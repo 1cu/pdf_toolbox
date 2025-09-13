@@ -12,6 +12,7 @@ from threading import Event
 import fitz  # type: ignore
 from platformdirs import user_config_dir
 
+from pdf_toolbox.paths import PathValidationError, validate_path
 from pdf_toolbox.validation import validate_config
 
 # Modules required at runtime; PowerPoint COM is no longer needed
@@ -28,6 +29,9 @@ LIB_HINTS: dict[str, str] = {
 }
 # store configuration in a platform-specific user config directory
 CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
+
+# Cache loaded author information to avoid repeated disk access.
+_AUTHOR_INFO: tuple[str, str] | None = None
 
 # central logger for the project
 logger = logging.getLogger("pdf_toolbox")
@@ -61,23 +65,25 @@ configure_logging()
 
 
 def _load_author_info() -> tuple[str, str]:
-    """Return configured author information.
+    """Return configured author information with caching.
 
-    The configuration must provide ``author`` and ``email`` fields in
-    ``pdf_toolbox_config.json`` located in the user's configuration directory.
-    A ``RuntimeError`` is raised if the configuration is missing or incomplete.
+    The first call reads ``pdf_toolbox_config.json`` from the user's
+    configuration directory. The result is cached and subsequent calls return
+    the cached value. Missing or invalid configuration gracefully yields empty
+    strings instead of raising an exception.
     """
-    try:
-        data = json.loads(CONFIG_FILE.read_text())
-        # Validate presence of required fields with a stable message.
-        validate_config(data)
-        author = data["author"]
-        email = data["email"]
-    except Exception as exc:  # pragma: no cover - best effort
-        raise RuntimeError(
-            "pdf_toolbox_config.json must define 'author' and 'email'"
-        ) from exc
-    return author, email
+    global _AUTHOR_INFO  # noqa: PLW0603
+    if _AUTHOR_INFO is None:
+        try:
+            data = json.loads(CONFIG_FILE.read_text())
+            validate_config(data)
+            _AUTHOR_INFO = (
+                data.get("author", ""),
+                data.get("email", ""),
+            )
+        except Exception:
+            _AUTHOR_INFO = ("", "")
+    return _AUTHOR_INFO
 
 
 def ensure_libs() -> None:
@@ -150,6 +156,7 @@ def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
     """
     base = Path(base_path)
     target = Path(out_dir) if out_dir else base.parent
+    target = validate_path(target)
     if target.suffix:
         raise ValueError(f"Output directory must be a directory, not a file: {out_dir}")
     target.mkdir(parents=True, exist_ok=True)
@@ -186,7 +193,11 @@ def raise_if_cancelled(
 def open_pdf(path: str | Path) -> fitz.Document:
     """Open ``path`` as a PDF document with friendly errors."""
     try:
-        return fitz.open(str(path))
+        safe = validate_path(path, must_exist=True)
+    except PathValidationError as exc:
+        raise RuntimeError(f"Could not open PDF file: {path}") from exc
+    try:
+        return fitz.open(str(safe))
     except Exception as exc:  # pragma: no cover - best effort
         raise RuntimeError(f"Could not open PDF file: {path}") from exc
 
@@ -200,8 +211,9 @@ def save_pdf(
 ) -> None:
     """Save ``doc`` to ``out_path`` updating metadata and closing it."""
     update_metadata(doc, note)
+    safe_out = validate_path(out_path)
     try:
-        doc.save(str(out_path), **save_kwargs)
+        doc.save(str(safe_out), **save_kwargs)
     except Exception as exc:  # pragma: no cover - best effort
         raise RuntimeError(f"Could not save PDF file: {out_path}") from exc
     finally:
