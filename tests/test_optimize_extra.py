@@ -53,7 +53,7 @@ def test_optimize_with_progress_threshold_and_cancel(tmp_path, monkeypatch):
         "pdf_toolbox.optimize.QUALITY_SETTINGS",
         {"default": {"pdf_quality": 80, "image_quality": 75, "min_reduction": 1.0}},
     )
-    output, reduction = optimize_pdf(str(pdf_path), keep=False, out_dir=str(tmp_path))
+    output, _reduction = optimize_pdf(str(pdf_path), keep=False, out_dir=str(tmp_path))
     assert output is None
 
     # Now trigger cancellation early
