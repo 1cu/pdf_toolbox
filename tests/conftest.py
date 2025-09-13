@@ -9,13 +9,13 @@ from pdf_toolbox import utils
 
 @pytest.fixture
 def sample_pdf(tmp_path):
-    doc = fitz.open()
-    for i in range(3):
-        page = doc.new_page()
-        page.insert_text((72, 72), f"Page {i + 1}")
+    document = fitz.open()
+    for page_index in range(3):
+        page = document.new_page()
+        page.insert_text((72, 72), f"Page {page_index + 1}")
     pdf_path = tmp_path / "sample.pdf"
-    doc.save(pdf_path)
-    doc.close()
+    document.save(pdf_path)
+    document.close()
     return str(pdf_path)
 
 

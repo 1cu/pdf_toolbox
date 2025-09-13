@@ -6,33 +6,33 @@ from pdf_toolbox.extract import extract_range, split_pdf
 
 
 def test_extract_range(sample_pdf, tmp_path):
-    out = extract_range(sample_pdf, "1-2", out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = extract_range(sample_pdf, "1-2", out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_extract_range_open_end(sample_pdf, tmp_path):
-    out = extract_range(sample_pdf, "2-", out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = extract_range(sample_pdf, "2-", out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_extract_range_single_page(sample_pdf, tmp_path):
-    out = extract_range(sample_pdf, "2", out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = extract_range(sample_pdf, "2", out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_extract_range_multiple(sample_pdf, tmp_path):
-    out = extract_range(sample_pdf, "1,3", out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = extract_range(sample_pdf, "1,3", out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_extract_range_to_page(sample_pdf, tmp_path):
-    out = extract_range(sample_pdf, "-2", out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = extract_range(sample_pdf, "-2", out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_extract_range_default_outdir(sample_pdf):
-    out = extract_range(sample_pdf, "1-2")
-    assert Path(out).parent == Path(sample_pdf).parent
+    output = extract_range(sample_pdf, "1-2")
+    assert Path(output).parent == Path(sample_pdf).parent
 
 
 def test_extract_range_invalid(sample_pdf, tmp_path):
@@ -47,4 +47,4 @@ def test_extract_range_invalid(sample_pdf, tmp_path):
 def test_split_pdf(sample_pdf, tmp_path):
     outputs = split_pdf(sample_pdf, 2, out_dir=str(tmp_path))
     assert len(outputs) == 2
-    assert all(Path(p).exists() for p in outputs)
+    assert all(Path(output_path).exists() for output_path in outputs)

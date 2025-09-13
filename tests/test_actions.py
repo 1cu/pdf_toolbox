@@ -6,46 +6,56 @@ from pdf_toolbox.actions import list_actions
 
 def test_registry_filters_internal_functions():
     actions_list = list_actions()
-    fqnames = {a.fqname for a in actions_list}
+    fqnames = {action_obj.fqname for action_obj in actions_list}
     assert "pdf_toolbox.actions.list_actions" not in fqnames
     assert "pdf_toolbox.gui.load_config" not in fqnames
 
 
 def test_decorator_preserves_category():
     actions_list = list_actions()
-    opt = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.optimize.optimize_pdf"
+    opt_action = next(
+        action_obj
+        for action_obj in actions_list
+        if action_obj.fqname == "pdf_toolbox.optimize.optimize_pdf"
     )
-    assert opt.category == "PDF"
+    assert opt_action.category == "PDF"
 
 
 def test_action_name_formatting():
     actions_list = list_actions()
-    img = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.images.pdf_to_images"
+    image_action = next(
+        action_obj
+        for action_obj in actions_list
+        if action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
     )
-    assert img.name == "PDF to images"
+    assert image_action.name == "PDF to Images"
 
 
 def test_literal_parameters_resolved():
     actions_list = list_actions()
-    pdf_act = next(
-        a for a in actions_list if a.fqname == "pdf_toolbox.images.pdf_to_images"
+    pdf_action = next(
+        action_obj
+        for action_obj in actions_list
+        if action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
     )
 
-    pdf_fmt = next(p for p in pdf_act.params if p.name == "image_format").annotation
-    pdf_dpi = next(p for p in pdf_act.params if p.name == "dpi").annotation
+    pdf_format_ann = next(
+        param for param in pdf_action.params if param.name == "image_format"
+    ).annotation
+    pdf_dpi_ann = next(
+        param for param in pdf_action.params if param.name == "dpi"
+    ).annotation
 
     from typing import Literal, get_args, get_origin
 
     from pdf_toolbox.images import DPI_PRESETS
 
-    assert get_origin(pdf_fmt) is Literal
-    assert set(get_args(pdf_fmt)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
-    dpi_args = get_args(pdf_dpi)
+    assert get_origin(pdf_format_ann) is Literal
+    assert set(get_args(pdf_format_ann)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
+    dpi_args = get_args(pdf_dpi_ann)
     assert int in dpi_args
-    lit = next(a for a in dpi_args if get_origin(a) is Literal)
-    assert set(get_args(lit)) == set(DPI_PRESETS.keys())
+    literal = next(arg for arg in dpi_args if get_origin(arg) is Literal)
+    assert set(get_args(literal)) == set(DPI_PRESETS.keys())
 
 
 def test_format_name_plural_acronyms():
@@ -71,7 +81,10 @@ def test_auto_discover_populates_registry():
     actions_list = list_actions()
     if had_attr is not None:
         images.pdf_to_images.__pdf_toolbox_action__ = had_attr
-    assert any(a.fqname == "pdf_toolbox.images.pdf_to_images" for a in actions_list)
+    assert any(
+        action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+        for action_obj in actions_list
+    )
 
 
 def test_auto_discover_loader_toc(monkeypatch):
@@ -79,18 +92,17 @@ def test_auto_discover_loader_toc(monkeypatch):
     import importlib.resources as ir
     import types
 
-    pkg = sys.modules["pdf_toolbox"]
+    pkg = sys.modules["pdf_toolbox.builtin"]
     original_loader = pkg.__spec__.loader
     monkeypatch.setattr(actions.pkgutil, "walk_packages", lambda *_, **__: [])
     monkeypatch.setattr(
         ir, "files", lambda *_, **__: (_ for _ in ()).throw(FileNotFoundError)
     )
-    pkg.__spec__.loader = types.SimpleNamespace(toc=["pdf_toolbox.images"])
+    pkg.__spec__.loader = types.SimpleNamespace(toc=["pdf_toolbox.builtin.images"])
     saved = {
         name: mod
         for name, mod in sys.modules.items()
-        if name.startswith("pdf_toolbox.")
-        and name not in {"pdf_toolbox.actions", "pdf_toolbox.utils"}
+        if name.startswith("pdf_toolbox.builtin.")
     }
     for name in saved:
         sys.modules.pop(name)
@@ -99,8 +111,8 @@ def test_auto_discover_loader_toc(monkeypatch):
     try:
         actions.list_actions()
         assert any(
-            a.fqname == "pdf_toolbox.images.pdf_to_images"
-            for a in actions._registry.values()
+            action_obj.fqname == "pdf_toolbox.images.pdf_to_images"
+            for action_obj in actions._registry.values()
         )
     finally:
         pkg.__spec__.loader = original_loader
@@ -123,3 +135,4 @@ def test_register_module_ignores_nodoc_functions(monkeypatch):
     actions._discovered = False
     actions._register_module("dummy_mod")
     assert not actions._registry
+    actions.list_actions()

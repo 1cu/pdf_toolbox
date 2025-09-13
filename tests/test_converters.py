@@ -14,7 +14,7 @@ def test_pdf_to_images_png(sample_pdf, tmp_path):
         sample_pdf, dpi=72, image_format="PNG", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
-    assert all(Path(p).exists() for p in outputs)
+    assert all(Path(output_path).exists() for output_path in outputs)
 
 
 def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
@@ -22,7 +22,7 @@ def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
         sample_pdf, dpi="Low (72 dpi)", image_format="JPEG", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
-    assert all(Path(p).exists() for p in outputs)
+    assert all(Path(output_path).exists() for output_path in outputs)
 
 
 def test_pdf_to_images_tiff(sample_pdf, tmp_path):
@@ -30,27 +30,29 @@ def test_pdf_to_images_tiff(sample_pdf, tmp_path):
         sample_pdf, dpi="Low (72 dpi)", image_format="TIFF", out_dir=str(tmp_path)
     )
     assert len(outputs) == 3
-    assert all(Path(p).exists() for p in outputs)
+    assert all(Path(output_path).exists() for output_path in outputs)
 
 
 def test_pdf_to_images_default_outdir(sample_pdf):
     outputs = pdf_to_images(sample_pdf, dpi="Low (72 dpi)")
-    assert all(Path(p).parent == Path(sample_pdf).parent for p in outputs)
+    assert all(
+        Path(output_path).parent == Path(sample_pdf).parent for output_path in outputs
+    )
 
 
 def test_pdf_to_docx(pdf_with_image, tmp_path):
-    out = pdf_to_docx(pdf_with_image, out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = pdf_to_docx(pdf_with_image, out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_repair_pdf(sample_pdf, tmp_path):
-    out = repair_pdf(sample_pdf, out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = repair_pdf(sample_pdf, out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_unlock_pdf(sample_pdf, tmp_path):
-    out = unlock_pdf(sample_pdf, out_dir=str(tmp_path))
-    assert Path(out).exists()
+    output = unlock_pdf(sample_pdf, out_dir=str(tmp_path))
+    assert Path(output).exists()
 
 
 def test_unlock_pdf_invalid_password(sample_pdf, tmp_path):

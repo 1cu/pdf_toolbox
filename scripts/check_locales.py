@@ -41,15 +41,30 @@ def load_locale(lang: str) -> dict:
 def referenced_keys() -> tuple[set[str], set[str]]:
     """Return (string_keys, label_keys) used in source by scanning tr()/label()."""
     src = ROOT / "src"
-    str_keys: set[str] = set()
-    lab_keys: set[str] = set()
+    string_keys: set[str] = set()
+    label_keys: set[str] = set()
     tr_re = re.compile(r"\btr\(\"([a-z0-9_]+)\"")
     lab_re = re.compile(r"\blabel\(\"([a-z0-9_]+)\"\)")
     for path in src.rglob("*.py"):
         text = path.read_text(encoding="utf-8", errors="ignore")
-        str_keys.update(tr_re.findall(text))
-        lab_keys.update(lab_re.findall(text))
-    return str_keys, lab_keys
+        string_keys.update(tr_re.findall(text))
+        label_keys.update(lab_re.findall(text))
+    sys.path.insert(0, str(src))
+    try:
+        from pdf_toolbox import actions as actions_mod  # noqa: PLC0415
+
+        actions_mod._registry.clear()
+        actions_mod._discovered = False
+        for name in list(sys.modules):
+            if name.startswith("pdf_toolbox.builtin"):
+                sys.modules.pop(name)
+        from pdf_toolbox.actions import list_actions  # noqa: PLC0415
+
+        for act in list_actions():
+            string_keys.add(act.key)
+    finally:
+        sys.path.remove(str(src))
+    return string_keys, label_keys
 
 
 def main() -> int:
