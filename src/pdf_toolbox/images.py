@@ -214,57 +214,35 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                     raise RuntimeError("Could not reduce image below max_size_mb")
                 out_path.write_bytes(scaled_bytes)
                 final_scale = scale_low
+                if fmt == "PNG":
+                    used_level = 9
 
         size_out = out_path.stat().st_size / 1024
+        scale_factor = final_scale if final_scale is not None else 1
+        final_width = int(img.width * scale_factor)
+        final_height = int(img.height * scale_factor)
+        final_dpi = int(dpi_value * scale_factor)
+        details = [f"{final_width}x{final_height} @ {final_dpi} dpi"]
+        if final_scale is not None:
+            details.append(f"scale={int(final_scale * 100)}%")
+        if used_quality is not None:
+            details.append(f"quality={used_quality}")
+        if used_level is not None:
+            details.append(f"compress_level={used_level}")
+        detail_str = ", ".join(details)
         if max_bytes is None:
-            if used_quality is not None:
-                logger.info(
-                    "Page %d rendered with quality=%d (%.1f kB)",
-                    page_no,
-                    used_quality,
-                    size_out,
-                )
-            elif used_level is not None:
-                logger.info(
-                    "Page %d rendered with compress_level=%d (%.1f kB)",
-                    page_no,
-                    used_level,
-                    size_out,
-                )
-            else:
-                logger.info(
-                    "Page %d rendered (%.1f kB)",
-                    page_no,
-                    size_out,
-                )
-        elif used_quality is not None:
             logger.info(
-                "Page %d saved with quality=%d to meet %.1f MB (%.1f kB)",
+                "Page %d rendered %s (%.1f kB)",
                 page_no,
-                used_quality,
-                max_size_mb,
-                size_out,
-            )
-        elif final_scale is not None:
-            logger.info(
-                "Page %d scaled to %d%% to meet %.1f MB (%.1f kB)",
-                page_no,
-                int(final_scale * 100),
-                max_size_mb,
-                size_out,
-            )
-        elif used_level is not None:
-            logger.info(
-                "Page %d compressed at level=%d to meet %.1f MB (%.1f kB)",
-                page_no,
-                used_level,
-                max_size_mb,
+                detail_str,
                 size_out,
             )
         else:
             logger.info(
-                "Page %d saved without changes (%.1f kB)",
+                "Page %d saved %s to meet %.1f MB (%.1f kB)",
                 page_no,
+                detail_str,
+                max_size_mb,
                 size_out,
             )
 
