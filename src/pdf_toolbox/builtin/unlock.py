@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 from pathlib import Path
 from threading import Event
 
@@ -43,12 +42,3 @@ def unlock_pdf(
     )
     logger.info("Unlocked PDF written to %s", out_path)
     return str(out_path)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Unlock PDF")
-    parser.add_argument("input_pdf")
-    parser.add_argument("--password")
-    parser.add_argument("--out-dir")
-    args = parser.parse_args()
-    unlock_pdf(args.input_pdf, args.password, args.out_dir)

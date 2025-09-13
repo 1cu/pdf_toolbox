@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from pdf_toolbox.extract import extract_range, split_pdf
+from pdf_toolbox.builtin.extract import extract_range, split_pdf
 
 
 def test_extract_range(sample_pdf, tmp_path):

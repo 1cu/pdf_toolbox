@@ -3,7 +3,7 @@ from pathlib import Path
 import fitz  # type: ignore
 import pytest
 
-from pdf_toolbox.optimize import QUALITY_SETTINGS, optimize_pdf
+from pdf_toolbox.builtin.optimize import QUALITY_SETTINGS, optimize_pdf
 
 
 def test_pdf_quality_passed_to_doc_save(tmp_path, monkeypatch):

@@ -48,7 +48,7 @@ def test_literal_parameters_resolved():
 
     from typing import Literal, get_args, get_origin
 
-    from pdf_toolbox.images import DPI_PRESETS
+    from pdf_toolbox.builtin.images import DPI_PRESETS
 
     assert get_origin(pdf_format_ann) is Literal
     assert set(get_args(pdf_format_ann)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
@@ -71,7 +71,7 @@ def test_register_module_skips_undocumented(tmp_path, monkeypatch):
 
 
 def test_auto_discover_populates_registry():
-    from pdf_toolbox import images
+    from pdf_toolbox.builtin import images
 
     had_attr = getattr(images.pdf_to_images, "__pdf_toolbox_action__", None)
     if had_attr is not None:
