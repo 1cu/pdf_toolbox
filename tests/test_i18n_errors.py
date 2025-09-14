@@ -31,4 +31,3 @@ def test_tr_format_error():
         )
     finally:
         i18n.set_language("en")
-

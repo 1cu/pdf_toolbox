@@ -46,12 +46,8 @@ def pdf_to_docx(
                 raise_if_cancelled(cancel)
                 xref = img[0]
                 pix = fitz.Pixmap(pdf, xref)
-                if (
-                    pix.n > RGB_COMPONENTS
-                ):  # pragma: no cover  # pdf-toolbox: rare colorspace | issue:-
-                    pix = fitz.Pixmap(
-                        fitz.csRGB, pix
-                    )  # pragma: no cover  # pdf-toolbox: rare colorspace | issue:-
+                if pix.n > RGB_COMPONENTS:
+                    pix = fitz.Pixmap(fitz.csRGB, pix)
                 pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 with io.BytesIO() as buf:
                     pil.save(buf, format="PNG")

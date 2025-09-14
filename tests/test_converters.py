@@ -3,6 +3,8 @@ from pathlib import Path
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
+from pdf_toolbox.builtin import docx as docx_mod
+from pdf_toolbox.builtin import images as images_mod
 from pdf_toolbox.builtin.docx import pdf_to_docx
 from pdf_toolbox.builtin.images import pdf_to_images
 from pdf_toolbox.builtin.repair import repair_pdf
@@ -45,6 +47,28 @@ def test_pdf_to_docx(pdf_with_image, tmp_path):
     assert Path(output).exists()
 
 
+def test_pdf_to_docx_converts_non_rgb(monkeypatch, pdf_with_image, tmp_path):
+    class DummyPix:
+        def __init__(self, n: int):
+            self.n = n
+            self.width = 1
+            self.height = 1
+            self.samples = b"\x00\x00\x00"
+
+    called = {"converted": False}
+
+    def fake_pixmap(arg1, arg2):
+        if isinstance(arg2, int):
+            return DummyPix(4)
+        called["converted"] = True
+        return DummyPix(3)
+
+    monkeypatch.setattr(docx_mod.fitz, "Pixmap", fake_pixmap)
+    output = pdf_to_docx(pdf_with_image, out_dir=str(tmp_path))
+    assert called["converted"]
+    assert Path(output).exists()
+
+
 def test_repair_pdf(sample_pdf, tmp_path):
     output = repair_pdf(sample_pdf, out_dir=str(tmp_path))
     assert Path(output).exists()
@@ -66,3 +90,57 @@ def test_unlock_pdf_invalid_password(sample_pdf, tmp_path):
         )
     with pytest.raises(ValueError, match="Invalid password"):
         unlock_pdf(str(locked), password="wrong", out_dir=str(tmp_path))
+
+
+def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
+    class DummyPix:
+        def __init__(self, n: int, alpha: int = 0):
+            self.colorspace = type("CS", (), {"n": n})()
+            self.alpha = alpha
+            self.width = 1
+            self.height = 1
+            self.samples = b"\x00\x00\x00"
+
+    class DummyPage:
+        def get_pixmap(self, matrix):
+            return DummyPix(4)
+
+    def fake_load_page(self, index):
+        return DummyPage()
+
+    def fake_pixmap(arg1, arg2):
+        assert arg1 is images_mod.fitz.csRGB
+        return DummyPix(3)
+
+    monkeypatch.setattr(images_mod.fitz.Document, "load_page", fake_load_page)
+    monkeypatch.setattr(images_mod.fitz, "Pixmap", fake_pixmap)
+    with images_mod.open_pdf(sample_pdf) as doc:
+        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG")
+    assert outputs
+
+
+def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
+    class DummyPix:
+        def __init__(self, alpha: int):
+            self.colorspace = type("CS", (), {"n": 3})()
+            self.alpha = alpha
+            self.width = 1
+            self.height = 1
+            self.samples = b"\x00\x00\x00"
+
+    class DummyPage:
+        def get_pixmap(self, matrix):
+            return DummyPix(1)
+
+    def fake_load_page(self, index):
+        return DummyPage()
+
+    def fake_pixmap(arg1, arg2):
+        assert arg2 == 0
+        return DummyPix(0)
+
+    monkeypatch.setattr(images_mod.fitz.Document, "load_page", fake_load_page)
+    monkeypatch.setattr(images_mod.fitz, "Pixmap", fake_pixmap)
+    with images_mod.open_pdf(sample_pdf) as doc:
+        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG")
+    assert outputs

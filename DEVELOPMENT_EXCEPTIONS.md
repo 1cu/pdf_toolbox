@@ -10,14 +10,10 @@
 | scripts/prune_releases.py:60              | type: ignore[arg-type]                   | GitHub API returns untyped data                     | -        |
 | src/pdf_toolbox/actions.py:89             | type: ignore[attr-defined]               | attach custom attribute for action registry         | -        |
 | src/pdf_toolbox/builtin/docx.py:9         | type: ignore                             | PyMuPDF lacks type hints                            | -        |
-| src/pdf_toolbox/builtin/docx.py:51        | pragma: no cover                         | rare colorspace                                     | -        |
-| src/pdf_toolbox/builtin/docx.py:54        | pragma: no cover                         | rare colorspace                                     | -        |
 | src/pdf_toolbox/builtin/extract.py:8      | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/builtin/images.py:11      | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/builtin/images.py:68      | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches  | -        |
-| src/pdf_toolbox/builtin/images.py:142     | pragma: no cover                         | exotic colorspace                                   | -        |
-| src/pdf_toolbox/builtin/images.py:146     | pragma: no cover                         | rare alpha channel                                  | -        |
-| src/pdf_toolbox/builtin/images.py:288     | PLR0913                                  | conversion helper requires many parameters          | -        |
+| src/pdf_toolbox/builtin/images.py:283     | PLR0913                                  | conversion helper requires many parameters          | -        |
 | src/pdf_toolbox/builtin/optimise.py:20    | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/builtin/optimise.py:65    | type: ignore[assignment]                 | PyMuPDF page typing mismatch                        | -        |
 | src/pdf_toolbox/builtin/optimise.py:94    | PLR0913                                  | optimisation API exposes many options               | -        |
