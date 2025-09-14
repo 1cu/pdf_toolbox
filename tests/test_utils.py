@@ -6,6 +6,7 @@ import fitz  # type: ignore
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
 
+from pdf_toolbox import utils
 from pdf_toolbox.i18n import label, set_language, tr
 from pdf_toolbox.utils import (
     ensure_libs,
@@ -38,13 +39,15 @@ def test_sane_output_dir_rejects_file(tmp_path):
 
 
 def test_update_metadata(tmp_path):
+    _ = tmp_path
+    utils._load_author_info.cache_clear()
     doc = fitz.open()
     doc.new_page()
     doc.set_metadata({})
     update_metadata(doc, "note")
     meta = doc.metadata
     assert "note" in meta.get("subject", "")
-    assert meta.get("author") == ""
+    assert meta.get("author") == "Tester"
 
 
 def test_open_save_pdf(tmp_path):
@@ -121,9 +124,9 @@ def test_parse_page_spec_examples():
 
 
 def test_parse_page_spec_invalid():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="end must be greater"):
         parse_page_spec("2-1", 5)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         parse_page_spec("0", 5)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid page specification"):
         parse_page_spec("a", 5)

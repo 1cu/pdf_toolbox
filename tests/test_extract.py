@@ -36,11 +36,11 @@ def test_extract_range_default_outdir(sample_pdf):
 
 
 def test_extract_range_invalid(sample_pdf, tmp_path):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         extract_range(sample_pdf, "0-2", out_dir=str(tmp_path))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="end must be greater"):
         extract_range(sample_pdf, "2-1", out_dir=str(tmp_path))
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         extract_range(sample_pdf, "1-5", out_dir=str(tmp_path))
 
 

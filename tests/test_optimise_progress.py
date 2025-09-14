@@ -36,7 +36,8 @@ def test_optimise_with_progress_no_compress(tmp_path):
     )
     assert isinstance(ratio, float)
     # Only one final tick when not compressing images
-    assert seen and seen[-1][0] == seen[-1][1] == 1
+    assert seen
+    assert seen[-1][0] == seen[-1][1] == 1
 
 
 def test_optimise_with_progress_with_compress(tmp_path):
@@ -60,4 +61,5 @@ def test_optimise_with_progress_with_compress(tmp_path):
     )
     assert isinstance(ratio, float)
     # Expect at least page_count updates and a final tick
-    assert seen and seen[-1][0] == seen[-1][1] == 3
+    assert seen
+    assert seen[-1][0] == seen[-1][1] == 3

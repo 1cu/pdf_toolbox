@@ -29,6 +29,9 @@ from pdf_toolbox.utils import (
     save_pdf,
 )
 
+ERR_UNKNOWN_QUALITY = "unknown quality"
+ERR_INPUT_DIR = "Input directory not found: {input_dir}"
+
 
 class QualitySetting(TypedDict):
     """Quality configuration options."""
@@ -115,7 +118,7 @@ def optimise_pdf(  # noqa: PLR0913
 
     """
     if quality not in QUALITY_SETTINGS:
-        raise ValueError("unknown quality")
+        raise ValueError(ERR_UNKNOWN_QUALITY)
     settings = QUALITY_SETTINGS[quality]
     input_path = Path(input_pdf)
     out_dir_path = sane_output_dir(input_path, out_dir)
@@ -201,7 +204,7 @@ def batch_optimise_pdfs(  # noqa: PLR0913
     """
     in_dir = Path(input_dir)
     if not in_dir.exists() or not in_dir.is_dir():
-        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+        raise FileNotFoundError(ERR_INPUT_DIR.format(input_dir=input_dir))
     out_dir = Path(output_dir) if output_dir else in_dir / "optimised"
     out_dir.mkdir(parents=True, exist_ok=True)
 

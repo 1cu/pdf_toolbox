@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import html
 import inspect
+import sys
 import types
 from importlib import metadata
-from typing import Any, Literal, get_args, get_origin
+from typing import Any, Literal, Union, get_args, get_origin
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -40,13 +41,14 @@ from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
-from pdf_toolbox.utils import configure_logging
+from pdf_toolbox.utils import _load_author_info, configure_logging
 
 
 class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
     """Main application window."""
 
     def __init__(self) -> None:  # noqa: PLR0915
+        """Initialize the main window and construct widgets."""
         super().__init__()
         self.setWindowTitle("PDF Toolbox")
         self.cfg = load_config()
@@ -135,15 +137,16 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.show()
 
     def update_status(self, text: str, key: str | None = None) -> None:
+        """Update the status bar text and optional status key."""
         self.status_key = key or text
         arrow = "▼" if self.log.isVisible() else "▶"
         self.status.setText(f"{text} {arrow}")
 
     def _populate_actions(self) -> None:
+        """Fill the action tree with all available actions."""
         cats: dict[str, QTreeWidgetItem] = {}
-        from pdf_toolbox.gui import list_actions as _list_actions
-
-        for act in _list_actions():
+        gui_pkg = sys.modules[__package__]
+        for act in gui_pkg.list_actions():
             cat_name = act.category or "General"
             cat_item = cats.get(cat_name)
             if cat_item is None:
@@ -156,6 +159,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.tree.expandAll()
 
     def on_item_clicked(self, item: QTreeWidgetItem) -> None:  # pragma: no cover - GUI
+        """Respond to tree item clicks by showing the action form."""
         act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]
         if isinstance(act, Action):
             self.current_action = act
@@ -163,6 +167,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             self.info_btn.setEnabled(bool(act.help))
 
     def build_form(self, action: Action) -> None:  # noqa: PLR0912, PLR0915
+        """Create input widgets for the given action parameters."""
         while self.form_layout.rowCount():
             self.form_layout.removeRow(0)
         self.current_widgets.clear()
@@ -179,8 +184,6 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             )
             ann = param.annotation
             lower = param.name.lower()
-
-            from typing import Union
 
             if get_origin(ann) in (types.UnionType, Union) and int in get_args(ann):  # type: ignore[attr-defined]
                 literal = next(
@@ -269,6 +272,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             self.current_widgets[param.name] = widget
 
     def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912
+        """Gather user input from the form into keyword arguments."""
         if not self.current_action:
             return {}
         params = {param.name: param for param in self.current_action.params}
@@ -284,13 +288,6 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                         None
                     ) in get_args(param.annotation):  # type: ignore[attr-defined]
                         optional = True
-            from PySide6.QtWidgets import (
-                QCheckBox,
-                QComboBox,
-                QDoubleSpinBox,
-                QLineEdit,
-                QSpinBox,
-            )
 
             if isinstance(widget, tuple):
                 combo_box, spin_box = widget
@@ -344,6 +341,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         return tr(label)
 
     def on_info(self) -> None:  # pragma: no cover - GUI
+        """Display help text for the currently selected action."""
         if not self.current_action:
             return
         text = inspect.cleandoc(self.current_action.help or "No description available.")
@@ -360,6 +358,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         msg.exec()
 
     def on_run(self) -> None:  # pragma: no cover - GUI
+        """Execute the current action or cancel the running worker."""
         if not self.current_action:
             return
         try:
@@ -391,6 +390,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.run_btn.setText(tr("stop") + " ❌")
 
     def on_finished(self, result: object) -> None:  # pragma: no cover - GUI
+        """Handle completion of the worker thread."""
         save_config(self.cfg)
         self.progress.setRange(0, 1)
         self.progress.setValue(1)
@@ -409,6 +409,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.worker = None
 
     def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
+        """Handle errors emitted by the worker thread."""
         self.log.setVisible(True)
         if self.log.toPlainText():
             self.log.appendPlainText(msg)
@@ -422,6 +423,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.worker = None
 
     def toggle_log(self) -> None:  # pragma: no cover - GUI
+        """Show or hide the log widget."""
         if self.log.isVisible():
             self.log.setVisible(False)
             self.resize(self.width(), self.base_height)
@@ -434,6 +436,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.update_status(tr(self.status_key), self.status_key)
 
     def on_author(self) -> None:  # pragma: no cover - GUI
+        """Edit author and email information in the configuration."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("author_email"))
         form = QFormLayout(dlg)
@@ -451,6 +454,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             save_config(self.cfg)
 
     def on_log_level(self) -> None:  # pragma: no cover - GUI
+        """Allow the user to adjust the logging level."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("log_level"))
         form = QFormLayout(dlg)
@@ -466,11 +470,10 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             level = combo.currentText()
             self.cfg["log_level"] = level
             save_config(self.cfg)
-            from pdf_toolbox import utils
-
-            utils.configure_logging(level, self.log_handler)
+            configure_logging(level, self.log_handler)
 
     def on_language(self) -> None:  # pragma: no cover - GUI
+        """Allow the user to change the interface language."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("language"))
         form = QFormLayout(dlg)
@@ -521,8 +524,6 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
     def check_author(self) -> None:
         """Warn when author/email config is missing."""
         try:
-            from pdf_toolbox.utils import _load_author_info
-
             _load_author_info()
         except RuntimeError:
             QMessageBox.warning(
