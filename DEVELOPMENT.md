@@ -103,7 +103,7 @@ If an exception is truly unavoidable:
 | src/pdf_toolbox/builtin/optimise.py:20  | type: ignore               | PyMuPDF lacks type hints                           | –               |
 | src/pdf_toolbox/builtin/optimise.py:65  | type: ignore[assignment]   | PyMuPDF page typing mismatch                       | –               |
 | src/pdf_toolbox/builtin/optimise.py:94  | PLR0913                    | optimisation API exposes many options              | –               |
-| src/pdf_toolbox/builtin/optimise.py:188 | PLR0913                    | batch optimisation needs several arguments         | –               |
+| src/pdf_toolbox/builtin/optimise.py:215 | PLR0913                    | batch optimisation needs several arguments         | –               |
 | src/pdf_toolbox/builtin/unlock.py:8     | type: ignore               | PyMuPDF lacks type hints                           | –               |
 | src/pdf_toolbox/gui/main_window.py:50   | PLR0915                    | constructor sets up many widgets                   | –               |
 | src/pdf_toolbox/gui/main_window.py:103  | type: ignore[attr-defined] | PySide6 stubs miss form layout policy enum         | –               |
