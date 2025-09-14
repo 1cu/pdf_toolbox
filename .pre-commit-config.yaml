@@ -62,9 +62,9 @@ repos:
         pass_filenames: false
         alias: lint
 
-      - id: check-lint-exceptions
-        name: "lint: lint-exceptions"
-        entry: python scripts/check_lint_exceptions.py
+      - id: check-code-exceptions
+        name: "lint: code-exceptions"
+        entry: python scripts/check_exceptions.py
         language: system
         types: [python]
         pass_filenames: false

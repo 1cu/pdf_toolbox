@@ -87,6 +87,9 @@ If an exception is truly unavoidable:
 
 ### Documented Exceptions
 
+The table below tracks both linter suppressions and coverage exclusions. It
+must stay up to date.
+
 | File / Line                             | Rule                       | Justification                                      | Linked Issue/PR |
 | --------------------------------------- | -------------------------- | -------------------------------------------------- | --------------- |
 | scripts/check_coverage.py:8             | B405                       | stdlib XML parser on trusted coverage file         | –               |
@@ -134,8 +137,67 @@ If an exception is truly unavoidable:
 | tests/test_optimise_extra.py:5          | type: ignore               | PyMuPDF lacks type hints                           | –               |
 | tests/test_optimise_progress.py:3       | type: ignore               | PyMuPDF lacks type hints                           | –               |
 | tests/test_utils.py:4                   | type: ignore               | PyMuPDF lacks type hints                           | –               |
+| src/pdf_toolbox/__main__.py:5           | pragma: no cover           | entry point                                        | –               |
+| src/pdf_toolbox/actions.py:46           | pragma: no cover           | trivial                                            | –               |
+| src/pdf_toolbox/actions.py:133          | pragma: no cover           | defensive                                          | –               |
+| src/pdf_toolbox/actions.py:136          | pragma: no cover           | defensive                                          | –               |
+| src/pdf_toolbox/actions.py:149          | pragma: no cover           | optional deps                                      | –               |
+| src/pdf_toolbox/builtin/__init__.py:23  | pragma: no cover           | optional dependencies                              | –               |
+| src/pdf_toolbox/builtin/docx.py:41      | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/docx.py:43      | pragma: no cover           | input PDF in tests has no text                     | –               |
+| src/pdf_toolbox/builtin/docx.py:44      | pragma: no cover           | add text if present                                | –               |
+| src/pdf_toolbox/builtin/docx.py:46      | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/docx.py:49      | pragma: no cover           | rare branch                                        | –               |
+| src/pdf_toolbox/builtin/docx.py:52      | pragma: no cover           | color conversion                                   | –               |
+| src/pdf_toolbox/builtin/extract.py:40   | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/extract.py:47   | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/extract.py:66   | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/extract.py:74   | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/images.py:129   | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/images.py:142   | pragma: no cover           | uncommon colorspace                                | –               |
+| src/pdf_toolbox/builtin/images.py:144   | pragma: no cover           | rare alpha channel                                 | –               |
+| src/pdf_toolbox/builtin/optimise.py:66  | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/optimise.py:68  | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/optimise.py:155 | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/optimise.py:169 | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/optimise.py:240 | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/repair.py:23    | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/repair.py:29    | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/unlock.py:30    | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/builtin/unlock.py:38    | pragma: no cover           | cancellation hook                                  | –               |
+| src/pdf_toolbox/gui/__init__.py:42      | pragma: no cover           | environment dependent                              | –               |
+| src/pdf_toolbox/gui/__init__.py:47      | pragma: no cover           | entry point                                        | –               |
+| src/pdf_toolbox/gui/__main__.py:5       | pragma: no cover           | entry point                                        | –               |
+| src/pdf_toolbox/gui/main_window.py:47   | pragma: no cover           | exercised in GUI tests                             | –               |
+| src/pdf_toolbox/gui/main_window.py:161  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:343  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:360  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:392  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:411  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:425  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:438  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:456  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:475  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/main_window.py:510  | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/widgets.py:15       | pragma: no cover           | GUI helper                                         | –               |
+| src/pdf_toolbox/gui/widgets.py:36       | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/widgets.py:43       | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/widgets.py:96       | pragma: no cover           | GUI                                                | –               |
+| src/pdf_toolbox/gui/worker.py:11        | pragma: no cover           | thread/GUI                                         | –               |
+| src/pdf_toolbox/i18n.py:39              | pragma: no cover           | env-dependent                                      | –               |
+| src/pdf_toolbox/i18n.py:62              | pragma: no cover           | defensive                                          | –               |
+| src/pdf_toolbox/i18n.py:75              | pragma: no cover           | defensive                                          | –               |
+| src/pdf_toolbox/utils.py:96             | pragma: no cover           | best effort                                        | –               |
+| src/pdf_toolbox/utils.py:179            | pragma: no cover           | cooperative cancellation helper                    | –               |
+| src/pdf_toolbox/utils.py:200            | pragma: no cover           | best effort                                        | –               |
+| src/pdf_toolbox/utils.py:216            | pragma: no cover           | best effort                                        | –               |
+| tests/test_entrypoint.py:10             | pragma: no cover           | optional GUI deps                                  | –               |
+| tests/test_gui.py:8                     | pragma: no cover           | optional GUI deps                                  | –               |
+| tests/test_gui.py:118                   | pragma: no cover           | GUI helper                                         | –               |
+| tests/test_optimise.py:76               | pragma: no cover           | simple container                                   | –               |
+| tests/test_optimise.py:80               | pragma: no cover           | simple                                             | –               |
 
-This table must stay up to date. Reviewers will reject PRs that introduce undocumented disables.
+This table must stay up to date. Reviewers will reject PRs that introduce undocumented linter or coverage disables.
 
 ## Release
 

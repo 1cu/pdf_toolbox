@@ -2,7 +2,7 @@
 
 Thank you for considering contributing! This document explains how to set up your environment, follow our workflow, and meet our quality standards.
 
-See the [README](README.md) for a project overview and quick start, [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter exceptions, and the release process, and [AGENTS](AGENTS.md) for the enforcement rules.
+See the [README](README.md) for a project overview and quick start, [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter and coverage exceptions, and the release process, and [AGENTS](AGENTS.md) for the enforcement rules.
 
 ______________________________________________________________________
 
@@ -12,6 +12,7 @@ ______________________________________________________________________
 - [Workflow](#workflow)
 - [Code Quality](#code-quality)
 - [Linting Policy: Fix, Don’t Silence](#linting-policy-fix-dont-silence)
+- [Coverage Policy: Test, Don’t Exclude](#coverage-policy-test-dont-exclude)
 - [Testing](#testing)
 - [Pull Requests](#pull-requests)
 
@@ -78,6 +79,20 @@ Pull requests that violate this policy will be rejected.
 
 ______________________________________________________________________
 
+## Coverage Policy: Test, Don’t Exclude
+
+Business logic must be testable, even in GUI modules. Avoid coverage exclusions
+(`# pragma: no cover`, `# coverage: ignore`, etc.). If an exclusion is truly
+unavoidable:
+
+1. Limit it to a single line.
+1. Add a short inline justification.
+1. Document it in [`DEVELOPMENT.md`](DEVELOPMENT.md#documented-exceptions).
+
+Reviewers should reject PRs with undocumented or unjustified coverage exclusions.
+
+______________________________________________________________________
+
 ## Testing
 
 - All existing tests must pass.
@@ -95,7 +110,7 @@ ______________________________________________________________________
 
 - Use the [PR template](.github/pull_request_template.md).
 - Verify the linting checklist is complete.
-- Ensure no undocumented linter disables; reviewers will reject PRs that silence rules without entries in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions).
+- Ensure no undocumented linter or coverage disables; reviewers will reject PRs that silence rules or exclude coverage without entries in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions).
 - Document breaking changes and update `README.md` if needed.
 - Keep PRs focused: one logical change per PR.
 

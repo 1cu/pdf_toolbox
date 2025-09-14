@@ -1,7 +1,7 @@
 # Agent Guidelines for `tests`
 
 This directory follows the repository-wide [AGENTS.md](../AGENTS.md). Document
-any linter exceptions in
+any linter or coverage exceptions in
 [DEVELOPMENT.md](../DEVELOPMENT.md#documented-exceptions).
 
 Additional rules:

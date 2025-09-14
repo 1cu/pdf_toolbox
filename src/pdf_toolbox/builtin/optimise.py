@@ -63,9 +63,9 @@ def _compress_images(
 ) -> int:
     total = len(doc)
     for current, page in enumerate(doc, start=1):  # type: ignore[assignment]
-        raise_if_cancelled(cancel)  # pragma: no cover
+        raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
         for img in page.get_images(full=True):
-            raise_if_cancelled(cancel)  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
             xref = img[0]
             pix = fitz.Pixmap(doc, xref)
             try:
@@ -152,7 +152,7 @@ def optimise_pdf(  # noqa: PLR0913
     doc = open_pdf(input_pdf)
     saved = False
     try:
-        raise_if_cancelled(cancel, doc)  # pragma: no cover
+        raise_if_cancelled(cancel, doc)  # pragma: no cover - cancellation hook
 
         progress_total = len(doc) if compress_images else 1
         if compress_images:
@@ -166,7 +166,7 @@ def optimise_pdf(  # noqa: PLR0913
         if progress_callback:
             progress_callback(progress_total, progress_total)
 
-        raise_if_cancelled(cancel, doc)  # pragma: no cover
+        raise_if_cancelled(cancel, doc)  # pragma: no cover - cancellation hook
 
         pdf_quality = settings["pdf_quality"]
         compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
@@ -237,7 +237,7 @@ def batch_optimise_pdfs(  # noqa: PLR0913
 
     outputs: list[str] = []
     for pdf in sorted(in_dir.glob("*.pdf")):
-        raise_if_cancelled(cancel)  # pragma: no cover
+        raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
         out, _ = optimise_pdf(
             str(pdf),
             quality=quality,

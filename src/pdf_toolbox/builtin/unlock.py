@@ -27,7 +27,7 @@ def unlock_pdf(
     cancel: Event | None = None,
 ) -> str:
     """Remove password protection from a PDF."""
-    raise_if_cancelled(cancel)  # pragma: no cover
+    raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
     logger.info("Unlocking %s", input_pdf)
     doc = open_pdf(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
@@ -35,7 +35,7 @@ def unlock_pdf(
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_unlocked.pdf"
     )
-    raise_if_cancelled(cancel, doc)  # pragma: no cover
+    raise_if_cancelled(cancel, doc)  # pragma: no cover - cancellation hook
     save_pdf(
         doc,
         out_path,

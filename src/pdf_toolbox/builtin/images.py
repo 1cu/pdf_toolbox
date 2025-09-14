@@ -126,7 +126,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
 
     for group in batches:
         for page_no in group:
-            raise_if_cancelled(cancel)  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
             page = doc.load_page(page_no - 1)
             matrix = fitz.Matrix(zoom, zoom)
             if fmt == "SVG":
@@ -139,9 +139,9 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
             if pix.colorspace is None or pix.colorspace.n not in (
                 1,
                 3,
-            ):  # pragma: no cover
+            ):  # pragma: no cover - uncommon colorspace
                 pix = fitz.Pixmap(fitz.csRGB, pix)
-            if pix.alpha:  # pragma: no cover
+            if pix.alpha:  # pragma: no cover - rare alpha channel
                 pix = fitz.Pixmap(pix, 0)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"

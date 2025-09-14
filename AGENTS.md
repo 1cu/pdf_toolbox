@@ -7,7 +7,7 @@ and any more specific one.
 
 See the [README](README.md) for a quick start, [CONTRIBUTING](CONTRIBUTING.md)
 for the contributor workflow, and [DEVELOPMENT](DEVELOPMENT.md) for detailed
-notes, documented linter exceptions, and the release process.
+notes, documented linter and coverage exceptions, and the release process.
 
 ## Environment
 
@@ -72,15 +72,25 @@ alternatives, and impact). Never lower severity as a workaround.
 ### PR checklist
 
 - [ ] `pre-commit run --all-files` passes.
-- [ ] No new linter disables.
+- [ ] No new linter or coverage disables.
 - [ ] Any exception documented in DEVELOPMENT.md.
 - [ ] Tests cover the change.
 
 ### Review guidelines
 
-Reject PRs that silence rules without proper justification and
-documentation. Request refactoring when complexity, duplication, or typing
+Reject PRs that silence rules or exclude coverage without proper justification
+and documentation. Request refactoring when complexity, duplication, or typing
 issues trigger warnings.
+
+______________________________________________________________________
+
+## Coverage Policy: Test, Don’t Exclude
+
+- Business logic must be testable, even in GUI modules.
+- Avoid coverage exclusions (`# pragma: no cover`, `# coverage: ignore`, etc.).
+- If unavoidable, limit to a single line, include a brief inline justification,
+  and document the exclusion in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions).
+- Reviewers should reject PRs with undocumented or unjustified coverage exclusions.
 
 ______________________________________________________________________
 

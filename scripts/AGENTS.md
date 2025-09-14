@@ -1,7 +1,7 @@
 # Agent Guidelines for `scripts`
 
 Follow the repository-wide [AGENTS.md](../AGENTS.md) for general rules and
-linting policy. Document any linter exceptions in
+linting policy. Document any linter or coverage exceptions in
 [DEVELOPMENT.md](../DEVELOPMENT.md#documented-exceptions).
 
 Additional rules:

@@ -13,8 +13,8 @@ ______________________________________________________________________
 ### Code Quality & Linting (AGENTS.md → “Fix, don’t silence”)
 
 - [ ] All files pass `pre-commit run --all-files`.
-- [ ] No new `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore`.
-- [ ] If a disable was **absolutely necessary**:
+- [ ] No new `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, `# type: ignore`, or coverage skips (`# pragma: no cover`, `# coverage: ignore`).
+- [ ] If a disable or exclusion was **absolutely necessary**:
   - [ ] Inline justification (1–2 sentences) is present.
   - [ ] Scope is minimal (single line; no file/module-wide disable).
   - [ ] Linked Issue/Ticket reference included.

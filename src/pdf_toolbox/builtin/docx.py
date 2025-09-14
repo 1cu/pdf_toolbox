@@ -38,16 +38,18 @@ def pdf_to_docx(
     docx_doc = Document()
     with open_pdf(input_pdf) as pdf:
         for page in pdf:
-            raise_if_cancelled(cancel)  # pragma: no cover
+            raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
             text = page.get_text()
             if text:  # pragma: no cover - input PDF in tests has no text
-                docx_doc.add_paragraph(text)  # pragma: no cover
+                docx_doc.add_paragraph(text)  # pragma: no cover - add text if present
             for img in page.get_images(full=True):
-                raise_if_cancelled(cancel)  # pragma: no cover
+                raise_if_cancelled(cancel)  # pragma: no cover - cancellation hook
                 xref = img[0]
                 pix = fitz.Pixmap(pdf, xref)
                 if pix.n > RGB_COMPONENTS:  # pragma: no cover - rare branch
-                    pix = fitz.Pixmap(fitz.csRGB, pix)  # pragma: no cover
+                    pix = fitz.Pixmap(
+                        fitz.csRGB, pix
+                    )  # pragma: no cover - color conversion
                 pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 with io.BytesIO() as buf:
                     pil.save(buf, format="PNG")
