@@ -57,7 +57,7 @@ def test_pdf_to_docx_converts_non_rgb(monkeypatch, pdf_with_image, tmp_path):
 
     called = {"converted": False}
 
-    def fake_pixmap(arg1, arg2):
+    def fake_pixmap(_arg1, arg2):
         if isinstance(arg2, int):
             return DummyPix(4)
         called["converted"] = True
@@ -103,12 +103,13 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
 
     class DummyPage:
         def get_pixmap(self, matrix):
+            _ = matrix
             return DummyPix(4)
 
-    def fake_load_page(self, index):
+    def fake_load_page(_doc, _index):
         return DummyPage()
 
-    def fake_pixmap(arg1, arg2):
+    def fake_pixmap(arg1, _arg2):
         assert arg1 is images_mod.fitz.csRGB
         return DummyPix(3)
 
@@ -130,12 +131,13 @@ def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
 
     class DummyPage:
         def get_pixmap(self, matrix):
+            _ = matrix
             return DummyPix(1)
 
-    def fake_load_page(self, index):
+    def fake_load_page(_doc, _index):
         return DummyPage()
 
-    def fake_pixmap(arg1, arg2):
+    def fake_pixmap(_arg1, arg2):
         assert arg2 == 0
         return DummyPix(0)
 
