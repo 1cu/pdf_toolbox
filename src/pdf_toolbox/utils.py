@@ -93,7 +93,7 @@ def ensure_libs() -> None:
     for mod in REQUIRED_LIBS:
         try:
             importlib.import_module(mod)
-        except Exception:  # pragma: no cover  # pdf-toolbox: best effort | issue:-
+        except Exception:
             missing.append(mod)
     if missing:
         parts = []
@@ -197,7 +197,7 @@ def open_pdf(path: str | Path) -> fitz.Document:
         raise RuntimeError(ERR_OPEN_PDF.format(path=path)) from exc
     try:
         return fitz.open(str(safe))
-    except Exception as exc:  # pragma: no cover  # pdf-toolbox: best effort | issue:-
+    except Exception as exc:
         raise RuntimeError(ERR_OPEN_PDF.format(path=path)) from exc
 
 
@@ -213,7 +213,7 @@ def save_pdf(
     safe_out = validate_path(out_path)
     try:
         doc.save(str(safe_out), **save_kwargs)
-    except Exception as exc:  # pragma: no cover  # pdf-toolbox: best effort | issue:-
+    except Exception as exc:
         raise RuntimeError(ERR_SAVE_PDF.format(out_path=out_path)) from exc
     finally:
         doc.close()

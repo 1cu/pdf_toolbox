@@ -71,7 +71,9 @@ If you must add an exception:
 
 1. Add a one-line justification directly in code.
 1. Restrict scope to a single line (never file/module-wide).
-1. Document the exception in [`DEVELOPMENT.md`](DEVELOPMENT.md#documented-exceptions) under “Documented Exceptions”.
+1. Use `# pdf-toolbox: <reason> | issue:<id or ->`.
+1. Do not edit `DEVELOPMENT_EXCEPTIONS.md`; run pre-commit to regenerate it.
+1. Document the exception in [`DEVELOPMENT.md`](DEVELOPMENT.md#documented-exceptions).
 1. Link to the relevant Issue/PR.
 
 Pull requests that violate this policy will be rejected.

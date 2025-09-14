@@ -7,7 +7,7 @@ import pytest
 gui: ModuleType | None
 try:
     gui = importlib.import_module("pdf_toolbox.gui")
-except Exception:  # pragma: no cover - optional GUI deps
+except Exception:  # pragma: no cover  # pdf-toolbox: optional GUI deps | issue:-
     gui = None
     pytest.skip("pdf_toolbox.gui not available", allow_module_level=True)
 

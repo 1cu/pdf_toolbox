@@ -63,6 +63,9 @@ A disable is allowed **only if all conditions are met**:
 - Documented in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions)
   with rationale and Issue/PR reference.
 - Temporary? link to a follow‑up ticket.
+- Use short format with `# pdf-toolbox: <reason> | issue:<id or ->`.
+- Run `scripts/generate_exception_overview.py` via pre-commit to update
+  `DEVELOPMENT_EXCEPTIONS.md` (never edit it manually).
 
 ### Changes to linter configuration
 
@@ -80,7 +83,8 @@ alternatives, and impact). Never lower severity as a workaround.
 
 Reject PRs that silence rules without proper justification and
 documentation. Request refactoring when complexity, duplication, or typing
-issues trigger warnings.
+issues trigger warnings. Check existing exceptions periodically to keep the
+codebase clean.
 
 ______________________________________________________________________
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
 from pdf_toolbox.builtin.docx import pdf_to_docx

@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
@@ -58,6 +58,26 @@ def test_open_save_pdf(tmp_path):
     reopened = open_pdf(out)
     assert reopened.page_count == 1
     reopened.close()
+
+
+def test_open_pdf_invalid(tmp_path):
+    bad = tmp_path / "bad.pdf"
+    bad.write_text("not a pdf")
+    with pytest.raises(RuntimeError, match="Could not open PDF file"):
+        open_pdf(bad)
+
+
+def test_save_pdf_failure(tmp_path, monkeypatch):
+    doc = fitz.open()
+    doc.new_page()
+
+    def fail_save(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(doc, "save", fail_save)
+    out = tmp_path / "out.pdf"
+    with pytest.raises(RuntimeError, match="Could not save PDF file"):
+        save_pdf(doc, out)
 
 
 def test_ensure_libs_missing(monkeypatch):
