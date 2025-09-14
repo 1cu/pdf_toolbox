@@ -29,6 +29,7 @@ notes, documented linter exceptions, and the release process.
 - Maintain ≥95% test coverage for every module (modules excluded in the
   coverage configuration in `pyproject.toml` are exempt).
 - Use clear, descriptive names for functions and variables.
+- Prefer `logging` for messages; do not swap `print` for `sys.stderr.write`.
 
 See the `AGENTS.md` in each subdirectory for additional guidance. The most
 deeply nested instructions take precedence.
@@ -60,12 +61,11 @@ A disable is allowed **only if all conditions are met**:
 
 - One‑line justification in code.
 - Minimal scope (single line).
-- Documented in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions)
-  with rationale and Issue/PR reference.
 - Temporary? link to a follow‑up ticket.
 - Use short format with `# pdf-toolbox: <reason> | issue:<id or ->`.
 - Run `scripts/generate_exception_overview.py` via pre-commit to update
-  `DEVELOPMENT_EXCEPTIONS.md` (never edit it manually).
+  `DEVELOPMENT_EXCEPTIONS.md`; never document exceptions manually in any
+  Markdown file.
 
 ### Changes to linter configuration
 
@@ -76,7 +76,6 @@ alternatives, and impact). Never lower severity as a workaround.
 
 - [ ] `pre-commit run --all-files` passes.
 - [ ] No new linter disables.
-- [ ] Any exception documented in DEVELOPMENT.md.
 - [ ] Tests cover the change.
 
 ### Review guidelines

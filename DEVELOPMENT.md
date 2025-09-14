@@ -82,14 +82,12 @@ If an exception is truly unavoidable:
 
 1. Add a one-line justification in code (1–2 sentences).
 1. Restrict the scope to a single line (never a file or module).
-1. Document the exception in this file using the table below.
+1. Run `scripts/generate_exception_overview.py` via pre-commit to update `DEVELOPMENT_EXCEPTIONS.md`.
 1. Link the related Issue/PR for visibility.
 
 ### Documented Exceptions
 
-See [DEVELOPMENT_EXCEPTIONS.md](DEVELOPMENT_EXCEPTIONS.md).
-
-This table must stay up to date. Reviewers will reject PRs that introduce undocumented disables.
+See [DEVELOPMENT_EXCEPTIONS.md](DEVELOPMENT_EXCEPTIONS.md). The file is generated; never edit it manually. Reviewers will reject PRs that introduce undocumented disables.
 
 ## Release
 

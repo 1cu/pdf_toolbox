@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
+import logging
 import re
-import sys
 import tokenize
 from pathlib import Path
 
@@ -97,7 +97,7 @@ def main() -> int:
     """Write the current exception table and validate comment format."""
     rows, errors = gather()
     if errors:
-        sys.stderr.write("\n".join(errors) + "\n")
+        logging.error("\n".join(errors))
         return 1
     table = render_table(rows)
     content = "# Documented Exceptions\n\n" + table + "\n"
