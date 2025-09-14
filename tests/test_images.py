@@ -312,10 +312,8 @@ def test_pdf_to_images_max_size_lossless_scales_down(tmp_path, fmt):
     limited_img = Image.open(limited)
     assert limited_size <= limit_mb * 1024 * 1024
     assert limited_size < base_size
-    assert (
-        limited_img.size[0] < base_img.size[0]
-        and limited_img.size[1] < base_img.size[1]
-    )
+    assert limited_img.size[0] < base_img.size[0]
+    assert limited_img.size[1] < base_img.size[1]
 
 
 def test_pdf_to_images_png_max_size_too_small_raises(tmp_path):

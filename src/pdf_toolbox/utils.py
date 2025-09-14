@@ -37,6 +37,16 @@ _AUTHOR_INFO: tuple[str, str] | None = None
 logger = logging.getLogger("pdf_toolbox")
 logger.propagate = False
 
+ERR_INVALID_PAGE_SPEC = "Invalid page specification"
+ERR_PAGE_RANGE = "page {start}-{end} out of range 1..{total}"
+ERR_END_GTE_START = "end must be greater than or equal to start"
+ERR_PAGE_OUT_OF_RANGE = "page {page} out of range 1..{total}"
+ERR_OUTPUT_DIR_FILE = "Output directory must be a directory, not a file: {out_dir}"
+ERR_OPEN_PDF = "Could not open PDF file: {path}"
+ERR_SAVE_PDF = "Could not save PDF file: {out_path}"
+ERR_MISSING_LIBS = "Missing required libraries: {libs}"
+ERR_CANCELLED = "cancelled"
+
 
 def configure_logging(
     level: str = "INFO", handler: logging.Handler | None = None
@@ -103,7 +113,7 @@ def ensure_libs() -> None:
         for mod in missing:
             hint = LIB_HINTS.get(mod, "see documentation")
             parts.append(f"{mod} ({hint})")
-        raise RuntimeError("Missing required libraries: " + ", ".join(parts))
+        raise RuntimeError(ERR_MISSING_LIBS.format(libs=", ".join(parts)))
 
 
 def parse_page_spec(spec: str | None, total: int) -> list[int]:
@@ -131,19 +141,21 @@ def parse_page_spec(spec: str | None, total: int) -> list[int]:
                 start = int(start_s) if start_s else 1
                 end = int(end_s) if end_s else total
             except ValueError as exc:
-                raise ValueError("Invalid page specification") from exc
+                raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
             if start < 1 or end > total:
-                raise ValueError(f"page {start}-{end} out of range 1..{total}")
+                raise ValueError(
+                    ERR_PAGE_RANGE.format(start=start, end=end, total=total)
+                )
             if end < start:
-                raise ValueError("end must be greater than or equal to start")
+                raise ValueError(ERR_END_GTE_START)
             pages.update(range(start, end + 1))
         else:
             try:
                 page = int(part)
             except ValueError as exc:
-                raise ValueError("Invalid page specification") from exc
+                raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
             if page < 1 or page > total:
-                raise ValueError(f"page {page} out of range 1..{total}")
+                raise ValueError(ERR_PAGE_OUT_OF_RANGE.format(page=page, total=total))
             pages.add(page)
     return sorted(pages)
 
@@ -158,7 +170,7 @@ def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
     target = Path(out_dir) if out_dir else base.parent
     target = validate_path(target)
     if target.suffix:
-        raise ValueError(f"Output directory must be a directory, not a file: {out_dir}")
+        raise ValueError(ERR_OUTPUT_DIR_FILE.format(out_dir=out_dir))
     target.mkdir(parents=True, exist_ok=True)
     return target
 
@@ -187,7 +199,7 @@ def raise_if_cancelled(
     if cancel and cancel.is_set():
         if doc is not None:
             doc.close()
-        raise RuntimeError("cancelled")
+        raise RuntimeError(ERR_CANCELLED)
 
 
 def open_pdf(path: str | Path) -> fitz.Document:
@@ -195,11 +207,11 @@ def open_pdf(path: str | Path) -> fitz.Document:
     try:
         safe = validate_path(path, must_exist=True)
     except PathValidationError as exc:
-        raise RuntimeError(f"Could not open PDF file: {path}") from exc
+        raise RuntimeError(ERR_OPEN_PDF.format(path=path)) from exc
     try:
         return fitz.open(str(safe))
     except Exception as exc:  # pragma: no cover - best effort
-        raise RuntimeError(f"Could not open PDF file: {path}") from exc
+        raise RuntimeError(ERR_OPEN_PDF.format(path=path)) from exc
 
 
 def save_pdf(
@@ -215,7 +227,7 @@ def save_pdf(
     try:
         doc.save(str(safe_out), **save_kwargs)
     except Exception as exc:  # pragma: no cover - best effort
-        raise RuntimeError(f"Could not save PDF file: {out_path}") from exc
+        raise RuntimeError(ERR_SAVE_PDF.format(out_path=out_path)) from exc
     finally:
         doc.close()
 

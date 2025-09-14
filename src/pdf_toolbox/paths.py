@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+ERR_ESCAPES_BASE = "path escapes base directory"
+ERR_NOT_EXIST = "path does not exist"
+
 
 class PathValidationError(ValueError):
     """Raised when a user-supplied path is invalid or unsafe."""
@@ -32,11 +35,11 @@ def validate_path(
         base_path = Path(base).resolve()
         candidate = (base_path / p).resolve() if not p.is_absolute() else p.resolve()
         if base_path not in [candidate, *candidate.parents]:
-            raise PathValidationError("path escapes base directory")
+            raise PathValidationError(ERR_ESCAPES_BASE)
     else:
         candidate = p.resolve()
     if must_exist and not candidate.exists():
-        raise PathValidationError("path does not exist")
+        raise PathValidationError(ERR_NOT_EXIST)
     return candidate
 
 

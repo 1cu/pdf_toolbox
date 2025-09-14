@@ -11,6 +11,7 @@ Checks:
 from __future__ import annotations
 
 import json
+import logging
 import re
 import sys
 from pathlib import Path
@@ -18,23 +19,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 LOCALES = ROOT / "src" / "pdf_toolbox" / "locales"
 
+ERR_OBJECT = "{path} must be an object"
+ERR_MISSING = "{path} must define object '{key}'"
+ERR_SNAKE = "{path}:{group} key '{key}' must be snake_case"
+ERR_STRING = "{path}:{group} key '{key}' must map to string"
+
 
 def load_locale(lang: str) -> dict:
     """Load and minimally validate a locale JSON by language code."""
     p = LOCALES / f"{lang}.json"
     data = json.loads(p.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        raise SystemExit(f"{p} must be an object")
+        raise SystemExit(ERR_OBJECT.format(path=p))
     for k in ("strings", "labels"):
         if k not in data or not isinstance(data[k], dict):
-            raise SystemExit(f"{p} must define object '{k}'")
+            raise SystemExit(ERR_MISSING.format(path=p, key=k))
     snake = re.compile(r"^[a-z0-9_]+$")
     for group in ("strings", "labels"):
         for key, val in data[group].items():
             if not snake.match(key):
-                raise SystemExit(f"{p}:{group} key '{key}' must be snake_case")
+                raise SystemExit(ERR_SNAKE.format(path=p, group=group, key=key))
             if not isinstance(val, str):
-                raise SystemExit(f"{p}:{group} key '{key}' must map to string")
+                raise SystemExit(ERR_STRING.format(path=p, group=group, key=key))
     return data
 
 
@@ -72,9 +78,10 @@ def main() -> int:
 
     Returns 0 on success; non-zero on validation error.
     """
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     locales = {p.stem: load_locale(p.stem) for p in LOCALES.glob("*.json")}
     if not locales:
-        print("no locales found")
+        logging.error("no locales found")
         return 1
     ok = True
     ref_strings, _ = referenced_keys()
@@ -87,9 +94,9 @@ def main() -> int:
                 missing = sorted(base - keys)
                 extra = sorted(keys - base)
                 if missing:
-                    print(f"{lang}.json missing {group} keys: {missing}")
+                    logging.error("%s.json missing %s keys: %s", lang, group, missing)
                 if extra:
-                    print(f"{lang}.json has extra {group} keys: {extra}")
+                    logging.error("%s.json has extra %s keys: %s", lang, group, extra)
                 ok = False
     for lang, data in locales.items():
         keys = set(data["strings"].keys())
@@ -97,9 +104,9 @@ def main() -> int:
             extra = sorted(keys - ref_strings)
             missing = sorted(ref_strings - keys)
             if extra:
-                print(f"{lang}.json obsolete string keys: {extra}")
+                logging.error("%s.json obsolete string keys: %s", lang, extra)
             if missing:
-                print(f"{lang}.json missing string keys: {missing}")
+                logging.error("%s.json missing string keys: %s", lang, missing)
             ok = False
     return 0 if ok else 1
 
