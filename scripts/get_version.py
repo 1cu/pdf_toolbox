@@ -3,15 +3,17 @@
 
 from __future__ import annotations
 
+import logging
 import pathlib
 import tomllib
 
 
 def main() -> None:
-    """Print the version defined in ``pyproject.toml``."""
+    """Log the version defined in ``pyproject.toml``."""
     pyproject = pathlib.Path("pyproject.toml")
     data = tomllib.loads(pyproject.read_text())
-    print(data["project"]["version"])
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.info(data["project"]["version"])
 
 
 if __name__ == "__main__":

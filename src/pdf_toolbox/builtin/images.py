@@ -20,6 +20,14 @@ from pdf_toolbox.utils import (
     sane_output_dir,
 )
 
+ERR_UNKNOWN_DPI = "Unknown DPI preset '{dpi}'"
+ERR_UNSUPPORTED_FORMAT = (
+    "Unsupported image format '{image_format}'. Supported formats: {formats}"
+)
+ERR_UNKNOWN_QUALITY = "Unknown quality preset '{quality}'"
+ERR_COULD_NOT_REDUCE = "Could not reduce image below max_size_mb"
+ERR_WIDTH_HEIGHT = "width and height must be provided together"
+
 # Supported output formats for PDF rendering; WebP offers
 # smaller files with good quality.
 IMAGE_FORMATS = ["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
@@ -82,7 +90,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
         try:
             dpi_value = DPI_PRESETS[dpi]
         except KeyError as exc:
-            raise ValueError(f"Unknown DPI preset '{dpi}'") from exc
+            raise ValueError(ERR_UNKNOWN_DPI.format(dpi=dpi)) from exc
     else:
         dpi_value = int(dpi)
     zoom = dpi_value / 72  # default PDF resolution is 72 dpi
@@ -90,7 +98,10 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
     fmt = image_format.upper()
     if fmt not in IMAGE_FORMATS:
         raise ValueError(
-            f"Unsupported image format '{image_format}'. Supported formats: {', '.join(IMAGE_FORMATS)}"
+            ERR_UNSUPPORTED_FORMAT.format(
+                image_format=image_format,
+                formats=", ".join(IMAGE_FORMATS),
+            )
         )
     ext = fmt.lower()
     max_bytes = int(max_size_mb * 1024 * 1024) if max_size_mb else None
@@ -145,7 +156,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                             quality_val = LOSSY_QUALITY_PRESETS[quality]
                         except KeyError as exc:
                             raise ValueError(
-                                f"Unknown quality preset '{quality}'"
+                                ERR_UNKNOWN_QUALITY.format(quality=quality)
                             ) from exc
                     else:
                         quality_val = int(quality)
@@ -161,7 +172,9 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                     try:
                         quality_val = LOSSY_QUALITY_PRESETS[quality]
                     except KeyError as exc:
-                        raise ValueError(f"Unknown quality preset '{quality}'") from exc
+                        raise ValueError(
+                            ERR_UNKNOWN_QUALITY.format(quality=quality)
+                        ) from exc
                 else:
                     quality_val = int(quality)
                 q_low, q_high = 1, quality_val
@@ -179,7 +192,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                     else:
                         q_high = mid - 1
                 if best is None:
-                    raise RuntimeError("Could not reduce image below max_size_mb")
+                    raise RuntimeError(ERR_COULD_NOT_REDUCE)
                 out_path.write_bytes(best)
             else:
                 need_scale = True
@@ -230,7 +243,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
                         else:
                             scale_high = scale
                     if scaled_bytes is None:
-                        raise RuntimeError("Could not reduce image below max_size_mb")
+                        raise RuntimeError(ERR_COULD_NOT_REDUCE)
                     out_path.write_bytes(scaled_bytes)
                     final_scale = scale_low
                     if fmt == "PNG":
@@ -314,7 +327,7 @@ def pdf_to_images(  # noqa: PLR0913
         dpi_val: int | DpiChoice = dpi
         if width is not None or height is not None:
             if width is None or height is None:
-                raise ValueError("width and height must be provided together")
+                raise ValueError(ERR_WIDTH_HEIGHT)
             first = doc.load_page(0)
             w_in = first.rect.width / 72
             h_in = first.rect.height / 72

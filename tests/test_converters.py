@@ -64,5 +64,5 @@ def test_unlock_pdf_invalid_password(sample_pdf, tmp_path):
             owner_pw="secret",
             user_pw="secret",
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Invalid password"):
         unlock_pdf(str(locked), password="wrong", out_dir=str(tmp_path))

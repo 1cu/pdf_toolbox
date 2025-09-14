@@ -108,6 +108,7 @@ def test_builtin_import_registers_actions():
 
 
 def test_register_module_ignores_nodoc_functions(monkeypatch):
+    _ = monkeypatch
     import types
 
     mod = types.ModuleType("dummy_mod")

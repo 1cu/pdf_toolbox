@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+ERR_PDF_NOT_FOUND = "PDF file not found: {path}"
+ERR_EXPECTED_FILE = "Expected a file, got directory: {path}"
+ERR_MUST_BE_PDF = "File must be a PDF: {path}"
+ERR_MISSING_CONFIG = "Missing required config field: {key}"
+
 
 def validate_pdf_path(path: str | Path) -> Path:
     """Validate and sanitize a PDF file path.
@@ -13,11 +18,11 @@ def validate_pdf_path(path: str | Path) -> Path:
     """
     p = Path(path)
     if not p.exists():
-        raise FileNotFoundError(f"PDF file not found: {path}")
+        raise FileNotFoundError(ERR_PDF_NOT_FOUND.format(path=path))
     if p.is_dir():
-        raise IsADirectoryError(f"Expected a file, got directory: {path}")
+        raise IsADirectoryError(ERR_EXPECTED_FILE.format(path=path))
     if p.suffix.lower() != ".pdf":
-        raise ValueError(f"File must be a PDF: {path}")
+        raise ValueError(ERR_MUST_BE_PDF.format(path=path))
     return p
 
 
@@ -30,7 +35,7 @@ def validate_config(config: dict) -> dict:
     for key in required:
         val = (config or {}).get(key)
         if not val:
-            raise ValueError(f"Missing required config field: {key}")
+            raise ValueError(ERR_MISSING_CONFIG.format(key=key))
     return config
 
 

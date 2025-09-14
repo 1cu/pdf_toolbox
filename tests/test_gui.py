@@ -37,6 +37,7 @@ def test_save_config_roundtrip(tmp_path, monkeypatch):
 
 
 def test_mainwindow_populates_actions(app):
+    _ = app
     win = gui.MainWindow()
     try:
         assert win.tree.topLevelItemCount() > 0
@@ -45,6 +46,8 @@ def test_mainwindow_populates_actions(app):
 
 
 def test_mainwindow_collect_args(app, monkeypatch):
+    _ = app
+
     def sample(name: str, flag: bool = False) -> None:
         pass
 
@@ -70,6 +73,7 @@ def test_main_raises_without_qt(monkeypatch):
 
 
 def test_build_form_handles_pep604_union(app, monkeypatch):
+    _ = app
     from typing import Literal
 
     def sample(dpi: int | Literal["Low", "High"] = "High") -> None:
@@ -92,6 +96,8 @@ def test_build_form_handles_pep604_union(app, monkeypatch):
 
 
 def test_float_none_spinbox_range(app, monkeypatch):
+    _ = app
+
     def sample(max_size_mb: float | None = None) -> None:
         pass
 
@@ -107,6 +113,8 @@ def test_float_none_spinbox_range(app, monkeypatch):
 
 
 def test_build_form_hides_cancel(app, monkeypatch):
+    _ = app
+
     def sample(path: str, cancel=None) -> None:  # pragma: no cover - GUI helper
         pass
 

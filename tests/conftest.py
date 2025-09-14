@@ -38,4 +38,3 @@ def author_config(tmp_path, monkeypatch):
     config = tmp_path / "pdf_toolbox_config.json"
     config.write_text(json.dumps({"author": "Tester", "email": "tester@example.com"}))
     monkeypatch.setattr(utils, "CONFIG_FILE", config)
-    yield
