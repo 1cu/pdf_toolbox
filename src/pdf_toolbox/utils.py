@@ -178,8 +178,7 @@ def raise_if_cancelled(cancel: Event | None, doc: fitz.Document | None = None) -
     """Raise ``RuntimeError('cancelled')`` if ``cancel`` is set.
 
     If ``doc`` is provided it will be closed before raising to free
-    resources. The function is excluded from coverage as it depends on
-    timing-sensitive user interaction.
+    resources.
     """
     if cancel and cancel.is_set():
         if doc is not None:

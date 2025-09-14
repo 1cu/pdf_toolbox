@@ -126,9 +126,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
 
     for group in batches:
         for page_no in group:
-            raise_if_cancelled(
-                cancel
-            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+            raise_if_cancelled(cancel)
             page = doc.load_page(page_no - 1)
             matrix = fitz.Matrix(zoom, zoom)
             if fmt == "SVG":

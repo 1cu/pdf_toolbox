@@ -26,6 +26,7 @@ def pdf_with_image(tmp_path):
     doc = fitz.open()
     page = doc.new_page()
     rect = fitz.Rect(0, 0, 10, 10)
+    page.insert_text((72, 72), "Hi")
     page.insert_image(rect, filename=str(img_path))
     pdf_path = tmp_path / "with_image.pdf"
     doc.save(pdf_path)

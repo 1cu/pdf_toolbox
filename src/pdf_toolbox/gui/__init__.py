@@ -46,7 +46,7 @@ except (
     QT_IMPORT_ERROR = _qt_exc
 
 
-def main() -> None:  # pragma: no cover  # pdf-toolbox: entry point | issue:-
+def main() -> None:
     """Launch the GUI application."""
     if not QT_AVAILABLE:
         raise QT_IMPORT_ERROR or RuntimeError("Qt libraries not available")
