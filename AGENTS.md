@@ -1,6 +1,8 @@
 # Agent Guidelines
 
-This file provides general instructions for all contributors. Directory-specific instructions live in `AGENTS.md` files in subdirectories such as `src/pdf_toolbox`, `tests`, and `scripts`. When working on a file, apply the rules from this file and any nested `AGENTS.md`.
+This file provides general instructions for all contributors.\
+Directory-specific instructions live in `AGENTS.md` files in subdirectories such as `src/pdf_toolbox`, `tests`, and `scripts`.\
+When working on a file, apply the rules from this file and any nested `AGENTS.md`.
 
 ## Environment
 
@@ -10,7 +12,8 @@ This file provides general instructions for all contributors. Directory-specific
 
 ## Workflow
 
-- Run `pre-commit run --all-files` before every commit. The hooks format, lint, run tests, and perform security checks. Allow them to finish even if they take a while.
+- Run `pre-commit run --all-files` before every commit. The hooks format, lint, run tests, and perform security checks.\
+  Allow them to finish even if they take a while.
 - Use `pre-commit run format|lint|tests` to run subsets when needed.
 - If hooks modify files, stage the changes and re-run `pre-commit run --files <file>`.
 - Bump the `version` in `pyproject.toml` once per pull request.
@@ -22,55 +25,63 @@ This file provides general instructions for all contributors. Directory-specific
   the coverage configuration in `pyproject.toml` are exempt.
 - Use clear, descriptive names for functions and variables.
 
-See the `AGENTS.md` in each subdirectory for additional guidance. The most deeply nested instructions take precedence.
+See the `AGENTS.md` in each subdirectory for additional guidance.\
+The most deeply nested instructions take precedence.
+
+______________________________________________________________________
 
 # Linting-Policy: Fix, don’t silence
 
-**Grundsatz**
+**Principle**
 
-- Erst Code reparieren, nicht die Regel ausschalten.
-- Linter helfen, Fehler früh zu finden und Lesbarkeit zu sichern.
+- Always fix the code first, do not disable the rule.
+- Linters help to catch problems early and enforce readability.
 
-**Verboten (sofern nicht unter „Ausnahmen“ dokumentiert):**
+**Strictly forbidden (unless covered under “Exceptions” below):**
 
-- `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, `# type: ignore` ohne Begründung.
-- Per-Datei-/Block-Disables: `# ruff: noqa`, `# ruff: noqa: <codes>`, `flake8: noqa`, `pylint: disable=...`.
-- Änderungen an `pyproject.toml`, die Regeln absenken/entfernen, um einen einzelnen Befund zu „grün“ zu machen.
+- `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, `# type: ignore` without justification.
+- File- or block-wide disables: `# ruff: noqa`, `flake8: noqa`, `pylint: disable=...`.
+- Changes to `pyproject.toml` that weaken/remove rules to make one finding “green”.
 
-**Erwartetes Vorgehen**
+**Expected workflow**
 
-1. Warnung verstehen (Regelbeschreibung lesen).
-1. Code vereinfachen/refactoren (z. B. Komplexität senken statt `PLR0915` zu muten).
-1. Typen/Nullpfade absichern statt `type: ignore`.
-1. Tests anpassen/ergänzen, falls das Refactoring Verhalten ändert.
-1. Nur wenn technisch nicht lösbar: Ausnahme prüfen (siehe unten).
+1. Understand the warning (read the rule documentation).
+1. Simplify/refactor code (e.g. reduce complexity instead of muting `PLR0915`).
+1. Strengthen typing or null-handling instead of using `type: ignore`.
+1. Update/add tests if refactoring changes behavior.
+1. Only if truly unavoidable: follow the exception path below.
 
-**Ausnahmen (nur in seltenen Fällen)**
-Erlaubt ist ein Disable **nur**, wenn alle Punkte erfüllt sind:
+**Exceptions (rare cases only)**
 
-- **Begründung** direkt am Code in 1–2 Sätzen: *warum* die Regel hier nicht sinnvoll ist.
-- **Scope minimal** (eine Zeile, kein Datei- oder Modul-Disable).
-- **Ticket/Issue-Referenz** (z. B. `# noqa: PLR0915  # see #123: Algorithmus bewusst unrolled for perf on large PDFs`).
-- **Follow-up**: Wenn es ein temporärer Workaround ist, verlinke ein Issue mit Plan (Deadline oder Kriterien).
+A disable is allowed **only if all conditions are met**:
 
-**Beispiele**
+- **Justification in code** (1–2 sentences why the rule does not apply).
+- **Minimal scope** (single line, never a file or module).
+- **Documentation**:
+  - Reference the exception in **`DEVELOPMENT.md`** (or `CONTRIBUTING.md`) with rationale and context.
+  - Include an Issue/PR reference if relevant.
+- **Follow-up**: If temporary, link to a ticket/plan for eventual removal.
 
-- ✅ Gut:
+**Examples**
+
+- ✅ Good:
 
   ```python
-  def _scale(img, target):  # zyklomatische Komplexität < 10
+  def _scale(img, target):  # cyclomatic complexity < 10
       ...
   ```
 
-  (Regel erfüllt durch Refactoring.)
+````
 
-- ✅ Seltene Ausnahme:
+(Rule satisfied by refactoring.)
+
+* ✅ Rare exception:
 
   ```python
-  result: Any = json.loads(raw)  # noqa: ANN401  # see #456: Fremd-API liefert heterogene Strukturen; Adapter folgt.
+  result: Any = json.loads(raw)  # noqa: ANN401  # Heterogeneous API payload; adapter planned. Documented in DEVELOPMENT.md.
   ```
 
-- ❌ Schlecht:
+* ❌ Bad:
 
   ```python
   # ruff: noqa
@@ -78,30 +89,46 @@ Erlaubt ist ein Disable **nur**, wenn alle Punkte erfüllt sind:
       ...
   ```
 
-  (pauschales Abschalten des Linters)
+  (Global mute without justification.)
 
-**Änderungen an Linter-Konfiguration**
+**Changes to linter configuration**
 
-- Regeln dürfen nur nach Team-Entscheid geändert werden (PR mit Begründung, Alternativen, Impact).
-- Kein Herabsetzen von Schweregraden als Workaround.
+* Rules may be modified only after team decision (PR with justification, alternatives, and impact).
+* Never lower severity as a workaround.
 
-**PR-Checkliste (bitte im PR-Template abhaken)**
+**PR checklist (enforced in PR template)**
 
-- [ ] Alle neuen/geänderten Dateien linten sauber ohne neue Disables.
-- [ ] Kein Anstieg von `noqa`/`type: ignore` in der Codebasis.
-- [ ] Wenn Disable nötig: Begründung + Issue-Link vorhanden, Scope minimal.
-- [ ] Tests grün; neue Tests für Refactorings vorhanden.
+* [ ] All new/changed files lint clean without new disables.
+* [ ] No increase in `noqa` / `type: ignore` count.
+* [ ] If disable used: justification inline + entry in DEVELOPMENT.md.
+* [ ] Tests pass; new tests cover refactoring.
 
-**Review-Hinweise**
+**Review guidelines**
 
-- Lehnt PRs ab, die Regeln ohne fundierte Begründung abschalten.
-- Fordert Refactoring-Vorschläge ein (Komplexität, Duplication, Typen).
+* Reject PRs that silence rules without proper justification and documentation.
+* Request refactoring alternatives when complexity, duplication, or typing issues are the cause.
+
+---
+
+## Quick Reference for Common Ruff Rules
+
+* `PLR0915` (too complex): split into helpers, early returns.
+* `ANN401` (Any): use precise types or adapters; `Any` only with justification + doc.
+* `E/F` (Syntax/Name errors): must be fixed, never ignored.
+* `I` (Import sort): sort imports; do not disable.
+
+````
 
 ______________________________________________________________________
 
-## Kurzleitfaden für häufige Ruff-Regeln
+👉 To make this actionable, add a simple `DEVELOPMENT.md` with a table like:
 
-- `PLR0915` (zu komplex): Funktion splitten, Helfer extrahieren, frühe Returns.
-- `ANN401` (Any): präzise Typen oder Adapter; nur ausnahmsweise `Any` mit Begründung.
-- `E/F` (Syntax/Name): Fehler fixen, keine Ausnahmen.
-- `I` (Import sort): Imports ordnen, nicht deaktivieren.
+```markdown
+# Development Notes
+
+## Documented Linter Exceptions
+
+| File / Line | Rule | Justification | Linked Issue/PR |
+|-------------|------|---------------|-----------------|
+| src/pdf_toolbox/foo.py:42 | ANN401 | External API returns arbitrary JSON, adapter planned | #456 |
+```

@@ -4,8 +4,6 @@ Notes for contributing to PDF Toolbox. All Python modules live inside the `pdf_t
 
 GUI is split under `pdf_toolbox/gui/` into `config.py`, `widgets.py`, `worker.py`, and `main_window.py` with a thin facade in `pdf_toolbox/gui/__init__.py`. Headless helpers (`gui/config.py`, `gui/__init__.py`) are covered by tests; pure GUI modules are excluded from coverage in `pyproject.toml`.
 
-The default optimise action is `optimise_pdf` (with optional progress callback). A private helper `_optimise_pdf` contains core logic without progress.
-
 Internationalization: basic English/German translations are provided by `pdf_toolbox.i18n`. Use `i18n.tr()` for UI strings and `i18n.set_language()` to override auto-detection when testing.
 
 ## Table of Contents
@@ -14,6 +12,7 @@ Internationalization: basic English/German translations are provided by `pdf_too
 - [Build the distribution](#build-the-distribution)
 - [Run the source](#run-the-source)
 - [Pre-commit hooks](#pre-commit-hooks)
+- [Linting and Rule Exceptions](#linting-and-rule-exceptions)
 - [Release](#release)
 
 ## Set up the environment
@@ -70,6 +69,28 @@ Bandit performs static security checks during pre-commit. Dependency
 vulnerability auditing is omitted because the project is not published on
 PyPI.
 
+## Linting and Rule Exceptions
+
+PDF Toolbox follows a **“Fix, don’t silence”** linting policy (see [AGENTS.md](./AGENTS.md)):
+
+- Warnings should be fixed through refactoring, not disabled.
+- No new `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore` are allowed unless justified.
+
+If an exception is truly unavoidable:
+
+1. Add a one-line justification in code (1–2 sentences).
+1. Restrict the scope to a single line (never a file or module).
+1. Document the exception in this file using the table below.
+1. Link the related Issue/PR for visibility.
+
+### Documented Exceptions
+
+| File / Line  | Rule | Justification | Linked Issue/PR |
+| ------------ | ---- | ------------- | --------------- |
+| *(none yet)* | –    | –             | –               |
+
+This table must stay up to date. Reviewers will reject PRs that introduce undocumented disables.
+
 ## Release
 
 The release workflow runs only when a version tag (matching `v*`) is pushed. This allows releases to be cut manually instead of on every commit.
@@ -86,3 +107,6 @@ git push origin v0.2.62
 ```
 
 The workflow will build the package and publish a GitHub release for that tag.
+
+```
+```

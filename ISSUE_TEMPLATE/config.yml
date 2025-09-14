@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions / Usage / How-To
+    url: https://github.com/1cu/pdf_toolbox/discussions
+    about: Use Discussions for general questions and support.
+  - name: Security Reports
+    url: https://github.com/1cu/pdf_toolbox/security/policy
+    about: For vulnerabilities, follow the Security Policy.
