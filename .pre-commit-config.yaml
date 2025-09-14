@@ -86,3 +86,8 @@ repos:
         pass_filenames: false
         alias: tests
 
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
