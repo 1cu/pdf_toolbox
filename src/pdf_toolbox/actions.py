@@ -7,6 +7,7 @@ import inspect
 import typing as t
 from contextlib import suppress
 from dataclasses import dataclass
+from functools import cache
 
 from pdf_toolbox.i18n import tr
 
@@ -40,7 +41,6 @@ class Action:
 
 
 _registry: dict[str, Action] = {}
-_discovered = False
 
 
 def _format_name(func_name: str) -> str:  # pragma: no cover - trivial
@@ -137,16 +137,12 @@ def _register_module(mod_name: str) -> None:
             _registry.setdefault(act.fqname, act)
 
 
+@cache
 def _auto_discover() -> None:
-    global _discovered  # noqa: PLW0603
-    if _discovered:
-        return
-    from pdf_toolbox import builtin  # noqa: PLC0415
-
+    builtin = importlib.import_module("pdf_toolbox.builtin")
     for name in getattr(builtin, "__all__", []):
         with suppress(Exception):  # pragma: no cover - optional deps
             _register_module(f"{builtin.__name__}.{name}")
-    _discovered = True
 
 
 def list_actions() -> list[Action]:

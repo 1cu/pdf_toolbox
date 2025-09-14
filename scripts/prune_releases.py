@@ -18,6 +18,7 @@ API_URL = "https://api.github.com"  # Base URL for GitHub REST API
 HTTP_NO_CONTENT = 204
 TIMEOUT = 10
 RETRIES = 3
+ERR_REQUEST_FAIL = "{method} {url} failed"
 
 
 def _request(
@@ -32,11 +33,14 @@ def _request(
             with urllib.request.urlopen(req, timeout=timeout) as response:  # noqa: S310  # nosec B310
                 if response.status != HTTP_NO_CONTENT:
                     return json.load(response)
-            return None
         except (HTTPError, URLError) as exc:
             if attempt == RETRIES - 1:
-                raise RuntimeError(f"{method} {url} failed") from exc
+                raise RuntimeError(
+                    ERR_REQUEST_FAIL.format(method=method, url=url)
+                ) from exc
             time.sleep(2**attempt)
+        else:
+            return None
     return None
 
 

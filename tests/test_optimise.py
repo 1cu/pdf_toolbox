@@ -28,7 +28,7 @@ def test_pdf_quality_passed_to_doc_save(tmp_path, monkeypatch):
 
 
 def test_invalid_quality_raises(sample_pdf):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="unknown quality"):
         optimise_pdf(sample_pdf, quality="unknown")
 
 

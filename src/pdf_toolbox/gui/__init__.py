@@ -13,6 +13,8 @@ It also re-exports ``Action`` and ``list_actions`` so tests can monkeypatch
 
 from __future__ import annotations
 
+import sys
+
 import pdf_toolbox.gui.config as _config
 from pdf_toolbox.actions import Action, list_actions
 from pdf_toolbox.gui.main_window import MainWindow
@@ -33,7 +35,7 @@ def save_config(cfg: dict) -> None:
 
 
 try:  # Detect Qt availability for headless error handling tests
-    from PySide6.QtWidgets import QApplication  # noqa: F401
+    from PySide6.QtWidgets import QApplication
 
     QT_AVAILABLE = True
     QT_IMPORT_ERROR: Exception | None = None
@@ -46,12 +48,9 @@ def main() -> None:  # pragma: no cover - entry point
     """Launch the GUI application."""
     if not QT_AVAILABLE:
         raise QT_IMPORT_ERROR or RuntimeError("Qt libraries not available")
-    from PySide6.QtWidgets import QApplication
 
     app = QApplication([])
     _win = MainWindow()
-    import sys
-
     sys.exit(app.exec())
 
 
