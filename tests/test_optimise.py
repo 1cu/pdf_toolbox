@@ -57,3 +57,33 @@ def test_optimise_pdf_internal_path(tmp_path):
     output, reduction = optimise_pdf(str(pdf_path))
     assert output is not None
     assert reduction <= 1
+
+
+def test_logs_size_increase(sample_pdf, tmp_path, monkeypatch):
+    import logging
+
+    from pdf_toolbox.utils import logger
+    from pdf_toolbox.utils import save_pdf as original_save_pdf
+
+    def bigger_save(doc, out_path, *, note=None, **kwargs):
+        original_save_pdf(doc, out_path, note=note, **kwargs)
+        with Path(out_path).open("ab") as fh:
+            fh.write(b"extra")
+
+    monkeypatch.setattr("pdf_toolbox.builtin.optimise.save_pdf", bigger_save)
+
+    class ListHandler(logging.Handler):
+        def __init__(self) -> None:  # pragma: no cover - simple container
+            super().__init__()
+            self.messages: list[str] = []
+
+        def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover - simple
+            self.messages.append(record.getMessage())
+
+    list_handler = ListHandler()
+    logger.addHandler(list_handler)
+    try:
+        optimise_pdf(sample_pdf, out_dir=str(tmp_path))
+    finally:
+        logger.removeHandler(list_handler)
+    assert any("size increased by" in msg for msg in list_handler.messages)
