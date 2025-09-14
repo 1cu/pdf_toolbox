@@ -57,6 +57,7 @@ ______________________________________________________________________
 - Use clear, descriptive names for variables and functions.
 - Provide type annotations and meaningful docstrings.
 - Keep functions small and focused.
+- Prefer `logging` for messages; avoid replacing `print` with `sys.stderr.write`.
 
 ______________________________________________________________________
 
@@ -71,7 +72,9 @@ If you must add an exception:
 
 1. Add a one-line justification directly in code.
 1. Restrict scope to a single line (never file/module-wide).
-1. Document the exception in [`DEVELOPMENT.md`](DEVELOPMENT.md#documented-exceptions) under “Documented Exceptions”.
+1. Use `# pdf-toolbox: <reason> | issue:<id or ->`.
+1. Do not edit `DEVELOPMENT_EXCEPTIONS.md`; run pre-commit to regenerate it.
+1. Never document exceptions manually in any Markdown file.
 1. Link to the relevant Issue/PR.
 
 Pull requests that violate this policy will be rejected.
@@ -95,7 +98,7 @@ ______________________________________________________________________
 
 - Use the [PR template](.github/pull_request_template.md).
 - Verify the linting checklist is complete.
-- Ensure no undocumented linter disables; reviewers will reject PRs that silence rules without entries in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions).
+- Ensure no undocumented linter disables; each uses `# pdf-toolbox:` and passes `scripts/generate_exception_overview.py`.
 - Document breaking changes and update `README.md` if needed.
 - Keep PRs focused: one logical change per PR.
 

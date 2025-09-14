@@ -63,13 +63,9 @@ def _compress_images(
 ) -> int:
     total = len(doc)
     for current, page in enumerate(doc, start=1):  # type: ignore[assignment]  # pdf-toolbox: PyMuPDF page typing mismatch | issue:-
-        raise_if_cancelled(
-            cancel
-        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+        raise_if_cancelled(cancel)
         for img in page.get_images(full=True):
-            raise_if_cancelled(
-                cancel
-            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+            raise_if_cancelled(cancel)
             xref = img[0]
             pix = fitz.Pixmap(doc, xref)
             try:
@@ -158,9 +154,7 @@ def optimise_pdf(  # noqa: PLR0913  # pdf-toolbox: optimisation API exposes many
     doc = open_pdf(input_pdf)
     saved = False
     try:
-        raise_if_cancelled(
-            cancel, doc
-        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+        raise_if_cancelled(cancel, doc)
 
         progress_total = len(doc) if compress_images else 1
         if compress_images:
@@ -174,9 +168,7 @@ def optimise_pdf(  # noqa: PLR0913  # pdf-toolbox: optimisation API exposes many
         if progress_callback:
             progress_callback(progress_total, progress_total)
 
-        raise_if_cancelled(
-            cancel, doc
-        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+        raise_if_cancelled(cancel, doc)
 
         pdf_quality = settings["pdf_quality"]
         compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
@@ -249,9 +241,7 @@ def batch_optimise_pdfs(  # noqa: PLR0913  # pdf-toolbox: batch optimisation nee
 
     outputs: list[str] = []
     for pdf in sorted(in_dir.glob("*.pdf")):
-        raise_if_cancelled(
-            cancel
-        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+        raise_if_cancelled(cancel)
         out, _ = optimise_pdf(
             str(pdf),
             quality=quality,

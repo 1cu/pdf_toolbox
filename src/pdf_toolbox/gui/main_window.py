@@ -46,9 +46,7 @@ from pdf_toolbox.utils import _load_author_info, configure_logging
 RESULT_PAIR_LEN = 2
 
 
-class MainWindow(
-    QMainWindow
-):  # pragma: no cover  # pdf-toolbox: exercised in GUI tests | issue:-
+class MainWindow(QMainWindow):
     """Main application window."""
 
     def __init__(self) -> None:  # noqa: PLR0915  # pdf-toolbox: constructor sets up many widgets | issue:-

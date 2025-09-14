@@ -126,9 +126,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
 
     for group in batches:
         for page_no in group:
-            raise_if_cancelled(
-                cancel
-            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+            raise_if_cancelled(cancel)
             page = doc.load_page(page_no - 1)
             matrix = fitz.Matrix(zoom, zoom)
             if fmt == "SVG":
@@ -138,14 +136,9 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
                 outputs.append(str(out_path))
                 continue
             pix = page.get_pixmap(matrix=matrix)
-            if pix.colorspace is None or pix.colorspace.n not in (
-                1,
-                3,
-            ):  # pragma: no cover  # pdf-toolbox: exotic colorspace | issue:-
+            if pix.colorspace is None or pix.colorspace.n not in (1, 3):
                 pix = fitz.Pixmap(fitz.csRGB, pix)
-            if (
-                pix.alpha
-            ):  # pragma: no cover  # pdf-toolbox: rare alpha channel | issue:-
+            if pix.alpha:
                 pix = fitz.Pixmap(pix, 0)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"

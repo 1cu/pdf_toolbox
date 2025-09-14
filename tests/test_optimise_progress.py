@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 
 from pdf_toolbox.builtin.optimise import optimise_pdf
 

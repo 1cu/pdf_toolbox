@@ -1,6 +1,6 @@
 from threading import Event, Thread
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
 from pdf_toolbox.builtin.optimise import batch_optimise_pdfs

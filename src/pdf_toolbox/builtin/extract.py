@@ -37,18 +37,14 @@ def extract_range(
         page_numbers = parse_page_spec(pages, doc.page_count)
         new_doc = fitz.open()
         for page in page_numbers:
-            raise_if_cancelled(
-                cancel
-            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+            raise_if_cancelled(cancel)
             new_doc.insert_pdf(doc, from_page=page - 1, to_page=page - 1)
         update_metadata(new_doc, note=" | extract_range")
         safe_spec = pages.replace(",", "_").replace("-", "_").strip("_")
         out_path = sane_output_dir(input_pdf, out_dir) / (
             f"{Path(input_pdf).stem}_Extract_{safe_spec}.pdf"
         )
-        raise_if_cancelled(
-            cancel
-        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+        raise_if_cancelled(cancel)
         new_doc.save(out_path)
         new_doc.close()
     logger.info("Extracted pages written to %s", out_path)
@@ -67,9 +63,7 @@ def split_pdf(
     outputs: list[str] = []
     with open_pdf(input_pdf) as doc:
         for start in range(0, doc.page_count, pages_per_file):
-            raise_if_cancelled(
-                cancel
-            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+            raise_if_cancelled(cancel)
             end = min(start + pages_per_file, doc.page_count)
             new_doc = fitz.open()
             new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
@@ -77,9 +71,7 @@ def split_pdf(
             out_path = sane_output_dir(input_pdf, out_dir) / (
                 f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
             )
-            raise_if_cancelled(
-                cancel
-            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
+            raise_if_cancelled(cancel)
             new_doc.save(out_path)
             new_doc.close()
             logger.info("Created %s", out_path)

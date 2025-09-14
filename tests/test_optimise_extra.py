@@ -2,7 +2,7 @@ import io
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
 

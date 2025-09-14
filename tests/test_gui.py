@@ -3,10 +3,8 @@ import os
 
 import pytest
 
-try:
-    from PySide6.QtWidgets import QApplication
-except Exception:  # pragma: no cover - optional GUI deps
-    pytest.skip("PySide6.QtWidgets not available", allow_module_level=True)
+pytest.importorskip("PySide6.QtWidgets")
+from PySide6.QtWidgets import QApplication
 
 from pdf_toolbox import actions, gui
 
@@ -115,7 +113,7 @@ def test_float_none_spinbox_range(app, monkeypatch):
 def test_build_form_hides_cancel(app, monkeypatch):
     _ = app
 
-    def sample(path: str, cancel=None) -> None:  # pragma: no cover - GUI helper
+    def sample(path: str, cancel=None) -> None:
         pass
 
     act = actions.build_action(sample, name="Sample")

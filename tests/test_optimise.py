@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
 from pdf_toolbox.builtin.optimise import QUALITY_SETTINGS, optimise_pdf
@@ -47,7 +47,7 @@ def test_remove_output_on_small_reduction(sample_pdf, tmp_path, monkeypatch):
 
 
 def test_optimise_pdf_internal_path(tmp_path):
-    import fitz  # type: ignore
+    import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 
     pdf_path = tmp_path / "in.pdf"
     document = fitz.open()
@@ -73,11 +73,11 @@ def test_logs_size_increase(sample_pdf, tmp_path, monkeypatch):
     monkeypatch.setattr("pdf_toolbox.builtin.optimise.save_pdf", bigger_save)
 
     class ListHandler(logging.Handler):
-        def __init__(self) -> None:  # pragma: no cover - simple container
+        def __init__(self) -> None:
             super().__init__()
             self.messages: list[str] = []
 
-        def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover - simple
+        def emit(self, record: logging.LogRecord) -> None:
             self.messages.append(record.getMessage())
 
     list_handler = ListHandler()
