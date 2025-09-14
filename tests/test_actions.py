@@ -1,5 +1,7 @@
 import sys
 
+import pytest
+
 from pdf_toolbox import actions
 from pdf_toolbox.actions import list_actions
 
@@ -124,3 +126,31 @@ def test_register_module_ignores_nodoc_functions():
     actions._register_module("pdf_toolbox.dummy_mod")
     assert not actions._registry
     actions.list_actions()
+
+
+def test_register_module_rejects_untrusted_prefix():
+    with pytest.raises(ValueError, match="outside allowed packages"):
+        actions._register_module("malicious.mod")
+
+
+def test_register_module_skips_excluded(monkeypatch):
+    called = False
+
+    def fail_import(_name):
+        nonlocal called
+        called = True
+        raise AssertionError
+
+    monkeypatch.setattr(actions.importlib, "import_module", fail_import)
+    actions._register_module("pdf_toolbox.actions")
+    assert not called
+
+
+def test_auto_discover_suppresses_errors(monkeypatch):
+    def boom(_name):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(actions, "_register_module", boom)
+    actions._auto_discover.cache_clear()
+    actions._auto_discover()
+    actions._auto_discover.cache_clear()

@@ -36,7 +36,7 @@ def set_language(lang: str | None) -> None:
         _STATE["lang"] = autodetect()
 
 
-def autodetect() -> str:  # pragma: no cover  # pdf-toolbox: env-dependent | issue:-
+def autodetect() -> str:
     """Return language code inferred from the OS locale."""
     lang = ""
     with suppress(Exception):
@@ -59,7 +59,7 @@ def _load(lang: str) -> dict:
             .joinpath(filename)
             .read_text(encoding="utf-8")
         )
-    except Exception:  # pragma: no cover  # pdf-toolbox: defensive | issue:-
+    except Exception:
         data = {"strings": {}, "labels": {}}
     _CACHE[lang] = data
     return data
@@ -72,7 +72,7 @@ def tr(key: str, **kwargs: Any) -> str:
     s = data.get("strings", {}).get(key, key)
     try:
         return s.format(**kwargs)
-    except Exception:  # pragma: no cover  # pdf-toolbox: defensive | issue:-
+    except Exception:
         return s
 
 

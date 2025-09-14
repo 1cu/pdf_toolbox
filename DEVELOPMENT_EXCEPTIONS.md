@@ -9,11 +9,7 @@
 | scripts/prune_releases.py:33              | S310, B310                               | urllib urlopen for GitHub API                       | -        |
 | scripts/prune_releases.py:60              | type: ignore[arg-type]                   | GitHub API returns untyped data                     | -        |
 | src/pdf_toolbox/__main__.py:5             | pragma: no cover                         | entry point                                         | -        |
-| src/pdf_toolbox/actions.py:48             | pragma: no cover                         | trivial helper                                      | -        |
 | src/pdf_toolbox/actions.py:89             | type: ignore[attr-defined]               | attach custom attribute for action registry         | -        |
-| src/pdf_toolbox/actions.py:137            | pragma: no cover                         | defensive                                           | -        |
-| src/pdf_toolbox/actions.py:140            | pragma: no cover                         | defensive                                           | -        |
-| src/pdf_toolbox/actions.py:155            | pragma: no cover                         | optional deps                                       | -        |
 | src/pdf_toolbox/builtin/__init__.py:25    | pragma: no cover                         | optional dependencies                               | -        |
 | src/pdf_toolbox/builtin/docx.py:9         | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/builtin/docx.py:43        | pragma: no cover                         | cooperative cancellation guard                      | -        |
@@ -85,11 +81,7 @@
 | src/pdf_toolbox/gui/widgets.py:96         | pragma: no cover                         | GUI widget                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:101        | N802                                     | Qt requires camelCase event name                    | -        |
 | src/pdf_toolbox/gui/worker.py:11          | pragma: no cover                         | thread/GUI                                          | -        |
-| src/pdf_toolbox/i18n.py:39                | pragma: no cover                         | env-dependent                                       | -        |
-| src/pdf_toolbox/i18n.py:62                | pragma: no cover                         | defensive                                           | -        |
-| src/pdf_toolbox/i18n.py:75                | pragma: no cover                         | defensive                                           | -        |
 | src/pdf_toolbox/utils.py:13               | type: ignore                             | PyMuPDF lacks type hints                            | -        |
-| src/pdf_toolbox/utils.py:179              | pragma: no cover                         | cooperative cancellation helper                     | -        |
 | tests/conftest.py:3                       | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_batch_optimise.py:3            | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_converters.py:3                | type: ignore                             | PyMuPDF lacks type hints                            | -        |
@@ -100,4 +92,4 @@
 | tests/test_optimise.py:50                 | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_optimise_extra.py:5            | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_optimise_progress.py:3         | type: ignore                             | PyMuPDF lacks type hints                            | -        |
-| tests/test_utils.py:4                     | type: ignore                             | PyMuPDF lacks type hints                            | -        |
+| tests/test_utils.py:5                     | type: ignore                             | PyMuPDF lacks type hints                            | -        |

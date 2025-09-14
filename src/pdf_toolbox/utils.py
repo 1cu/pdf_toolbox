@@ -174,9 +174,7 @@ def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
     fitz_doc.set_metadata(metadata)
 
 
-def raise_if_cancelled(
-    cancel: Event | None, doc: fitz.Document | None = None
-) -> None:  # pragma: no cover  # pdf-toolbox: cooperative cancellation helper | issue:-
+def raise_if_cancelled(cancel: Event | None, doc: fitz.Document | None = None) -> None:
     """Raise ``RuntimeError('cancelled')`` if ``cancel`` is set.
 
     If ``doc`` is provided it will be closed before raising to free

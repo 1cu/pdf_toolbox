@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from threading import Event
 
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 
@@ -150,3 +151,39 @@ def test_parse_page_spec_invalid():
         parse_page_spec("0", 5)
     with pytest.raises(ValueError, match="Invalid page specification"):
         parse_page_spec("a", 5)
+
+
+def test_raise_if_cancelled_noop():
+    cancel = Event()
+
+    class Dummy:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    doc = Dummy()
+    utils.raise_if_cancelled(cancel, doc)
+    assert not doc.closed
+
+
+def test_raise_if_cancelled_closes_and_raises():
+    cancel = Event()
+    cancel.set()
+    closed = False
+
+    class Dummy:
+        def close(self) -> None:
+            nonlocal closed
+            closed = True
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        utils.raise_if_cancelled(cancel, Dummy())
+    assert closed
+
+
+def test_raise_if_cancelled_without_doc():
+    cancel = Event()
+    cancel.set()
+    with pytest.raises(RuntimeError, match="cancelled"):
+        utils.raise_if_cancelled(cancel)

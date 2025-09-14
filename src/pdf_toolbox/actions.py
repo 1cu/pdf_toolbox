@@ -45,7 +45,7 @@ _registry: dict[str, Action] = {}
 
 def _format_name(
     func_name: str,
-) -> str:  # pragma: no cover  # pdf-toolbox: trivial helper | issue:-
+) -> str:
     acronyms = {
         "pdf": "PDF",
         "docx": "DOCX",
@@ -132,12 +132,10 @@ _ALLOWED_PREFIXES = ("pdf_toolbox.",)
 
 def _register_module(mod_name: str) -> None:
     """Import *mod_name* so that decorated actions register themselves."""
-    if not mod_name.startswith(
-        _ALLOWED_PREFIXES
-    ):  # pragma: no cover  # pdf-toolbox: defensive | issue:-
+    if not mod_name.startswith(_ALLOWED_PREFIXES):
         msg = f"module outside allowed packages: {mod_name}"
         raise ValueError(msg)
-    if mod_name in _EXCLUDE:  # pragma: no cover  # pdf-toolbox: defensive | issue:-
+    if mod_name in _EXCLUDE:
         return
     mod = importlib.import_module(mod_name)
     for _, obj in inspect.getmembers(mod, inspect.isfunction):
@@ -150,9 +148,7 @@ def _register_module(mod_name: str) -> None:
 def _auto_discover() -> None:
     builtin = importlib.import_module("pdf_toolbox.builtin")
     for name in getattr(builtin, "__all__", []):
-        with suppress(
-            Exception
-        ):  # pragma: no cover  # pdf-toolbox: optional deps | issue:-
+        with suppress(Exception):
             _register_module(f"{builtin.__name__}.{name}")
 
 
