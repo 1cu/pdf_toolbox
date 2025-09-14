@@ -62,12 +62,14 @@ def test_format_name_plural_acronyms():
     assert actions._format_name("pdfs_to_pngs") == "PDFs to PNGs"
 
 
-def test_register_module_skips_undocumented(tmp_path, monkeypatch):
-    mod_path = tmp_path / "undoc_mod.py"
-    mod_path.write_text("def foo(x):\n    return x\n")
-    monkeypatch.syspath_prepend(tmp_path)
-    actions._register_module("undoc_mod")
-    assert "undoc_mod.foo" not in actions._registry
+def test_register_module_skips_undocumented():
+    import types
+
+    mod = types.ModuleType("pdf_toolbox.undoc_mod")
+    mod.foo = lambda x: x
+    sys.modules["pdf_toolbox.undoc_mod"] = mod
+    actions._register_module("pdf_toolbox.undoc_mod")
+    assert "pdf_toolbox.undoc_mod.foo" not in actions._registry
 
 
 def test_auto_discover_populates_registry():
@@ -107,19 +109,18 @@ def test_builtin_import_registers_actions():
     actions._auto_discover.cache_clear()
 
 
-def test_register_module_ignores_nodoc_functions(monkeypatch):
-    _ = monkeypatch
+def test_register_module_ignores_nodoc_functions():
     import types
 
-    mod = types.ModuleType("dummy_mod")
+    mod = types.ModuleType("pdf_toolbox.dummy_mod")
 
     def func_without_docs():
         pass
 
     mod.func_without_docs = func_without_docs
-    sys.modules["dummy_mod"] = mod
+    sys.modules["pdf_toolbox.dummy_mod"] = mod
     actions._registry.clear()
     actions._auto_discover.cache_clear()
-    actions._register_module("dummy_mod")
+    actions._register_module("pdf_toolbox.dummy_mod")
     assert not actions._registry
     actions.list_actions()

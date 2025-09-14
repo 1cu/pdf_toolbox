@@ -26,6 +26,7 @@ source .venv/bin/activate
 pip install -e '.[dev]'
 pre-commit install
 python -m pdf_toolbox.gui          # launch the GUI
+python -c "from pdf_toolbox.builtin.images import pdf_to_images; pdf_to_images('doc.pdf')"  # run an action from the CLI
 pre-commit run tests --all-files   # run tests
 ```
 
@@ -56,6 +57,29 @@ The GUI uses the progress-enabled optimise action for improved responsiveness.
 Internationalization: The GUI supports English and German for common UI strings.
 Language is auto-detected but can be overridden programmatically using
 `pdf_toolbox.i18n.set_language("de")`.
+
+### Adding a New Action
+
+Actions are plain Python callables registered via the `@action` decorator. They
+appear in the GUI and are importable for automation. To add one:
+
+```python
+from pdf_toolbox.actions import action
+
+@action(category="PDF")
+def merge_pdfs(first: str, second: str) -> str:
+    """Merge two PDFs into a new file."""
+    ...
+```
+
+Add a translation key for the function name in `src/pdf_toolbox/locales/en.json`
+and `de.json`. Use `tr("key")` for any additional user-facing strings.
+
+Actions can be scripted directly, e.g.:
+
+```bash
+python -c "from pdf_toolbox.builtin.extract import extract_text; print(extract_text('doc.pdf'))"
+```
 
 ### Design Notes
 
