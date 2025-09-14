@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
@@ -27,7 +27,9 @@ def unlock_pdf(
     cancel: Event | None = None,
 ) -> str:
     """Remove password protection from a PDF."""
-    raise_if_cancelled(cancel)  # pragma: no cover
+    raise_if_cancelled(
+        cancel
+    )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
     logger.info("Unlocking %s", input_pdf)
     doc = open_pdf(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
@@ -35,7 +37,9 @@ def unlock_pdf(
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_unlocked.pdf"
     )
-    raise_if_cancelled(cancel, doc)  # pragma: no cover
+    raise_if_cancelled(
+        cancel, doc
+    )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
     save_pdf(
         doc,
         out_path,

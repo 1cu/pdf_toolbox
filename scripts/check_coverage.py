@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import tomllib
-import xml.etree.ElementTree as ET  # nosec B405
+import xml.etree.ElementTree as ET  # nosec B405  # pdf-toolbox: stdlib XML parser on trusted coverage file | issue:-
 from fnmatch import fnmatch
 from pathlib import Path
 
@@ -35,7 +35,7 @@ def main() -> int:
         return 1
 
     threshold, omit_patterns = load_settings()
-    tree = ET.parse(xml_file)  # nosec B314
+    tree = ET.parse(xml_file)  # nosec B314  # pdf-toolbox: parsing trusted coverage report | issue:-
     root = tree.getroot()
 
     total_rate = float(root.get("line-rate", "0"))

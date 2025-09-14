@@ -1,35 +1,13 @@
 repos:
   - repo: local
     hooks:
-      - id: ruff-format
-        name: "format: ruff"
-        entry: ruff format
+      - id: generate-exception-overview
+        name: "lint: generate exception overview"
+        entry: python scripts/generate_exception_overview.py
         language: system
-        types: [python]
-        alias: format
-
-      - id: mdformat
-        name: "format: mdformat"
-        entry: mdformat
-        language: system
-        types: [markdown]
-        alias: format
-
-      - id: pretty-format-yaml
-        name: "format: pretty-format-yaml"
-        entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
-        language: system
-        types: [yaml]
-        alias: format
-
-      - id: format-locales
-        name: "format: locales json"
-        entry: python scripts/format_locales.py
-        language: system
-        types: [json]
-        files: ^src/pdf_toolbox/locales/.*\.json$
         pass_filenames: false
-        alias: format
+        always_run: true
+        alias: lint
 
       - id: ruff
         name: "lint: ruff"
@@ -62,13 +40,35 @@ repos:
         pass_filenames: false
         alias: lint
 
-      - id: check-lint-exceptions
-        name: "lint: lint-exceptions"
-        entry: python scripts/check_lint_exceptions.py
+      - id: ruff-format
+        name: "format: ruff"
+        entry: ruff format
         language: system
         types: [python]
+        alias: format
+
+      - id: mdformat
+        name: "format: mdformat"
+        entry: mdformat
+        language: system
+        types: [markdown]
+        alias: format
+
+      - id: pretty-format-yaml
+        name: "format: pretty-format-yaml"
+        entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
+        language: system
+        types: [yaml]
+        alias: format
+
+      - id: format-locales
+        name: "format: locales json"
+        entry: python scripts/format_locales.py
+        language: system
+        types: [json]
+        files: ^src/pdf_toolbox/locales/.*\.json$
         pass_filenames: false
-        alias: lint
+        alias: format
 
       - id: pytest
         name: "tests: pytest"

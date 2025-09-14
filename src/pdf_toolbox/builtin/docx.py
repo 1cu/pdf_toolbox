@@ -6,7 +6,7 @@ import io
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from docx import Document
 from PIL import Image
 
@@ -38,16 +38,26 @@ def pdf_to_docx(
     docx_doc = Document()
     with open_pdf(input_pdf) as pdf:
         for page in pdf:
-            raise_if_cancelled(cancel)  # pragma: no cover
+            raise_if_cancelled(
+                cancel
+            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
             text = page.get_text()
-            if text:  # pragma: no cover - input PDF in tests has no text
-                docx_doc.add_paragraph(text)  # pragma: no cover
+            if text:  # pragma: no cover  # pdf-toolbox: input PDF in tests has no text | issue:-
+                docx_doc.add_paragraph(
+                    text
+                )  # pragma: no cover  # pdf-toolbox: input PDF in tests has no text | issue:-
             for img in page.get_images(full=True):
-                raise_if_cancelled(cancel)  # pragma: no cover
+                raise_if_cancelled(
+                    cancel
+                )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
                 xref = img[0]
                 pix = fitz.Pixmap(pdf, xref)
-                if pix.n > RGB_COMPONENTS:  # pragma: no cover - rare branch
-                    pix = fitz.Pixmap(fitz.csRGB, pix)  # pragma: no cover
+                if (
+                    pix.n > RGB_COMPONENTS
+                ):  # pragma: no cover  # pdf-toolbox: rare colorspace | issue:-
+                    pix = fitz.Pixmap(
+                        fitz.csRGB, pix
+                    )  # pragma: no cover  # pdf-toolbox: rare colorspace | issue:-
                 pil = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
                 with io.BytesIO() as buf:
                     pil.save(buf, format="PNG")

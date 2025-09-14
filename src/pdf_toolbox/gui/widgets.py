@@ -12,7 +12,9 @@ from pdf_toolbox.gui.config import save_config
 from pdf_toolbox.i18n import tr
 
 
-class QtLogHandler(QObject, logging.Handler):  # pragma: no cover - GUI helper
+class QtLogHandler(
+    QObject, logging.Handler
+):  # pragma: no cover  # pdf-toolbox: GUI helper | issue:-
     """Send log records to a ``QPlainTextEdit`` widget."""
 
     message = Signal(str)
@@ -33,14 +35,12 @@ class QtLogHandler(QObject, logging.Handler):  # pragma: no cover - GUI helper
         )
         self.on_update()
 
-    def emit(  # type: ignore[override]  # pragma: no cover - GUI
-        self, record: logging.LogRecord
-    ) -> None:
+    def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]  # pragma: no cover  # pdf-toolbox: override signal emitter with broader type; GUI-only | issue:-
         """Forward a log record to the GUI thread."""
         self.message.emit(self.format(record))
 
 
-class FileEdit(QLineEdit):  # pragma: no cover - GUI
+class FileEdit(QLineEdit):  # pragma: no cover  # pdf-toolbox: GUI widget | issue:-
     """Widget for selecting files or directories."""
 
     def __init__(self, cfg: dict, directory: bool = False, multi: bool = False):
@@ -75,12 +75,12 @@ class FileEdit(QLineEdit):  # pragma: no cover - GUI
                 self.cfg["last_open_dir"] = str(Path(path).parent)
                 save_config(self.cfg)
 
-    def dragEnterEvent(self, e):  # noqa: N802
+    def dragEnterEvent(self, e):  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
         """Accept drag when it contains URLs."""
         if e.mimeData().hasUrls():
             e.acceptProposedAction()
 
-    def dropEvent(self, e):  # noqa: N802
+    def dropEvent(self, e):  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
         """Handle dropped files to populate the edit field."""
         paths = [url.toLocalFile() for url in e.mimeData().urls()]
         if not paths:
@@ -93,12 +93,12 @@ class FileEdit(QLineEdit):  # pragma: no cover - GUI
         save_config(self.cfg)
 
 
-class ClickableLabel(QLabel):  # pragma: no cover - GUI
+class ClickableLabel(QLabel):  # pragma: no cover  # pdf-toolbox: GUI widget | issue:-
     """Label that emits a ``clicked`` signal when pressed."""
 
     clicked = Signal()
 
-    def mousePressEvent(self, event):  # noqa: N802
+    def mousePressEvent(self, event):  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
         """Emit the ``clicked`` signal and forward the event."""
         self.clicked.emit()
         super().mousePressEvent(event)

@@ -20,13 +20,17 @@ def repair_pdf(
     input_pdf: str, out_dir: str | None = None, cancel: Event | None = None
 ) -> str:
     """Repair a PDF and clean up inconsistent data."""
-    raise_if_cancelled(cancel)  # pragma: no cover
+    raise_if_cancelled(
+        cancel
+    )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
     logger.info("Repairing %s", input_pdf)
     doc = open_pdf(input_pdf)
     out_path = sane_output_dir(input_pdf, out_dir) / (
         f"{Path(input_pdf).stem}_repaired.pdf"
     )
-    raise_if_cancelled(cancel, doc)  # pragma: no cover
+    raise_if_cancelled(
+        cancel, doc
+    )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
     save_pdf(doc, out_path, note=" | repaired", clean=True, deflate=True, garbage=4)
     logger.info("Repaired PDF written to %s", out_path)
     return str(out_path)

@@ -8,7 +8,7 @@ from pathlib import Path
 from threading import Event
 from typing import Literal
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image
 
 from pdf_toolbox.actions import action
@@ -65,7 +65,7 @@ LOSSY_QUALITY_PRESETS: dict[str, int] = {
 QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
 
 
-def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
+def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: rendering pages needs many parameters and branches | issue:-
     input_path: str,
     doc: fitz.Document,
     page_numbers: list[int],
@@ -126,7 +126,9 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
 
     for group in batches:
         for page_no in group:
-            raise_if_cancelled(cancel)  # pragma: no cover
+            raise_if_cancelled(
+                cancel
+            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
             page = doc.load_page(page_no - 1)
             matrix = fitz.Matrix(zoom, zoom)
             if fmt == "SVG":
@@ -139,9 +141,11 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
             if pix.colorspace is None or pix.colorspace.n not in (
                 1,
                 3,
-            ):  # pragma: no cover
+            ):  # pragma: no cover  # pdf-toolbox: exotic colorspace | issue:-
                 pix = fitz.Pixmap(fitz.csRGB, pix)
-            if pix.alpha:  # pragma: no cover
+            if (
+                pix.alpha
+            ):  # pragma: no cover  # pdf-toolbox: rare alpha channel | issue:-
                 pix = fitz.Pixmap(pix, 0)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
@@ -283,7 +287,7 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915
 
 
 @action(category="PDF")
-def pdf_to_images(  # noqa: PLR0913
+def pdf_to_images(  # noqa: PLR0913  # pdf-toolbox: conversion helper requires many parameters | issue:-
     input_pdf: str,
     pages: str | None = None,
     dpi: int | DpiChoice = "High (300 dpi)",

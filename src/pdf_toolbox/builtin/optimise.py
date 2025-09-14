@@ -17,7 +17,7 @@ from pathlib import Path
 from threading import Event
 from typing import Literal, TypedDict
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image
 
 from pdf_toolbox.actions import action
@@ -62,10 +62,14 @@ def _compress_images(
     progress_offset: int = 0,
 ) -> int:
     total = len(doc)
-    for current, page in enumerate(doc, start=1):  # type: ignore[assignment]
-        raise_if_cancelled(cancel)  # pragma: no cover
+    for current, page in enumerate(doc, start=1):  # type: ignore[assignment]  # pdf-toolbox: PyMuPDF page typing mismatch | issue:-
+        raise_if_cancelled(
+            cancel
+        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
         for img in page.get_images(full=True):
-            raise_if_cancelled(cancel)  # pragma: no cover
+            raise_if_cancelled(
+                cancel
+            )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
             xref = img[0]
             pix = fitz.Pixmap(doc, xref)
             try:
@@ -91,7 +95,7 @@ def _compress_images(
 
 
 @action(category="PDF")
-def optimise_pdf(  # noqa: PLR0913
+def optimise_pdf(  # noqa: PLR0913  # pdf-toolbox: optimisation API exposes many options | issue:-
     input_pdf: str,
     quality: QualityChoice = "default",
     compress_images: bool = False,
@@ -154,7 +158,9 @@ def optimise_pdf(  # noqa: PLR0913
     doc = open_pdf(input_pdf)
     saved = False
     try:
-        raise_if_cancelled(cancel, doc)  # pragma: no cover
+        raise_if_cancelled(
+            cancel, doc
+        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
 
         progress_total = len(doc) if compress_images else 1
         if compress_images:
@@ -168,7 +174,9 @@ def optimise_pdf(  # noqa: PLR0913
         if progress_callback:
             progress_callback(progress_total, progress_total)
 
-        raise_if_cancelled(cancel, doc)  # pragma: no cover
+        raise_if_cancelled(
+            cancel, doc
+        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
 
         pdf_quality = settings["pdf_quality"]
         compression_effort = max(0, min(9, (100 - pdf_quality) // 10))
@@ -216,7 +224,7 @@ def optimise_pdf(  # noqa: PLR0913
 
 
 @action(category="PDF")
-def batch_optimise_pdfs(  # noqa: PLR0913
+def batch_optimise_pdfs(  # noqa: PLR0913  # pdf-toolbox: batch optimisation needs several arguments | issue:-
     input_dir: str,
     output_dir: str | None = None,
     quality: QualityChoice = "default",
@@ -241,7 +249,9 @@ def batch_optimise_pdfs(  # noqa: PLR0913
 
     outputs: list[str] = []
     for pdf in sorted(in_dir.glob("*.pdf")):
-        raise_if_cancelled(cancel)  # pragma: no cover
+        raise_if_cancelled(
+            cancel
+        )  # pragma: no cover  # pdf-toolbox: cooperative cancellation guard | issue:-
         out, _ = optimise_pdf(
             str(pdf),
             quality=quality,

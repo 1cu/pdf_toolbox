@@ -20,5 +20,7 @@ __all__ = [
 ]
 
 for _name in __all__:
-    with suppress(Exception):  # pragma: no cover - optional dependencies
+    with suppress(
+        Exception
+    ):  # pragma: no cover  # pdf-toolbox: optional dependencies | issue:-
         import_module(f"{__name__}.{_name}")

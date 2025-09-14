@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from platformdirs import user_config_dir
 
 from pdf_toolbox.paths import PathValidationError, validate_path
@@ -93,7 +93,7 @@ def ensure_libs() -> None:
     for mod in REQUIRED_LIBS:
         try:
             importlib.import_module(mod)
-        except Exception:  # pragma: no cover - best effort
+        except Exception:  # pragma: no cover  # pdf-toolbox: best effort | issue:-
             missing.append(mod)
     if missing:
         parts = []
@@ -176,7 +176,7 @@ def update_metadata(fitz_doc: fitz.Document, note: str | None = None) -> None:
 
 def raise_if_cancelled(
     cancel: Event | None, doc: fitz.Document | None = None
-) -> None:  # pragma: no cover - cooperative cancellation helper
+) -> None:  # pragma: no cover  # pdf-toolbox: cooperative cancellation helper | issue:-
     """Raise ``RuntimeError('cancelled')`` if ``cancel`` is set.
 
     If ``doc`` is provided it will be closed before raising to free
@@ -197,7 +197,7 @@ def open_pdf(path: str | Path) -> fitz.Document:
         raise RuntimeError(ERR_OPEN_PDF.format(path=path)) from exc
     try:
         return fitz.open(str(safe))
-    except Exception as exc:  # pragma: no cover - best effort
+    except Exception as exc:  # pragma: no cover  # pdf-toolbox: best effort | issue:-
         raise RuntimeError(ERR_OPEN_PDF.format(path=path)) from exc
 
 
@@ -213,7 +213,7 @@ def save_pdf(
     safe_out = validate_path(out_path)
     try:
         doc.save(str(safe_out), **save_kwargs)
-    except Exception as exc:  # pragma: no cover - best effort
+    except Exception as exc:  # pragma: no cover  # pdf-toolbox: best effort | issue:-
         raise RuntimeError(ERR_SAVE_PDF.format(out_path=out_path)) from exc
     finally:
         doc.close()

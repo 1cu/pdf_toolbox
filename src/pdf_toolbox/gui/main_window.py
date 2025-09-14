@@ -46,10 +46,12 @@ from pdf_toolbox.utils import _load_author_info, configure_logging
 RESULT_PAIR_LEN = 2
 
 
-class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
+class MainWindow(
+    QMainWindow
+):  # pragma: no cover  # pdf-toolbox: exercised in GUI tests | issue:-
     """Main application window."""
 
-    def __init__(self) -> None:  # noqa: PLR0915
+    def __init__(self) -> None:  # noqa: PLR0915  # pdf-toolbox: constructor sets up many widgets | issue:-
         """Initialize the main window and construct widgets."""
         super().__init__()
         self.setWindowTitle("PDF Toolbox")
@@ -102,7 +104,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
 
         self.form_widget = QWidget()
         self.form_layout = QFormLayout(self.form_widget)
-        self.form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)  # type: ignore[attr-defined]
+        self.form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss form layout policy enum | issue:-
         splitter.addWidget(self.form_widget)
         splitter.setSizes([250, 650])
 
@@ -125,7 +127,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.action_about = settings_menu.addAction(tr("about"), self.on_about)
         self.settings_menu = settings_menu
         self.settings_btn.setMenu(settings_menu)
-        self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]
+        self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss tool button enum | issue:-
         top_bar.addStretch()
         top_bar.addWidget(self.settings_btn)
 
@@ -156,19 +158,21 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                 self.tree.addTopLevelItem(cat_item)
                 cats[cat_name] = cat_item
             item = QTreeWidgetItem([act.name])
-            item.setData(0, Qt.UserRole, act)  # type: ignore[attr-defined]
+            item.setData(0, Qt.UserRole, act)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.UserRole | issue:-
             cat_item.addChild(item)
         self.tree.expandAll()
 
-    def on_item_clicked(self, item: QTreeWidgetItem) -> None:  # pragma: no cover - GUI
+    def on_item_clicked(
+        self, item: QTreeWidgetItem
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Respond to tree item clicks by showing the action form."""
-        act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]
+        act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.UserRole | issue:-
         if isinstance(act, Action):
             self.current_action = act
             self.build_form(act)
             self.info_btn.setEnabled(bool(act.help))
 
-    def build_form(self, action: Action) -> None:  # noqa: PLR0912, PLR0915
+    def build_form(self, action: Action) -> None:  # noqa: PLR0912, PLR0915  # pdf-toolbox: dynamic form builder is inherently complex | issue:-
         """Create input widgets for the given action parameters."""
         while self.form_layout.rowCount():
             self.form_layout.removeRow(0)
@@ -187,7 +191,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             ann = param.annotation
             lower = param.name.lower()
 
-            if get_origin(ann) in (types.UnionType, Union) and int in get_args(ann):  # type: ignore[attr-defined]
+            if get_origin(ann) in (types.UnionType, Union) and int in get_args(ann):  # type: ignore[attr-defined]  # pdf-toolbox: `types.UnionType` absent from stubs | issue:-
                 literal = next(
                     (
                         arg
@@ -270,10 +274,10 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                 layout.setStretch(0, 1)
                 self.form_layout.addRow(self._pretty_label(param.name), container)
             else:
-                self.form_layout.addRow(self._pretty_label(param.name), widget)  # type: ignore[arg-type]
+                self.form_layout.addRow(self._pretty_label(param.name), widget)  # type: ignore[arg-type]  # pdf-toolbox: PySide6 stubs reject tuple variant | issue:-
             self.current_widgets[param.name] = widget
 
-    def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912
+    def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912  # pdf-toolbox: argument collection involves many branches | issue:-
         """Gather user input from the form into keyword arguments."""
         if not self.current_action:
             return {}
@@ -288,7 +292,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                     origin = get_origin(param.annotation)
                     if origin in (types.UnionType, Any.__class__) and type(
                         None
-                    ) in get_args(param.annotation):  # type: ignore[attr-defined]
+                    ) in get_args(param.annotation):  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt enum | issue:-
                         optional = True
 
             if isinstance(widget, tuple):
@@ -342,7 +346,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             label = " ".join(words)
         return tr(label)
 
-    def on_info(self) -> None:  # pragma: no cover - GUI
+    def on_info(self) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Display help text for the currently selected action."""
         if not self.current_action:
             return
@@ -359,7 +363,7 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         msg.exec()
 
-    def on_run(self) -> None:  # pragma: no cover - GUI
+    def on_run(self) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Execute the current action or cancel the running worker."""
         if not self.current_action:
             return
@@ -391,7 +395,9 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.worker.start()
         self.run_btn.setText(tr("stop") + " ❌")
 
-    def on_finished(self, result: object) -> None:  # pragma: no cover - GUI
+    def on_finished(
+        self, result: object
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Handle completion of the worker thread."""
         save_config(self.cfg)
         self.progress.setRange(0, 1)
@@ -430,7 +436,9 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
                 self.log.setPlainText(text)
         self.worker = None
 
-    def on_error(self, msg: str) -> None:  # pragma: no cover - GUI
+    def on_error(
+        self, msg: str
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Handle errors emitted by the worker thread."""
         self.log.setVisible(True)
         if self.log.toPlainText():
@@ -444,7 +452,9 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.resize(self.width(), self.base_height + self.log.height())
         self.worker = None
 
-    def toggle_log(self) -> None:  # pragma: no cover - GUI
+    def toggle_log(
+        self,
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Show or hide the log widget."""
         if self.log.isVisible():
             self.log.setVisible(False)
@@ -457,7 +467,9 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             self.resize(self.width(), self.base_height + self.log.height())
         self.update_status(tr(self.status_key), self.status_key)
 
-    def on_author(self) -> None:  # pragma: no cover - GUI
+    def on_author(
+        self,
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Edit author and email information in the configuration."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("author_email"))
@@ -466,16 +478,18 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         email_edit = QLineEdit(self.cfg.get("email", ""))
         form.addRow(tr("author"), author_edit)
         form.addRow(tr("email"), email_edit)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
+        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
             self.cfg["author"] = author_edit.text().strip()
             self.cfg["email"] = email_edit.text().strip()
             save_config(self.cfg)
 
-    def on_log_level(self) -> None:  # pragma: no cover - GUI
+    def on_log_level(
+        self,
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Allow the user to adjust the logging level."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("log_level"))
@@ -484,17 +498,19 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         combo.addItems(["ERROR", "WARNING", "INFO", "DEBUG"])
         combo.setCurrentText(self.cfg.get("log_level", "INFO"))
         form.addRow("Level", combo)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
+        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
             level = combo.currentText()
             self.cfg["log_level"] = level
             save_config(self.cfg)
             configure_logging(level, self.log_handler)
 
-    def on_language(self) -> None:  # pragma: no cover - GUI
+    def on_language(
+        self,
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Allow the user to change the interface language."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("language"))
@@ -506,11 +522,11 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         mapping = {"system": tr("system"), "en": tr("english"), "de": tr("german")}
         combo.setCurrentText(mapping.get(current, tr("system")))
         form.addRow(tr("language"), combo)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]
+        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
             inverse = {value: key for key, value in mapping.items()}
             choice = inverse.get(combo.currentText(), "system")
             self.cfg["language"] = choice
@@ -529,7 +545,9 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
             self._populate_actions()
             self.update_status(tr(self.status_key), self.status_key)
 
-    def on_about(self) -> None:  # pragma: no cover - GUI
+    def on_about(
+        self,
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Show about dialog with version and link."""
         ver = metadata.version("pdf-toolbox")
         msg = QMessageBox(self)
