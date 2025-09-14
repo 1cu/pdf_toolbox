@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html
 import inspect
+import sys
 import types
 from importlib import metadata
 from typing import Any, Literal, Union, get_args, get_origin
@@ -35,7 +36,6 @@ from PySide6.QtWidgets import (
 )
 
 from pdf_toolbox.actions import Action
-from pdf_toolbox.gui import list_actions
 from pdf_toolbox.gui.config import load_config, save_config
 from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
@@ -145,8 +145,8 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
     def _populate_actions(self) -> None:
         """Fill the action tree with all available actions."""
         cats: dict[str, QTreeWidgetItem] = {}
-
-        for act in list_actions():
+        gui_pkg = sys.modules[__package__]
+        for act in gui_pkg.list_actions():
             cat_name = act.category or "General"
             cat_item = cats.get(cat_name)
             if cat_item is None:

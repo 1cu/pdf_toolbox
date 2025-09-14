@@ -18,23 +18,22 @@ from typing import Any
 
 _LC_MESSAGES: int = getattr(locale, "LC_MESSAGES", locale.LC_CTYPE)
 
-_LANG = "en"
 _CACHE: dict[str, dict] = {}
+_STATE: dict[str, str] = {"lang": "en"}
 
 
 def set_language(lang: str | None) -> None:
     """Set current UI language to 'en', 'de', or system default."""
-    global _LANG  # noqa: PLW0603
     if not lang:
-        _LANG = autodetect()
+        _STATE["lang"] = autodetect()
         return
     low = lang.lower()
     if low.startswith("de"):
-        _LANG = "de"
+        _STATE["lang"] = "de"
     elif low.startswith("en"):
-        _LANG = "en"
+        _STATE["lang"] = "en"
     else:
-        _LANG = autodetect()
+        _STATE["lang"] = autodetect()
 
 
 def autodetect() -> str:  # pragma: no cover - env-dependent
@@ -68,7 +67,7 @@ def _load(lang: str) -> dict:
 
 def tr(key: str, **kwargs: Any) -> str:
     """Translate a UI string by key using current language."""
-    lang = _LANG or autodetect()
+    lang = _STATE.get("lang") or autodetect()
     data = _load(lang)
     s = data.get("strings", {}).get(key, key)
     try:
@@ -79,7 +78,7 @@ def tr(key: str, **kwargs: Any) -> str:
 
 def label(name: str) -> str:
     """Translate a parameter/field label by its canonical name."""
-    lang = _LANG or autodetect()
+    lang = _STATE.get("lang") or autodetect()
     data = _load(lang)
     return data.get("labels", {}).get(name, name)
 

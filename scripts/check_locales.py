@@ -10,6 +10,7 @@ Checks:
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import re
@@ -57,16 +58,13 @@ def referenced_keys() -> tuple[set[str], set[str]]:
         label_keys.update(lab_re.findall(text))
     sys.path.insert(0, str(src))
     try:
-        from pdf_toolbox import actions as actions_mod  # noqa: PLC0415
-
+        actions_mod = importlib.import_module("pdf_toolbox.actions")
         actions_mod._registry.clear()
-        actions_mod._discovered = False
+        actions_mod._auto_discover.cache_clear()
         for name in list(sys.modules):
             if name.startswith("pdf_toolbox.builtin"):
                 sys.modules.pop(name)
-        from pdf_toolbox.actions import list_actions  # noqa: PLC0415
-
-        for act in list_actions():
+        for act in actions_mod.list_actions():
             string_keys.add(act.key)
     finally:
         sys.path.remove(str(src))
