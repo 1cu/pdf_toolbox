@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.6.7"
+version = "0.6.8"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -68,7 +68,7 @@ extend-select = [
   "T20",
   "PT",
 ]
-extend-ignore = ["E402", "D203", "D213"]
+extend-ignore = ["D203", "D213"]
 
 
 [tool.ruff.lint.flake8-tidy-imports]

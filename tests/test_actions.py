@@ -72,7 +72,7 @@ def test_register_module_skips_undocumented(tmp_path, monkeypatch):
 
 def test_auto_discover_populates_registry():
     actions._registry.clear()
-    actions._discovered = False
+    actions._auto_discover.cache_clear()
     actions_list = list_actions()
     assert any(
         action_obj.fqname == "pdf_toolbox.builtin.images.pdf_to_images"
@@ -94,7 +94,7 @@ def test_builtin_import_registers_actions():
         sys.modules.pop(name)
 
     actions._registry.clear()
-    actions._discovered = False
+    actions._auto_discover.cache_clear()
 
     importlib.import_module("pdf_toolbox.builtin")
     assert any(
@@ -104,7 +104,7 @@ def test_builtin_import_registers_actions():
 
     sys.modules.update(saved)
     actions._registry.clear()
-    actions._discovered = False
+    actions._auto_discover.cache_clear()
 
 
 def test_register_module_ignores_nodoc_functions(monkeypatch):
@@ -119,7 +119,7 @@ def test_register_module_ignores_nodoc_functions(monkeypatch):
     mod.func_without_docs = func_without_docs
     sys.modules["dummy_mod"] = mod
     actions._registry.clear()
-    actions._discovered = False
+    actions._auto_discover.cache_clear()
     actions._register_module("dummy_mod")
     assert not actions._registry
     actions.list_actions()

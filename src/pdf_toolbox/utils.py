@@ -6,6 +6,7 @@ import importlib
 import json
 import logging
 from collections.abc import Iterable
+from functools import lru_cache
 from pathlib import Path
 from threading import Event
 
@@ -29,9 +30,6 @@ LIB_HINTS: dict[str, str] = {
 }
 # store configuration in a platform-specific user config directory
 CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
-
-# Cache loaded author information to avoid repeated disk access.
-_AUTHOR_INFO: tuple[str, str] | None = None
 
 # central logger for the project
 logger = logging.getLogger("pdf_toolbox")
@@ -74,26 +72,15 @@ def configure_logging(
 configure_logging()
 
 
+@lru_cache(maxsize=1)
 def _load_author_info() -> tuple[str, str]:
-    """Return configured author information with caching.
-
-    The first call reads ``pdf_toolbox_config.json`` from the user's
-    configuration directory. The result is cached and subsequent calls return
-    the cached value. Missing or invalid configuration gracefully yields empty
-    strings instead of raising an exception.
-    """
-    global _AUTHOR_INFO  # noqa: PLW0603
-    if _AUTHOR_INFO is None:
-        try:
-            data = json.loads(CONFIG_FILE.read_text())
-            validate_config(data)
-            _AUTHOR_INFO = (
-                data.get("author", ""),
-                data.get("email", ""),
-            )
-        except Exception:
-            _AUTHOR_INFO = ("", "")
-    return _AUTHOR_INFO
+    """Return configured author information with caching."""
+    try:
+        data = json.loads(CONFIG_FILE.read_text())
+        validate_config(data)
+        return data.get("author", ""), data.get("email", "")
+    except Exception:
+        return "", ""
 
 
 def ensure_libs() -> None:

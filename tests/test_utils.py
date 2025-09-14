@@ -40,7 +40,7 @@ def test_sane_output_dir_rejects_file(tmp_path):
 
 def test_update_metadata(tmp_path):
     _ = tmp_path
-    utils._AUTHOR_INFO = None
+    utils._load_author_info.cache_clear()
     doc = fitz.open()
     doc.new_page()
     doc.set_metadata({})

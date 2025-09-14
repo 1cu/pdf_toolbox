@@ -24,15 +24,13 @@ def _scan_referenced_keys(root: Path) -> tuple[set[str], set[str]]:
     from pdf_toolbox import actions as actions_mod
 
     actions_mod._registry.clear()
-    actions_mod._discovered = False
+    actions_mod._auto_discover.cache_clear()
     for name in list(sys.modules):
         if name.startswith("pdf_toolbox.builtin"):
             sys.modules.pop(name)
     sys.path.insert(0, str(src))
     try:
-        from pdf_toolbox.actions import list_actions
-
-        for act in list_actions():
+        for act in actions_mod.list_actions():
             strings.add(act.key)
     finally:
         sys.path.remove(str(src))
