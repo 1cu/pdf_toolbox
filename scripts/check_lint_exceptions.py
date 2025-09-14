@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import tokenize
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -19,18 +20,17 @@ def gather_exceptions() -> set[str]:
 
     found: set[str] = set()
     for path in paths:
-        with path.open(encoding="utf8") as fh:
-            for lineno, line in enumerate(fh, 1):
-                hash_pos = line.find("#")
-                if hash_pos != -1:
-                    comment = line[hash_pos:]
-                    if (
-                        "noqa" in comment
-                        or "nosec" in comment
-                        or "type: ignore" in comment
-                    ):
-                        rel = path.relative_to(ROOT).as_posix()
-                        found.add(f"{rel}:{lineno}")
+        with tokenize.open(path) as fh:
+            for tok_type, tok_string, (lineno, _), _, _ in tokenize.generate_tokens(
+                fh.readline
+            ):
+                if tok_type == tokenize.COMMENT and (
+                    "noqa" in tok_string
+                    or "nosec" in tok_string
+                    or "type: ignore" in tok_string
+                ):
+                    rel = path.relative_to(ROOT).as_posix()
+                    found.add(f"{rel}:{lineno}")
     return found
 
 
