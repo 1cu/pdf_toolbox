@@ -43,6 +43,8 @@ from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.utils import _load_author_info, configure_logging
 
+RESULT_PAIR_LEN = 2
+
 
 class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
     """Main application window."""
@@ -395,12 +397,32 @@ class MainWindow(QMainWindow):  # pragma: no cover - exercised in GUI tests
         self.progress.setRange(0, 1)
         self.progress.setValue(1)
         self.run_btn.setText(tr("start"))
-        self.update_status(tr("done"), "done")
+
+        status = tr("done")
+        text: str | None = None
         if result:
-            if isinstance(result, list | tuple):
+            if (
+                isinstance(result, tuple)
+                and len(result) == RESULT_PAIR_LEN
+                and isinstance(result[1], float)
+            ):
+                out_path, reduction = result
+                pct = abs(reduction) * 100
+                if reduction > 0:
+                    status = tr("optimised_reduced", pct=f"{pct:.2f}")
+                elif reduction < 0:
+                    status = tr("optimised_increased", pct=f"{pct:.2f}")
+                else:
+                    status = tr("optimised_unchanged")
+                if out_path:
+                    text = str(out_path)
+            elif isinstance(result, list | tuple):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
+
+        self.update_status(status, status)
+        if text:
             self.log.setVisible(True)
             if self.log.toPlainText():
                 self.log.appendPlainText(text)

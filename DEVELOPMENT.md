@@ -103,24 +103,24 @@ If an exception is truly unavoidable:
 | src/pdf_toolbox/builtin/optimise.py:20  | type: ignore               | PyMuPDF lacks type hints                           | –               |
 | src/pdf_toolbox/builtin/optimise.py:65  | type: ignore[assignment]   | PyMuPDF page typing mismatch                       | –               |
 | src/pdf_toolbox/builtin/optimise.py:94  | PLR0913                    | optimisation API exposes many options              | –               |
-| src/pdf_toolbox/builtin/optimise.py:215 | PLR0913                    | batch optimisation needs several arguments         | –               |
+| src/pdf_toolbox/builtin/optimise.py:219 | PLR0913                    | batch optimisation needs several arguments         | –               |
 | src/pdf_toolbox/builtin/unlock.py:8     | type: ignore               | PyMuPDF lacks type hints                           | –               |
-| src/pdf_toolbox/gui/main_window.py:50   | PLR0915                    | constructor sets up many widgets                   | –               |
-| src/pdf_toolbox/gui/main_window.py:103  | type: ignore[attr-defined] | PySide6 stubs miss form layout policy enum         | –               |
-| src/pdf_toolbox/gui/main_window.py:126  | type: ignore[attr-defined] | PySide6 stubs miss tool button enum                | –               |
-| src/pdf_toolbox/gui/main_window.py:157  | type: ignore[attr-defined] | PySide6 stubs miss Qt.UserRole                     | –               |
-| src/pdf_toolbox/gui/main_window.py:163  | type: ignore[attr-defined] | PySide6 stubs miss Qt.UserRole                     | –               |
-| src/pdf_toolbox/gui/main_window.py:169  | PLR0912, PLR0915           | dynamic form builder is inherently complex         | –               |
-| src/pdf_toolbox/gui/main_window.py:188  | type: ignore[attr-defined] | `types.UnionType` absent from stubs                | –               |
-| src/pdf_toolbox/gui/main_window.py:271  | type: ignore[arg-type]     | PySide6 stubs reject tuple variant                 | –               |
-| src/pdf_toolbox/gui/main_window.py:274  | PLR0912                    | argument collection involves many branches         | –               |
-| src/pdf_toolbox/gui/main_window.py:289  | type: ignore[attr-defined] | PySide6 stubs miss Qt enum                         | –               |
-| src/pdf_toolbox/gui/main_window.py:447  | type: ignore[attr-defined] | PySide6 stubs miss dialog button enum              | –               |
-| src/pdf_toolbox/gui/main_window.py:451  | type: ignore[attr-defined] | PySide6 stubs miss dialog attribute                | –               |
-| src/pdf_toolbox/gui/main_window.py:465  | type: ignore[attr-defined] | PySide6 stubs miss dialog button enum              | –               |
-| src/pdf_toolbox/gui/main_window.py:469  | type: ignore[attr-defined] | PySide6 stubs miss dialog attribute                | –               |
+| src/pdf_toolbox/gui/main_window.py:52   | PLR0915                    | constructor sets up many widgets                   | –               |
+| src/pdf_toolbox/gui/main_window.py:105  | type: ignore[attr-defined] | PySide6 stubs miss form layout policy enum         | –               |
+| src/pdf_toolbox/gui/main_window.py:128  | type: ignore[attr-defined] | PySide6 stubs miss tool button enum                | –               |
+| src/pdf_toolbox/gui/main_window.py:159  | type: ignore[attr-defined] | PySide6 stubs miss Qt.UserRole                     | –               |
+| src/pdf_toolbox/gui/main_window.py:165  | type: ignore[attr-defined] | PySide6 stubs miss Qt.UserRole                     | –               |
+| src/pdf_toolbox/gui/main_window.py:171  | PLR0912, PLR0915           | dynamic form builder is inherently complex         | –               |
+| src/pdf_toolbox/gui/main_window.py:190  | type: ignore[attr-defined] | `types.UnionType` absent from stubs                | –               |
+| src/pdf_toolbox/gui/main_window.py:273  | type: ignore[arg-type]     | PySide6 stubs reject tuple variant                 | –               |
+| src/pdf_toolbox/gui/main_window.py:276  | PLR0912                    | argument collection involves many branches         | –               |
+| src/pdf_toolbox/gui/main_window.py:291  | type: ignore[attr-defined] | PySide6 stubs miss Qt enum                         | –               |
+| src/pdf_toolbox/gui/main_window.py:469  | type: ignore[attr-defined] | PySide6 stubs miss dialog button enum              | –               |
+| src/pdf_toolbox/gui/main_window.py:473  | type: ignore[attr-defined] | PySide6 stubs miss dialog attribute                | –               |
 | src/pdf_toolbox/gui/main_window.py:487  | type: ignore[attr-defined] | PySide6 stubs miss dialog button enum              | –               |
 | src/pdf_toolbox/gui/main_window.py:491  | type: ignore[attr-defined] | PySide6 stubs miss dialog attribute                | –               |
+| src/pdf_toolbox/gui/main_window.py:509  | type: ignore[attr-defined] | PySide6 stubs miss dialog button enum              | –               |
+| src/pdf_toolbox/gui/main_window.py:513  | type: ignore[attr-defined] | PySide6 stubs miss dialog attribute                | –               |
 | src/pdf_toolbox/gui/widgets.py:36       | type: ignore[override]     | override signal emitter with broader type          | –               |
 | src/pdf_toolbox/gui/widgets.py:78       | N802                       | Qt requires camelCase event name                   | –               |
 | src/pdf_toolbox/gui/widgets.py:83       | N802                       | Qt requires camelCase event name                   | –               |
