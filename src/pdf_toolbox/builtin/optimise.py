@@ -100,10 +100,27 @@ def optimise_pdf(  # noqa: PLR0913
     cancel: Event | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> tuple[str | None, float]:
-    """Optimise a PDF with progress updates.
+    """Optimise *input_pdf* and report the size change.
 
-    Calls ``progress_callback(current, total)`` as work advances. The total is
-    computed as the number of pages when ``compress_images`` is enabled.
+    The document is rewritten with garbage collection, deflated streams and an
+    optional JPEG recompression pass for embedded images.  When
+    ``progress_callback`` is provided it receives ``current`` and ``total``
+    counts as the work advances.  ``total`` equals the number of pages when
+    ``compress_images`` is enabled; otherwise it is ``1``.
+
+    Args:
+        input_pdf: Path to the PDF to optimise.
+        quality: Preset that controls compression effort.
+        compress_images: Recompress images as JPEG if ``True``.
+        keep: Preserve the output if the size reduction is below the preset
+            minimum.
+        out_dir: Optional directory for the output file.
+        cancel: Cancellation event.
+        progress_callback: Function receiving progress updates.
+
+    Returns:
+        Tuple of the output path and the size reduction ratio.  A negative
+        ratio indicates that the optimised file is larger than the input.
 
     Examples:
         >>> # Optimise a PDF with image compression and observe progress
@@ -111,7 +128,8 @@ def optimise_pdf(  # noqa: PLR0913
         >>> def on_progress(c, t):
         ...     print(f"{c}/{t}")
         >>> out, reduction = optimise_pdf(
-        ...     "input.pdf", quality="ebook", compress_images=True, progress_callback=on_progress
+        ...     "input.pdf", quality="ebook", compress_images=True,
+        ...     progress_callback=on_progress
         ... )
         >>> isinstance(out, str)
         True
@@ -169,18 +187,27 @@ def optimise_pdf(  # noqa: PLR0913
 
     optimised_size = out_path.stat().st_size
     reduction = 1 - (optimised_size / original_size)
+    change_pct = reduction * 100
     if reduction < QUALITY_SETTINGS[quality]["min_reduction"] and not keep:
         out_path.unlink(missing_ok=True)
-        logger.info(
-            "Optimised PDF discarded; reduction %.2f%% below threshold",
-            reduction * 100,
-        )
+        if reduction >= 0:
+            logger.info(
+                "Optimised PDF discarded; reduction %.2f%% below threshold",
+                change_pct,
+            )
+        else:
+            logger.info(
+                "Optimised PDF discarded; size increased by %.2f%%",
+                abs(change_pct),
+            )
         return None, reduction
-    logger.info(
-        "Optimised PDF written to %s (reduction %.2f%%)",
-        out_path,
-        reduction * 100,
-    )
+    if reduction > 0:
+        msg = f"size reduced by {change_pct:.2f}%"
+    elif reduction < 0:
+        msg = f"size increased by {abs(change_pct):.2f}%"
+    else:
+        msg = "size unchanged"
+    logger.info("Optimised PDF written to %s (%s)", out_path, msg)
     return str(out_path), reduction
 
 
