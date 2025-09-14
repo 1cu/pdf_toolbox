@@ -125,9 +125,14 @@ _EXCLUDE = {
     "pdf_toolbox.validation",
 }
 
+_ALLOWED_PREFIXES = ("pdf_toolbox.",)
+
 
 def _register_module(mod_name: str) -> None:
     """Import *mod_name* so that decorated actions register themselves."""
+    if not mod_name.startswith(_ALLOWED_PREFIXES):  # pragma: no cover - defensive
+        msg = f"module outside allowed packages: {mod_name}"
+        raise ValueError(msg)
     if mod_name in _EXCLUDE:  # pragma: no cover - defensive
         return
     mod = importlib.import_module(mod_name)
