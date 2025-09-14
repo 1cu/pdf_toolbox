@@ -106,7 +106,9 @@ def optimise_pdf(  # noqa: PLR0913
     optional JPEG recompression pass for embedded images.  When
     ``progress_callback`` is provided it receives ``current`` and ``total``
     counts as the work advances.  ``total`` equals the number of pages when
-    ``compress_images`` is enabled; otherwise it is ``1``.
+    ``compress_images`` is enabled; otherwise it is ``1``.  Depending on the
+    content, the rewritten file may be larger or unchanged and is then reported
+    as not optimised.
 
     Args:
         input_pdf: Path to the PDF to optimise.
@@ -203,11 +205,13 @@ def optimise_pdf(  # noqa: PLR0913
         return None, reduction
     if reduction > 0:
         msg = f"size reduced by {change_pct:.2f}%"
-    elif reduction < 0:
-        msg = f"size increased by {abs(change_pct):.2f}%"
+        logger.info("Optimised PDF written to %s (%s)", out_path, msg)
     else:
-        msg = "size unchanged"
-    logger.info("Optimised PDF written to %s (%s)", out_path, msg)
+        if reduction < 0:
+            msg = f"size increased by {abs(change_pct):.2f}%"
+        else:
+            msg = "size unchanged"
+        logger.info("PDF written to %s (%s)", out_path, msg)
     return str(out_path), reduction
 
 
