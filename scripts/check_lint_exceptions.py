@@ -29,7 +29,8 @@ def gather_exceptions() -> set[str]:
                         or "nosec" in comment
                         or "type: ignore" in comment
                     ):
-                        found.add(f"{path.relative_to(ROOT)}:{lineno}")
+                        rel = path.relative_to(ROOT).as_posix()
+                        found.add(f"{rel}:{lineno}")
     return found
 
 
