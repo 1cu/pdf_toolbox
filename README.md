@@ -5,18 +5,29 @@
 
 Utilities for manipulating PDF files. A Qt-based GUI discovers available functions dynamically and builds forms from their signatures. Launch it with `python -m pdf_toolbox.gui`.
 
+See [CONTRIBUTING](CONTRIBUTING.md) for the contributor workflow and [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter exceptions, and the release process. Repository-wide rules live in [AGENTS.md](AGENTS.md).
+
 The toolbox can also export PPTX presentations to images (JPEG, PNG, or TIFF) using Microsoft PowerPoint. TIFF exports are lossless for higher-quality results, and images are organized in a format-specific subdirectory.
 
-PDF pages can likewise be rasterized to images. When a `max_size_mb` limit is
-used, JPEG and WebP images lower their quality while PNG or TIFF images boost
-compression and are only downscaled if necessary, with a warning emitted when
-resizing occurs.
+PDF pages can likewise be rasterized to images. When a `max_size_mb` limit is used, JPEG and WebP images lower their quality while PNG or TIFF images boost compression and are only downscaled if necessary, with a warning emitted when resizing occurs.
 
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Optimisation](#optimisation)
 - [Development](#development)
+
+## Quick Start
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+pre-commit install
+python -m pdf_toolbox.gui          # launch the GUI
+pre-commit run tests --all-files   # run tests
+```
 
 ## Configuration
 
@@ -57,4 +68,4 @@ Language is auto-detected but can be overridden programmatically using
 
 ## Development
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) for environment setup, contributing, and release instructions.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and workflow guidance and [DEVELOPMENT.md](DEVELOPMENT.md) for developer notes, documented linting exceptions, and the release process.

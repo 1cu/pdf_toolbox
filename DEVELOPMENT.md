@@ -2,6 +2,8 @@
 
 Notes for contributing to PDF Toolbox. All Python modules live inside the `pdf_toolbox` package located in the `src` directory to provide a clear project structure.
 
+For a project overview and quick start, see the [README](README.md). The main contributor workflow is documented in [CONTRIBUTING](CONTRIBUTING.md). Repository-wide rules are enforced via [AGENTS.md](AGENTS.md).
+
 GUI is split under `pdf_toolbox/gui/` into `config.py`, `widgets.py`, `worker.py`, and `main_window.py` with a thin facade in `pdf_toolbox/gui/__init__.py`. Headless helpers (`gui/config.py`, `gui/__init__.py`) are covered by tests; pure GUI modules are excluded from coverage in `pyproject.toml`.
 
 Internationalization: basic English/German translations are provided by `pdf_toolbox.i18n`. Use `i18n.tr()` for UI strings and `i18n.set_language()` to override auto-detection when testing.
@@ -12,7 +14,7 @@ Internationalization: basic English/German translations are provided by `pdf_too
 - [Build the distribution](#build-the-distribution)
 - [Run the source](#run-the-source)
 - [Pre-commit hooks](#pre-commit-hooks)
-- [Linting and Rule Exceptions](#linting-and-rule-exceptions)
+- [Linting Policy: Fix, Don’t Silence](#linting-policy-fix-dont-silence)
 - [Release](#release)
 
 ## Set up the environment
@@ -69,9 +71,9 @@ Bandit performs static security checks during pre-commit. Dependency
 vulnerability auditing is omitted because the project is not published on
 PyPI.
 
-## Linting and Rule Exceptions
+## Linting Policy: Fix, Don’t Silence
 
-PDF Toolbox follows a **“Fix, don’t silence”** linting policy (see [AGENTS.md](./AGENTS.md)):
+PDF Toolbox follows a **“Fix, Don’t Silence”** linting policy (see [AGENTS.md](AGENTS.md) and [CONTRIBUTING](CONTRIBUTING.md)):
 
 - Warnings should be fixed through refactoring, not disabled.
 - No new `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore` are allowed unless justified.
