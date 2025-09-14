@@ -2,6 +2,8 @@
 
 Thank you for considering contributing! This document explains how to set up your environment, follow our workflow, and meet our quality standards.
 
+See the [README](README.md) for a project overview and quick start, [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter exceptions, and the release process, and [AGENTS](AGENTS.md) for the enforcement rules.
+
 ______________________________________________________________________
 
 ## Table of Contents
@@ -60,7 +62,7 @@ ______________________________________________________________________
 
 ## Linting Policy: Fix, Don’t Silence
 
-We follow a **strict no-silencing policy**:
+This project follows a strict no-silencing policy (see [AGENTS.md](AGENTS.md)):
 
 - Do **not** add `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore` unless absolutely unavoidable.
 - Do **not** disable rules globally or change linter config to “make it green”.
@@ -69,7 +71,7 @@ If you must add an exception:
 
 1. Add a one-line justification directly in code.
 1. Restrict scope to a single line (never file/module-wide).
-1. Document the exception in [`DEVELOPMENT.md`](./DEVELOPMENT.md) under “Documented Exceptions”.
+1. Document the exception in [`DEVELOPMENT.md`](DEVELOPMENT.md#documented-exceptions) under “Documented Exceptions”.
 1. Link to the relevant Issue/PR.
 
 Pull requests that violate this policy will be rejected.
@@ -93,7 +95,7 @@ ______________________________________________________________________
 
 - Use the [PR template](.github/pull_request_template.md).
 - Verify the linting checklist is complete.
-- Ensure no undocumented linter disables.
+- Ensure no undocumented linter disables; reviewers will reject PRs that silence rules without entries in [DEVELOPMENT.md](DEVELOPMENT.md#documented-exceptions).
 - Document breaking changes and update `README.md` if needed.
 - Keep PRs focused: one logical change per PR.
 
