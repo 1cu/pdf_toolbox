@@ -51,6 +51,9 @@ The configuration uses `language: system` so hooks run in the active virtual env
 pre-commit install
 ```
 
+The `gitleaks` hook builds from source and expects a system `go` toolchain. Install Go
+(`apt install golang-go` on Ubuntu) if the hook reports a missing compiler.
+
 To check the entire codebase manually:
 
 ```bash
