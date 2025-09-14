@@ -39,12 +39,14 @@ try:  # Detect Qt availability for headless error handling tests
 
     QT_AVAILABLE = True
     QT_IMPORT_ERROR: Exception | None = None
-except Exception as _qt_exc:  # pragma: no cover - environment dependent
+except (
+    Exception
+) as _qt_exc:  # pragma: no cover  # pdf-toolbox: environment dependent | issue:-
     QT_AVAILABLE = False
     QT_IMPORT_ERROR = _qt_exc
 
 
-def main() -> None:  # pragma: no cover - entry point
+def main() -> None:  # pragma: no cover  # pdf-toolbox: entry point | issue:-
     """Launch the GUI application."""
     if not QT_AVAILABLE:
         raise QT_IMPORT_ERROR or RuntimeError("Qt libraries not available")

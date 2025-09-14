@@ -25,12 +25,12 @@ def _request(
     method: str, url: str, token: str, *, timeout: float = TIMEOUT
 ) -> list | dict | None:
     """Perform an HTTP request and return parsed JSON if available."""
-    req = urllib.request.Request(url, method=method)  # noqa: S310
+    req = urllib.request.Request(url, method=method)  # noqa: S310  # pdf-toolbox: urllib Request for GitHub API | issue:-
     req.add_header("Authorization", f"token {token}")
     req.add_header("Accept", "application/vnd.github+json")
     for attempt in range(RETRIES):
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:  # noqa: S310  # nosec B310
+            with urllib.request.urlopen(req, timeout=timeout) as response:  # noqa: S310  # nosec B310  # pdf-toolbox: urllib urlopen for GitHub API | issue:-
                 if response.status != HTTP_NO_CONTENT:
                     return json.load(response)
         except (HTTPError, URLError) as exc:
@@ -57,7 +57,7 @@ def main() -> None:
         data = _request("GET", url, token)
         if not data:
             break
-        releases.extend(data)  # type: ignore[arg-type]
+        releases.extend(data)  # type: ignore[arg-type]  # pdf-toolbox: GitHub API returns untyped data | issue:-
         page += 1
 
     for rel in releases[keep:]:

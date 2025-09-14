@@ -2,5 +2,5 @@
 
 from pdf_toolbox.gui import main
 
-if __name__ == "__main__":  # pragma: no cover - entry point
+if __name__ == "__main__":  # pragma: no cover  # pdf-toolbox: entry point | issue:-
     main()
