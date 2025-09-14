@@ -6,5 +6,6 @@ from pdf_toolbox import actions
 
 
 def test_register_module_rejects_foreign():
-    with pytest.raises(ValueError):
+    msg = "module outside allowed packages"
+    with pytest.raises(ValueError, match=msg):
         actions._register_module("json")
