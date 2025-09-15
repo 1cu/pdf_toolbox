@@ -17,7 +17,6 @@
     "german": "Deutsch",
     "language": "Language",
     "log_level": "Log Level",
-    "merge_pptx": "Merge PPTX",
     "optimise_pdf": "Optimise PDF",
     "optimised_increased": "No optimisation: size increased by {pct}%",
     "optimised_reduced": "Optimised: size reduced by {pct}%",
@@ -25,7 +24,7 @@
     "pdf_to_docx": "PDF to DOCX",
     "pdf_to_images": "PDF to Images",
     "pptx_properties": "PPTX Properties",
-    "pptx_renderer_missing": "Rendering PPTX is not available without an external Office/LibreOffice provider",
+    "pptx_renderer_missing": "Rendering PPTX is not available without Office/LibreOffice. Configure an external provider",
     "pptx_to_images": "PPTX to Images",
     "pptx_to_pdf": "PPTX to PDF",
     "ready": "Ready",
@@ -43,14 +42,12 @@
     "warning": "Warning"
   },
   "labels": {
-    "first": "First PPTX",
     "input_pdf": "Input PDF",
     "input_pptx": "Input PPTX",
     "max_size_mb": "Max Size (MB)",
     "out_dir": "Output Directory",
     "output_dir": "Output Directory",
     "output_path": "Output Path",
-    "range_spec": "Range Specification",
-    "second": "Second PPTX"
+    "range_spec": "Range Specification"
   }
 }

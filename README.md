@@ -14,7 +14,7 @@ PDF pages can be rasterized to images. When a `max_size_mb` limit is used, JPEG 
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Optimisation](#optimisation)
-- [PPTX Support (without Office)](#pptx-support-without-office)
+- [PPTX Support](#pptx-support)
 - [Development](#development)
 
 ## Quick Start
@@ -89,24 +89,24 @@ python -c "from pdf_toolbox.actions.extract import extract_text; print(extract_t
 - Page rendering streams directly to disk to keep memory usage low.
 - User-supplied paths are validated to prevent directory traversal.
 
-## PPTX Support (without Office)
+## PPTX Support
 
-The toolbox can read and manipulate PowerPoint files using pure Python dependencies. Available actions:
+The toolbox can manipulate PowerPoint files using pure Python dependencies. Basic actions:
 
 - `extract_pptx_images` – extract embedded images
 - `pptx_properties` – write document properties to JSON
-- `merge_pptx` – append slides of one deck to another
 - `reorder_pptx` – select and reorder slides
-- `pptx_to_images` – render slides to images (requires external Office/LibreOffice)
-- `pptx_to_pdf` – render slides to PDF (requires external Office/LibreOffice)
 
-Rendering is optional and disabled by default because it depends on external Office software. A provider can be configured via the renderer interface when available.
+Rendering to images or PDF requires external Office/LibreOffice software and is disabled by default. When a provider is configured, additional actions become available:
+
+- `pptx_to_images` – render slides to images
+- `pptx_to_pdf` – render slides to PDF
 
 Examples:
 
 ```bash
 python -c "from pdf_toolbox.actions.pptx import extract_pptx_images; extract_pptx_images('deck.pptx')"
-python -c "from pdf_toolbox.actions.pptx import merge_pptx; merge_pptx('a.pptx','b.pptx')"
+python -c "from pdf_toolbox.actions.pptx import reorder_pptx; reorder_pptx('deck.pptx','2,1')"
 ```
 
 ## Development

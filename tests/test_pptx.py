@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -12,14 +13,12 @@ from pptx.util import Inches
 
 from pdf_toolbox.actions.pptx import (
     extract_pptx_images,
-    merge_pptx,
     pptx_properties,
     pptx_to_images,
     pptx_to_pdf,
     reorder_pptx,
 )
 from pdf_toolbox.renderers.pptx import BasePptxRenderer, get_pptx_renderer
-from importlib import metadata
 
 
 @pytest.fixture
@@ -75,33 +74,6 @@ def test_pptx_properties(tmp_path):
     assert data["title"] == "Demo"
 
 
-def test_merge_pptx(tmp_path):
-    prs1 = Presentation()
-    slide1 = prs1.slides.add_slide(prs1.slide_layouts[5])
-    slide1.shapes.title.text = "A1"
-    slide2 = prs1.slides.add_slide(prs1.slide_layouts[5])
-    slide2.shapes.title.text = "A2"
-    path1 = tmp_path / "a.pptx"
-    prs1.save(path1)
-
-    prs2 = Presentation()
-    slide3 = prs2.slides.add_slide(prs2.slide_layouts[5])
-    slide3.shapes.title.text = "B1"
-    tb = slide3.shapes.add_textbox(Inches(1), Inches(2), Inches(2), Inches(1))
-    tb.text = "box"
-    img = Image.new("RGB", (10, 10), color=(0, 0, 255))
-    img_path = tmp_path / "pic.png"
-    img.save(img_path)
-    slide3.shapes.add_picture(str(img_path), Inches(1), Inches(1))
-    path2 = tmp_path / "b.pptx"
-    prs2.save(path2)
-
-    merged = merge_pptx(str(path1), str(path2))
-    merged_prs = Presentation(merged)
-    titles = [s.shapes.title.text for s in merged_prs.slides]
-    assert titles == ["A1", "A2", "B1"]
-
-
 def test_reorder_pptx(simple_pptx, tmp_path):
     out = reorder_pptx(simple_pptx, "3,1,2,5,4", output_path=str(tmp_path / "out.pptx"))
     prs = Presentation(out)
@@ -119,7 +91,7 @@ def test_reorder_pptx_range_and_invalid(simple_pptx):
     assert Path(out).exists()
     out_all = reorder_pptx(simple_pptx, "")
     assert Path(out_all).exists()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         reorder_pptx(simple_pptx, "0")
 
 
@@ -130,12 +102,18 @@ def test_rendering_actions_raise(simple_pptx):
         pptx_to_pdf(simple_pptx)
 
 
-def test_renderer_env(monkeypatch, simple_pptx):
+def test_renderer_env(monkeypatch):
     class DummyRenderer(BasePptxRenderer):
-        def to_images(self, input_pptx: str, out_dir: str | None = None, max_size_mb: float | None = None, format: str = "jpeg") -> str:
+        def to_images(
+            self,
+            _input_pptx: str,
+            _out_dir: str | None = None,
+            _max_size_mb: float | None = None,
+            _img_format: str = "jpeg",
+        ) -> str:
             return "ok"
 
-        def to_pdf(self, input_pptx: str, output_path: str | None = None) -> str:
+        def to_pdf(self, _input_pptx: str, _output_path: str | None = None) -> str:
             return "ok.pdf"
 
     class EP:
@@ -145,7 +123,10 @@ def test_renderer_env(monkeypatch, simple_pptx):
             return DummyRenderer
 
     monkeypatch.setenv("PDF_TOOLBOX_PPTX_RENDERER", "dummy")
-    monkeypatch.setattr(metadata, "entry_points", lambda group: [EP()] if group == "pdf_toolbox.pptx_renderers" else [])
+    monkeypatch.setattr(
+        metadata,
+        "entry_points",
+        lambda group: [EP()] if group == "pdf_toolbox.pptx_renderers" else [],
+    )
     renderer = get_pptx_renderer()
     assert isinstance(renderer, DummyRenderer)
-

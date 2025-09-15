@@ -18,7 +18,6 @@
 | src/pdf_toolbox/actions/optimise.py:65    | type: ignore[assignment]                 | PyMuPDF page typing mismatch                        | -        |
 | src/pdf_toolbox/actions/optimise.py:94    | PLR0913                                  | optimisation API exposes many options               | -        |
 | src/pdf_toolbox/actions/optimise.py:221   | PLR0913                                  | batch optimisation needs several arguments          | -        |
-| src/pdf_toolbox/actions/pptx.py:189       | SLF001                                   | reorder slides via private API                      | -        |
 | src/pdf_toolbox/actions/unlock.py:8       | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/gui/__init__.py:44        | pragma: no cover                         | environment dependent                               | -        |
 | src/pdf_toolbox/gui/main_window.py:52     | PLR0915                                  | constructor sets up many widgets                    | -        |

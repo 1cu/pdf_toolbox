@@ -19,7 +19,7 @@ class BasePptxRenderer(ABC):
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
     ) -> str:
         """Render ``input_pptx`` slides to images."""
 
@@ -36,11 +36,13 @@ class NullRenderer(BasePptxRenderer):
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
     ) -> str:
+        """Always raise because no renderer is configured."""
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
     def to_pdf(self, input_pptx: str, output_path: str | None = None) -> str:
+        """Always raise because no renderer is configured."""
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
 
@@ -52,7 +54,6 @@ def get_pptx_renderer() -> BasePptxRenderer:
     group. If no matching entry point is found a :class:`NullRenderer` instance
     is returned.
     """
-
     name = os.getenv("PDF_TOOLBOX_PPTX_RENDERER")
     if name:
         for ep in metadata.entry_points(group="pdf_toolbox.pptx_renderers"):
@@ -63,4 +64,3 @@ def get_pptx_renderer() -> BasePptxRenderer:
 
 
 __all__ = ["BasePptxRenderer", "NullRenderer", "get_pptx_renderer"]
-
