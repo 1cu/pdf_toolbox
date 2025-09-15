@@ -4,7 +4,7 @@ Notes for contributing to PDF Toolbox. All Python modules live inside the `pdf_t
 
 For a project overview and quick start, see the [README](README.md). The main contributor workflow is documented in [CONTRIBUTING](CONTRIBUTING.md). Repository-wide rules are enforced via [AGENTS.md](AGENTS.md).
 
-GUI is split under `pdf_toolbox/gui/` into `config.py`, `widgets.py`, `worker.py`, and `main_window.py` with a thin facade in `pdf_toolbox/gui/__init__.py`. Headless helpers (`gui/config.py`, `gui/__init__.py`) are covered by tests; pure GUI modules are excluded from coverage in `pyproject.toml`.
+GUI is split under `pdf_toolbox/gui/` into `widgets.py`, `worker.py`, and `main_window.py` with a thin facade in `pdf_toolbox/gui/__init__.py`. Configuration helpers live in `pdf_toolbox/config.py`. Headless helpers (`gui/__init__.py`) are covered by tests; pure GUI modules are excluded from coverage in `pyproject.toml`.
 
 Internationalization: basic English/German translations are provided by `pdf_toolbox.i18n`. Use `i18n.tr()` for UI strings and `i18n.set_language()` to override auto-detection when testing.
 
@@ -54,8 +54,7 @@ raises a translated `NotImplementedError`.
 ### MS-Office Provider
 
 The optional `PptxMsOfficeRenderer` uses Microsoft PowerPoint via COM
-automation. Install the `pptx-render` extra and set
-`PDF_TOOLBOX_PPTX_RENDERER=ms_office` on Windows systems with PowerPoint
+automation. Install the `pptx-render` extra and set `pptx_renderer = "ms_office"` in the configuration file on Windows systems with PowerPoint
 installed to enable it.
 
 ## Pre-commit hooks

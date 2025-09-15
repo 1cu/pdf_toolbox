@@ -20,9 +20,9 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
     """Render PPTX files using Microsoft PowerPoint.
 
     The renderer relies on COM automation and therefore only works on Windows
-    systems with an installed version of Microsoft PowerPoint. It must be
-    enabled explicitly via the ``PDF_TOOLBOX_PPTX_RENDERER`` environment
-    variable and the optional ``pptx-render`` extras.
+    systems with an installed version of Microsoft PowerPoint. Enable it via
+    the configuration file (``pptx_renderer = "ms_office"``) and the optional
+    ``pptx-render`` extras.
 
     Example:
         >>> from pdf_toolbox.renderers.ms_office import PptxMsOfficeRenderer

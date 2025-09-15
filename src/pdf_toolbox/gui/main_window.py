@@ -9,8 +9,10 @@ import types
 from importlib import metadata
 from typing import Any, Literal, Union, get_args, get_origin
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QDialog,
@@ -36,11 +38,12 @@ from PySide6.QtWidgets import (
 )
 
 from pdf_toolbox.actions import Action
-from pdf_toolbox.gui.config import load_config, save_config
+from pdf_toolbox.config import CONFIG_PATH, load_config, save_config
 from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
+from pdf_toolbox.renderers.pptx import get_pptx_renderer
 from pdf_toolbox.utils import _load_author_info, configure_logging
 
 RESULT_PAIR_LEN = 2
@@ -122,6 +125,9 @@ class MainWindow(QMainWindow):
             tr("log_level"), self.on_log_level
         )
         self.action_language = settings_menu.addAction(tr("language"), self.on_language)
+        self.action_renderer = settings_menu.addAction(
+            "PPTX Renderer", self.on_pptx_renderer
+        )
         self.action_about = settings_menu.addAction(tr("about"), self.on_about)
         self.settings_menu = settings_menu
         self.settings_btn.setMenu(settings_menu)
@@ -542,6 +548,48 @@ class MainWindow(QMainWindow):
             self.tree.clear()
             self._populate_actions()
             self.update_status(tr(self.status_key), self.status_key)
+
+    def on_pptx_renderer(
+        self,
+    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+        """Configure PPTX renderer and show config path."""
+        cfg = self.cfg
+        dlg = QDialog(self)
+        dlg.setWindowTitle("PPTX Renderer")
+        form = QFormLayout(dlg)
+        combo = QComboBox()
+        combo.addItem("System default (no Office)", "")
+        combo.addItem("MS Office (PowerPoint)", "ms_office")
+        current = cfg.get("pptx_renderer", "")
+        index = combo.findData(current)
+        combo.setCurrentIndex(max(index, 0))
+        form.addRow("PPTX Renderer", combo)
+        path = CONFIG_PATH
+        path_label = QLabel(str(path))
+        path_row = QHBoxLayout()
+        path_row.addWidget(path_label)
+        open_btn = QPushButton("Open folder")
+        open_btn.clicked.connect(
+            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.parent)))
+        )
+        path_row.addWidget(open_btn)
+        copy_btn = QPushButton("Copy path")
+        copy_btn.clicked.connect(lambda: QApplication.clipboard().setText(str(path)))
+        path_row.addWidget(copy_btn)
+        form.addRow("Settings file", path_row)
+        eff = QLabel(type(get_pptx_renderer()).__name__)
+        form.addRow("Effective renderer", eff)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
+        form.addWidget(buttons)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
+            value = combo.currentData() or ""
+            if value:
+                cfg["pptx_renderer"] = value
+            else:
+                cfg.pop("pptx_renderer", None)
+            save_config(cfg)
 
     def on_about(
         self,

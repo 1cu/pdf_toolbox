@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import importlib.metadata
-import os
+import importlib
 from abc import ABC, abstractmethod
 from typing import Literal
 
+from pdf_toolbox.config import load_config
 from pdf_toolbox.i18n import tr
 
 
@@ -69,19 +69,34 @@ class NullRenderer(BasePptxRenderer):
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
 
+_INTERNAL_REGISTRY = {
+    "ms_office": "pdf_toolbox.renderers.ms_office:PptxMsOfficeRenderer",
+    "null": "pdf_toolbox.renderers.pptx:NullRenderer",
+}
+
+
+def _load_via_registry(name: str) -> BasePptxRenderer | None:
+    """Return renderer ``name`` from the internal registry if present."""
+    target = _INTERNAL_REGISTRY.get(name)
+    if not target:
+        return None
+    module_name, qualname = target.split(":", 1)
+    module = importlib.import_module(module_name)
+    return getattr(module, qualname)()
+
+
 def get_pptx_renderer() -> BasePptxRenderer:
     """Return the configured PPTX renderer or a placeholder.
 
-    A renderer can be selected via the ``PDF_TOOLBOX_PPTX_RENDERER`` environment
-    variable referring to an entry point in the ``pdf_toolbox.pptx_renderers``
-    group. If no matching entry point is found a :class:`NullRenderer` instance
-    is returned.
+    The ``pptx_renderer`` value from the JSON configuration file selects a
+    renderer from the internal registry. Unknown or missing values fall back to
+    :class:`NullRenderer`.
     """
-    name = os.getenv("PDF_TOOLBOX_PPTX_RENDERER")
+    name = (load_config().get("pptx_renderer") or "").strip()
     if name:
-        for ep in importlib.metadata.entry_points(group="pdf_toolbox.pptx_renderers"):
-            if ep.name == name:
-                return ep.load()()
+        obj = _load_via_registry(name)
+        if obj:
+            return obj
     return NullRenderer()
 
 

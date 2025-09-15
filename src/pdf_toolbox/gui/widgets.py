@@ -8,7 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QFileDialog, QLabel, QLineEdit, QPlainTextEdit
 
-from pdf_toolbox.gui.config import save_config
+from pdf_toolbox.config import save_config
 from pdf_toolbox.i18n import tr
 
 

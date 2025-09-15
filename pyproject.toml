@@ -96,7 +96,6 @@ omit = [
   "*/pdf_toolbox/gui/dialogs.py",
   "*/pdf_toolbox/gui/__init__.py",
   "*/pdf_toolbox/gui/__main__.py",
-  "*/pdf_toolbox/gui/config.py",
   "*/pdf_toolbox/__main__.py",
   "*/pdf_toolbox/renderers/ms_office.py",
 ]

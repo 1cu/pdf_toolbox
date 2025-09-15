@@ -111,7 +111,6 @@ Prerequisites::
 
 ```bash
 pip install .[pptx-render]
-set PDF_TOOLBOX_PPTX_RENDERER=ms_office  # PowerShell: $env:PDF_TOOLBOX_PPTX_RENDERER='ms_office'
 ```
 
 Examples:
@@ -127,6 +126,25 @@ Basic examples:
 python -c "from pdf_toolbox.actions.pptx import extract_pptx_images; extract_pptx_images('deck.pptx')"
 python -c "from pdf_toolbox.actions.pptx import reorder_pptx; reorder_pptx('deck.pptx','2,1')"
 ```
+
+### Renderer aktivieren (Desktop-Binary)
+
+Prerequisites: Windows and Microsoft PowerPoint installed.
+
+Activate via GUI: `Settings → PPTX Renderer → MS Office (PowerPoint) → Save`.
+
+Alternatively edit the configuration file `${CONFIG_DIR}/pdf_toolbox/pdf_toolbox_config.json`:
+
+```json
+{
+  "pptx_renderer": "ms_office"
+}
+```
+
+If the key is absent or empty the renderer remains disabled.
+
+Note: Frozen binaries may lack entry-point metadata. The renderer is then
+loaded via an internal registry without loss of functionality.
 
 ## Development
 
