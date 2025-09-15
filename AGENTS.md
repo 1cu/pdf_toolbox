@@ -14,6 +14,8 @@ notes, documented linter exceptions, and the release process.
 - Install dependencies with `pip install -e '.[dev]'`.
 - Install git hooks via `pre-commit install`.
 - Export `QT_QPA_PLATFORM=offscreen` when running pre-commit or tests.
+- PPTX rendering providers are optional; without configuration the
+  `NullRenderer` is used and no Office software is required.
 
 ## Workflow
 

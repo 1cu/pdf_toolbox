@@ -102,7 +102,26 @@ Rendering to images or PDF requires external Office/LibreOffice software and is 
 - `pptx_to_images` – render slides to images
 - `pptx_to_pdf` – render slides to PDF
 
+### PPTX → PDF/Bilder (MS Office Provider)
+
+An experimental provider uses Microsoft PowerPoint via COM automation. It is
+**optional** and only works on Windows with PowerPoint installed.
+
+Prerequisites::
+
+```bash
+pip install .[pptx-render]
+set PDF_TOOLBOX_PPTX_RENDERER=ms_office  # PowerShell: $env:PDF_TOOLBOX_PPTX_RENDERER='ms_office'
+```
+
 Examples:
+
+```bash
+python -c "from pdf_toolbox.actions.pptx import pptx_to_pdf; print(pptx_to_pdf('deck.pptx'))"
+python -c "from pdf_toolbox.actions.pptx import pptx_to_images; print(pptx_to_images('deck.pptx', img_format='png'))"
+```
+
+Basic examples:
 
 ```bash
 python -c "from pdf_toolbox.actions.pptx import extract_pptx_images; extract_pptx_images('deck.pptx')"
