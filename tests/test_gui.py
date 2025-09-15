@@ -105,6 +105,8 @@ def test_build_form_union_int_default(app, monkeypatch):
     win = gui.MainWindow()
     try:
         win.build_form(act)
+        win.show()
+        QApplication.processEvents()
         combo, spin = win.current_widgets["dpi"]
         assert combo.currentText() == "Custom"
         assert spin.isVisible()

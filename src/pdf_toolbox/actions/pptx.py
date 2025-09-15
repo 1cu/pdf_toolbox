@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
@@ -135,12 +135,13 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
         quality,
         allowed_formats={"PNG", "JPEG", "TIFF"},
     )
+    fmt_literal = cast(Literal["PNG", "JPEG", "TIFF"], fmt)
     renderer = get_pptx_renderer()
     return renderer.to_images(
         input_pptx,
         out_dir=out_dir,
         max_size_mb=max_size_mb,
-        image_format=fmt,
+        image_format=fmt_literal,
         quality=quality_val,
         width=width,
         height=height,

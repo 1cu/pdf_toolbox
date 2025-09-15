@@ -27,6 +27,7 @@ ERR_UNSUPPORTED_FORMAT = (
 ERR_UNKNOWN_QUALITY = "Unknown quality preset '{quality}'"
 ERR_COULD_NOT_REDUCE = "Could not reduce image below max_size_mb"
 ERR_WIDTH_HEIGHT = "width and height must be provided together"
+ERR_DPI_UNRESOLVED = "dpi could not be resolved"
 
 # Supported output formats for PDF rendering; WebP offers
 # smaller files with good quality.
@@ -354,7 +355,8 @@ def pdf_to_images(  # noqa: PLR0913  # pdf-toolbox: conversion helper requires m
             w_in = first.rect.width / 72
             h_in = first.rect.height / 72
             dpi_val = round(max(width / w_in, height / h_in))
-        assert dpi_val is not None  # resolved above
+        elif dpi_val is None:
+            raise ValueError(ERR_DPI_UNRESOLVED)
         return _render_doc_pages(
             input_pdf,
             doc,

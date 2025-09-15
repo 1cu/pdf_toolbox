@@ -12,8 +12,8 @@
 | src/pdf_toolbox/actions/docx.py:9          | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/actions/extract.py:8       | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/actions/images.py:11       | type: ignore                             | PyMuPDF lacks type hints                            | -        |
-| src/pdf_toolbox/actions/images.py:120      | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches  | -        |
-| src/pdf_toolbox/actions/images.py:304      | PLR0913                                  | conversion helper requires many parameters          | -        |
+| src/pdf_toolbox/actions/images.py:121      | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches  | -        |
+| src/pdf_toolbox/actions/images.py:305      | PLR0913                                  | conversion helper requires many parameters          | -        |
 | src/pdf_toolbox/actions/optimise.py:20     | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/actions/optimise.py:65     | type: ignore[assignment]                 | PyMuPDF page typing mismatch                        | -        |
 | src/pdf_toolbox/actions/optimise.py:94     | PLR0913                                  | optimisation API exposes many options               | -        |
