@@ -1,4 +1,4 @@
-"""Action registration and discovery utilities."""
+"""Action registration and default action modules."""
 
 from __future__ import annotations
 
@@ -43,9 +43,7 @@ class Action:
 _registry: dict[str, Action] = {}
 
 
-def _format_name(
-    func_name: str,
-) -> str:
+def _format_name(func_name: str) -> str:
     acronyms = {
         "pdf": "PDF",
         "docx": "DOCX",
@@ -86,7 +84,7 @@ def action(
 
     def deco(fn):
         act = build_action(fn, name=name, category=category)
-        fn.__pdf_toolbox_action__ = visible  # type: ignore[attr-defined]  # pdf-toolbox: attach custom attribute for action registry | issue:-
+        fn.__pdf_toolbox_action__ = visible  # type: ignore[attr-defined]  # pdf-toolbox: attach custom attribute for action registration | issue:-
         _registry[act.fqname] = act
         return fn
 
@@ -144,12 +142,21 @@ def _register_module(mod_name: str) -> None:
             _registry.setdefault(act.fqname, act)
 
 
+ACTION_MODULES = [
+    "docx",
+    "extract",
+    "images",
+    "optimise",
+    "repair",
+    "unlock",
+]
+
+
 @cache
 def _auto_discover() -> None:
-    builtin = importlib.import_module("pdf_toolbox.builtin")
-    for name in getattr(builtin, "__all__", []):
+    for name in ACTION_MODULES:
         with suppress(Exception):
-            _register_module(f"{builtin.__name__}.{name}")
+            _register_module(f"{__name__}.{name}")
 
 
 def list_actions() -> list[Action]:
@@ -162,4 +169,19 @@ def list_actions() -> list[Action]:
     ]
 
 
-__all__ = ["Action", "Param", "action", "list_actions"]
+for _mod in ACTION_MODULES:
+    with suppress(Exception):
+        importlib.import_module(f"{__name__}.{_mod}")
+
+__all__ = [
+    "Action",
+    "Param",
+    "action",
+    "docx",
+    "extract",
+    "images",
+    "list_actions",
+    "optimise",
+    "repair",
+    "unlock",
+]

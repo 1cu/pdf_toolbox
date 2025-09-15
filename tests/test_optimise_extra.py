@@ -6,7 +6,7 @@ import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
 
-from pdf_toolbox.builtin.optimise import batch_optimise_pdfs, optimise_pdf
+from pdf_toolbox.actions.optimise import batch_optimise_pdfs, optimise_pdf
 
 
 def test_optimise_pdf_cancellation_cleans_up(tmp_path):
@@ -52,7 +52,7 @@ def test_optimise_with_progress_threshold_and_cancel(tmp_path, monkeypatch):
 
     # Exercise keep=False branch in progress variant
     monkeypatch.setattr(
-        "pdf_toolbox.builtin.optimise.QUALITY_SETTINGS",
+        "pdf_toolbox.actions.optimise.QUALITY_SETTINGS",
         {"default": {"pdf_quality": 80, "image_quality": 75, "min_reduction": 1.0}},
     )
     output, _reduction = optimise_pdf(str(pdf_path), keep=False, out_dir=str(tmp_path))

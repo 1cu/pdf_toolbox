@@ -2,7 +2,7 @@ from pathlib import Path
 
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 
-from pdf_toolbox.builtin.optimise import optimise_pdf
+from pdf_toolbox.actions.optimise import optimise_pdf
 
 
 def _pdf_with_pages(path, pages=2):
