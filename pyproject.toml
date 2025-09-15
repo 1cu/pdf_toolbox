@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.6.16"
+version = "0.6.17"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -96,7 +96,6 @@ omit = [
   "*/pdf_toolbox/gui/dialogs.py",
   "*/pdf_toolbox/gui/__init__.py",
   "*/pdf_toolbox/gui/__main__.py",
-  "*/pdf_toolbox/gui/config.py",
   "*/pdf_toolbox/__main__.py",
   "*/pdf_toolbox/renderers/ms_office.py",
 ]

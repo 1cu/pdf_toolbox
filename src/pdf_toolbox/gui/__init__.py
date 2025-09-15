@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import sys
 
-import pdf_toolbox.gui.config as _config
+import pdf_toolbox.config as _config
 from pdf_toolbox.actions import Action, list_actions
 from pdf_toolbox.gui.main_window import MainWindow
 

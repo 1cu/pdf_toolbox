@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 import json
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from PIL import Image
 from pptx import Presentation
 from pptx.util import Inches
 
+from pdf_toolbox import config
 from pdf_toolbox.actions.pptx import (
     extract_pptx_images,
     pptx_properties,
@@ -18,6 +18,7 @@ from pdf_toolbox.actions.pptx import (
     pptx_to_pdf,
     reorder_pptx,
 )
+from pdf_toolbox.renderers import pptx
 from pdf_toolbox.renderers.pptx import BasePptxRenderer, get_pptx_renderer
 
 
@@ -106,7 +107,7 @@ def test_rendering_actions_raise(simple_pptx):
         pptx_to_pdf(simple_pptx)
 
 
-def test_renderer_env(monkeypatch):
+def test_renderer_config(monkeypatch, tmp_path):
     class DummyRenderer(BasePptxRenderer):
         def to_images(
             self,
@@ -131,18 +132,14 @@ def test_renderer_env(monkeypatch):
             del output_path, notes, handout, range_spec
             return "ok.pdf"
 
-    class EP:
-        name = "dummy"
-
-        def load(self):
-            return DummyRenderer
-
-    monkeypatch.setenv("PDF_TOOLBOX_PPTX_RENDERER", "dummy")
     monkeypatch.setattr(
-        importlib.metadata,
-        "entry_points",
-        lambda group: [EP()] if group == "pdf_toolbox.pptx_renderers" else [],
+        pptx,
+        "_load_via_registry",
+        lambda name: DummyRenderer() if name == "dummy" else None,
     )
+    cfg_path = tmp_path / "cfg.json"
+    cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
+    monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
     renderer = get_pptx_renderer()
     assert isinstance(renderer, DummyRenderer)
     assert pptx_to_images(simple_pptx) == "ok"

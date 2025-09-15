@@ -1,4 +1,4 @@
-"""Configuration helpers for the GUI (headless-testable)."""
+"""Configuration helpers shared across modules."""
 
 from __future__ import annotations
 
@@ -38,12 +38,12 @@ def save_config_at(path: Path, cfg: dict) -> None:
 
 
 def load_config() -> dict:
-    """Load configuration using the module's ``CONFIG_PATH``."""
+    """Load configuration using :data:`CONFIG_PATH`."""
     return load_config_at(CONFIG_PATH)
 
 
 def save_config(cfg: dict) -> None:
-    """Persist configuration using the module's ``CONFIG_PATH``."""
+    """Persist configuration using :data:`CONFIG_PATH`."""
     save_config_at(CONFIG_PATH, cfg)
 
 
