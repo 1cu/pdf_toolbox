@@ -9,7 +9,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from pdf_toolbox.actions import action
-from pdf_toolbox.actions.images import LOSSY_QUALITY_PRESETS, QualityChoice
+from pdf_toolbox.actions.images import QualityChoice, resolve_image_settings
 from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import get_pptx_renderer
 from pdf_toolbox.utils import logger
@@ -130,15 +130,17 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
     Returns:
         Path to the directory containing the images.
     """
-    quality_val = (
-        LOSSY_QUALITY_PRESETS[quality] if isinstance(quality, str) else quality
+    fmt, quality_val, _dpi = resolve_image_settings(
+        image_format,
+        quality,
+        allowed_formats={"PNG", "JPEG", "TIFF"},
     )
     renderer = get_pptx_renderer()
     return renderer.to_images(
         input_pptx,
         out_dir=out_dir,
         max_size_mb=max_size_mb,
-        image_format=image_format,
+        image_format=fmt,
         quality=quality_val,
         width=width,
         height=height,

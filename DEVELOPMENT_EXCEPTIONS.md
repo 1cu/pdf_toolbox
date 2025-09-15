@@ -12,8 +12,8 @@
 | src/pdf_toolbox/actions/docx.py:9          | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/actions/extract.py:8       | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/actions/images.py:11       | type: ignore                             | PyMuPDF lacks type hints                            | -        |
-| src/pdf_toolbox/actions/images.py:68       | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches  | -        |
-| src/pdf_toolbox/actions/images.py:283      | PLR0913                                  | conversion helper requires many parameters          | -        |
+| src/pdf_toolbox/actions/images.py:120      | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches  | -        |
+| src/pdf_toolbox/actions/images.py:304      | PLR0913                                  | conversion helper requires many parameters          | -        |
 | src/pdf_toolbox/actions/optimise.py:20     | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/actions/optimise.py:65     | type: ignore[assignment]                 | PyMuPDF page typing mismatch                        | -        |
 | src/pdf_toolbox/actions/optimise.py:94     | PLR0913                                  | optimisation API exposes many options               | -        |
@@ -68,7 +68,7 @@
 | src/pdf_toolbox/renderers/ms_office.py:61  | pragma: no cover                         | PowerPoint COM                                      | -        |
 | src/pdf_toolbox/renderers/ms_office.py:118 | pragma: no cover                         | COM export failures                                 | -        |
 | src/pdf_toolbox/renderers/ms_office.py:125 | PLR0913                                  | renderer API requires many parameters               | -        |
-| src/pdf_toolbox/renderers/ms_office.py:162 | pragma: no cover                         | COM export failures                                 | -        |
+| src/pdf_toolbox/renderers/ms_office.py:167 | pragma: no cover                         | COM export failures                                 | -        |
 | src/pdf_toolbox/renderers/pptx.py:21       | PLR0913                                  | renderer API requires many parameters               | -        |
 | src/pdf_toolbox/renderers/pptx.py:48       | PLR0913                                  | renderer API requires many parameters               | -        |
 | src/pdf_toolbox/utils.py:13                | type: ignore                             | PyMuPDF lacks type hints                            | -        |
@@ -80,4 +80,5 @@
 | tests/test_optimise_extra.py:5             | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_optimise_progress.py:3          | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_pptx.py:99                      | PLR0913                                  | renderer API requires many parameters               | -        |
+| tests/test_pptx.py:141                     | PLR0913                                  | renderer API requires many parameters               | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                            | -        |

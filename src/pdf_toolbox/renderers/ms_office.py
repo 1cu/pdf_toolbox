@@ -144,9 +144,14 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         out.mkdir(parents=True, exist_ok=True)
 
         ext_map = {"JPEG": "JPG", "PNG": "PNG", "TIFF": "TIFF"}
-        ext = ext_map[image_format]
+        fmt = image_format.upper()
+        try:
+            ext = ext_map[fmt]
+        except KeyError as exc:
+            msg = f"Unsupported image format: {image_format}"
+            raise PptxRenderingError(msg) from exc
 
-        logger.info("Rendering %s to images (%s)", inp, image_format)
+        logger.info("Rendering %s to images (%s)", inp, fmt)
         app = self._open_app()
         try:
             prs = self._open_presentation(app, inp)
@@ -155,7 +160,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                     prs.Export(str(out), ext, int(width), int(height))
                 else:
                     prs.Export(str(out), ext)
-                count = len(list(out.glob(f"*.{image_format.lower()}")))
+                count = len(list(out.glob(f"*.{fmt.lower()}")))
                 logger.info("Exported %d image(s) to %s", count, out)
             finally:
                 prs.Close()

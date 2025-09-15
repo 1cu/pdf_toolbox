@@ -65,13 +65,65 @@ LOSSY_QUALITY_PRESETS: dict[str, int] = {
 QualityChoice = Literal["Low (70)", "Medium (85)", "High (95)"]
 
 
+def resolve_image_settings(
+    image_format: str,
+    quality: int | QualityChoice = "High (95)",
+    dpi: int | DpiChoice | None = None,
+    *,
+    allowed_formats: set[str] | None = None,
+) -> tuple[str, int, int | None]:
+    """Normalise ``image_format``, ``quality`` and optional ``dpi`` values.
+
+    Args:
+        image_format: Requested output format. Case is ignored.
+        quality: Lossy quality preset or explicit value.
+        dpi: Optional DPI preset or value.
+        allowed_formats: Restrict accepted formats; defaults to
+            :data:`IMAGE_FORMATS`.
+
+    Returns:
+        A tuple ``(fmt, quality_val, dpi_val)`` where ``fmt`` is the validated
+        upper-case format, ``quality_val`` is the numeric quality value and
+        ``dpi_val`` the resolved DPI or ``None`` if ``dpi`` was ``None``.
+    """
+    fmt = image_format.upper()
+    formats = allowed_formats or set(IMAGE_FORMATS)
+    if fmt not in formats:
+        raise ValueError(
+            ERR_UNSUPPORTED_FORMAT.format(
+                image_format=image_format,
+                formats=", ".join(sorted(formats)),
+            )
+        )
+
+    if isinstance(quality, str):
+        try:
+            quality_val = LOSSY_QUALITY_PRESETS[quality]
+        except KeyError as exc:
+            raise ValueError(ERR_UNKNOWN_QUALITY.format(quality=quality)) from exc
+    else:
+        quality_val = int(quality)
+
+    dpi_val: int | None = None
+    if dpi is not None:
+        if isinstance(dpi, str):
+            try:
+                dpi_val = DPI_PRESETS[dpi]
+            except KeyError as exc:
+                raise ValueError(ERR_UNKNOWN_DPI.format(dpi=dpi)) from exc
+        else:
+            dpi_val = int(dpi)
+
+    return fmt, quality_val, dpi_val
+
+
 def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: rendering pages needs many parameters and branches | issue:-
     input_path: str,
     doc: fitz.Document,
     page_numbers: list[int],
-    dpi: int | DpiChoice,
+    dpi: int,
     image_format: str,
-    quality: int | QualityChoice = "High (95)",
+    quality: int,
     max_size_mb: float | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
@@ -86,23 +138,10 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
     """
     outputs: list[str] = []
 
-    if isinstance(dpi, str):
-        try:
-            dpi_value = DPI_PRESETS[dpi]
-        except KeyError as exc:
-            raise ValueError(ERR_UNKNOWN_DPI.format(dpi=dpi)) from exc
-    else:
-        dpi_value = int(dpi)
+    dpi_value = int(dpi)
     zoom = dpi_value / 72  # default PDF resolution is 72 dpi
 
-    fmt = image_format.upper()
-    if fmt not in IMAGE_FORMATS:
-        raise ValueError(
-            ERR_UNSUPPORTED_FORMAT.format(
-                image_format=image_format,
-                formats=", ".join(IMAGE_FORMATS),
-            )
-        )
+    fmt = image_format
     ext = fmt.lower()
     max_bytes = int(max_size_mb * 1024 * 1024) if max_size_mb else None
 
@@ -148,33 +187,15 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
             final_scale: float | None = None
             if max_bytes is None:
                 if fmt in {"JPEG", "WEBP"}:
-                    if isinstance(quality, str):
-                        try:
-                            quality_val = LOSSY_QUALITY_PRESETS[quality]
-                        except KeyError as exc:
-                            raise ValueError(
-                                ERR_UNKNOWN_QUALITY.format(quality=quality)
-                            ) from exc
-                    else:
-                        quality_val = int(quality)
-                    used_quality = quality_val
-                    img.save(out_path, format=fmt, quality=quality_val)
+                    used_quality = quality
+                    img.save(out_path, format=fmt, quality=quality)
                 elif fmt == "PNG":
                     used_level = 0
                     img.save(out_path, format=fmt, compress_level=0)
                 else:
                     img.save(out_path, format=fmt)
             elif fmt in {"JPEG", "WEBP"}:
-                if isinstance(quality, str):
-                    try:
-                        quality_val = LOSSY_QUALITY_PRESETS[quality]
-                    except KeyError as exc:
-                        raise ValueError(
-                            ERR_UNKNOWN_QUALITY.format(quality=quality)
-                        ) from exc
-                else:
-                    quality_val = int(quality)
-                q_low, q_high = 1, quality_val
+                q_low, q_high = 1, quality
                 best: bytes | None = None
                 while q_low <= q_high:
                     mid = (q_low + q_high) // 2
@@ -321,7 +342,11 @@ def pdf_to_images(  # noqa: PLR0913  # pdf-toolbox: conversion helper requires m
     doc = open_pdf(input_pdf)
     with doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
-        dpi_val: int | DpiChoice = dpi
+        fmt, quality_val, dpi_val = resolve_image_settings(
+            image_format,
+            quality,
+            None if width is not None or height is not None else dpi,
+        )
         if width is not None or height is not None:
             if width is None or height is None:
                 raise ValueError(ERR_WIDTH_HEIGHT)
@@ -329,13 +354,14 @@ def pdf_to_images(  # noqa: PLR0913  # pdf-toolbox: conversion helper requires m
             w_in = first.rect.width / 72
             h_in = first.rect.height / 72
             dpi_val = round(max(width / w_in, height / h_in))
+        assert dpi_val is not None  # resolved above
         return _render_doc_pages(
             input_pdf,
             doc,
             page_numbers,
             dpi_val,
-            image_format,
-            quality=quality,
+            fmt,
+            quality_val,
             max_size_mb=max_size_mb,
             out_dir=out_dir,
             cancel=cancel,
@@ -347,4 +373,5 @@ __all__ = [
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
     "pdf_to_images",
+    "resolve_image_settings",
 ]
