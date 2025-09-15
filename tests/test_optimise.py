@@ -3,7 +3,7 @@ from pathlib import Path
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
-from pdf_toolbox.builtin.optimise import QUALITY_SETTINGS, optimise_pdf
+from pdf_toolbox.actions.optimise import QUALITY_SETTINGS, optimise_pdf
 
 
 def test_pdf_quality_passed_to_doc_save(tmp_path, monkeypatch):
@@ -72,7 +72,7 @@ def test_logs_and_discards_size_increase(sample_pdf, tmp_path, monkeypatch):
         with Path(out_path).open("ab") as fh:
             fh.write(b"extra")
 
-    monkeypatch.setattr("pdf_toolbox.builtin.optimise.save_pdf", bigger_save)
+    monkeypatch.setattr("pdf_toolbox.actions.optimise.save_pdf", bigger_save)
 
     class ListHandler(logging.Handler):
         def __init__(self) -> None:

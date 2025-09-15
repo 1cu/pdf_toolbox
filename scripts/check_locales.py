@@ -62,7 +62,7 @@ def referenced_keys() -> tuple[set[str], set[str]]:
         actions_mod._registry.clear()
         actions_mod._auto_discover.cache_clear()
         for name in list(sys.modules):
-            if name.startswith("pdf_toolbox.builtin"):
+            if name.startswith("pdf_toolbox.actions") and name != "pdf_toolbox.actions":
                 sys.modules.pop(name)
         for act in actions_mod.list_actions():
             string_keys.add(act.key)

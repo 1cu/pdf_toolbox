@@ -26,7 +26,7 @@ def _scan_referenced_keys(root: Path) -> tuple[set[str], set[str]]:
     actions_mod._registry.clear()
     actions_mod._auto_discover.cache_clear()
     for name in list(sys.modules):
-        if name.startswith("pdf_toolbox.builtin"):
+        if name.startswith("pdf_toolbox.actions") and name != "pdf_toolbox.actions":
             sys.modules.pop(name)
     sys.path.insert(0, str(src))
     try:

@@ -128,7 +128,7 @@ def optimise_pdf(  # noqa: PLR0913  # pdf-toolbox: optimisation API exposes many
 
     Examples:
         >>> # Optimise a PDF with image compression and observe progress
-        >>> from pdf_toolbox.builtin.optimise import optimise_pdf
+        >>> from pdf_toolbox.actions.optimise import optimise_pdf
         >>> def on_progress(c, t):
         ...     print(f"{c}/{t}")
         >>> out, reduction = optimise_pdf(
@@ -229,7 +229,7 @@ def batch_optimise_pdfs(  # noqa: PLR0913  # pdf-toolbox: batch optimisation nee
     """Optimise all PDFs in a directory and return output paths.
 
     Examples:
-        >>> from pdf_toolbox.builtin.optimise import batch_optimise_pdfs
+        >>> from pdf_toolbox.actions.optimise import batch_optimise_pdfs
         >>> outs = batch_optimise_pdfs("/path/to/dir", quality="ebook", compress_images=True)
         >>> isinstance(outs, list)
         True

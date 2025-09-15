@@ -3,12 +3,12 @@ from pathlib import Path
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
-from pdf_toolbox.builtin import docx as docx_mod
-from pdf_toolbox.builtin import images as images_mod
-from pdf_toolbox.builtin.docx import pdf_to_docx
-from pdf_toolbox.builtin.images import pdf_to_images
-from pdf_toolbox.builtin.repair import repair_pdf
-from pdf_toolbox.builtin.unlock import unlock_pdf
+from pdf_toolbox.actions import docx as docx_mod
+from pdf_toolbox.actions import images as images_mod
+from pdf_toolbox.actions.docx import pdf_to_docx
+from pdf_toolbox.actions.images import pdf_to_images
+from pdf_toolbox.actions.repair import repair_pdf
+from pdf_toolbox.actions.unlock import unlock_pdf
 
 
 def test_pdf_to_images_png(sample_pdf, tmp_path):
