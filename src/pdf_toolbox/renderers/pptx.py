@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import os
 from abc import ABC, abstractmethod
-from importlib import metadata
 from typing import Literal
 
 from pdf_toolbox.i18n import tr
+
+
+class PptxRenderingError(RuntimeError):
+    """Error raised when a PPTX renderer fails."""
 
 
 class BasePptxRenderer(ABC):
@@ -19,12 +23,21 @@ class BasePptxRenderer(ABC):
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        width: int | None = None,
+        height: int | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to images."""
 
     @abstractmethod
-    def to_pdf(self, input_pptx: str, output_path: str | None = None) -> str:
+    def to_pdf(
+        self,
+        input_pptx: str,
+        output_path: str | None = None,
+        notes: bool = False,
+        handout: bool = False,
+        range_spec: str | None = None,
+    ) -> str:
         """Render ``input_pptx`` to a PDF file."""
 
 
@@ -36,12 +49,21 @@ class NullRenderer(BasePptxRenderer):
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        width: int | None = None,
+        height: int | None = None,
     ) -> str:
         """Always raise because no renderer is configured."""
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
-    def to_pdf(self, input_pptx: str, output_path: str | None = None) -> str:
+    def to_pdf(
+        self,
+        input_pptx: str,
+        output_path: str | None = None,
+        notes: bool = False,
+        handout: bool = False,
+        range_spec: str | None = None,
+    ) -> str:
         """Always raise because no renderer is configured."""
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
@@ -56,11 +78,15 @@ def get_pptx_renderer() -> BasePptxRenderer:
     """
     name = os.getenv("PDF_TOOLBOX_PPTX_RENDERER")
     if name:
-        for ep in metadata.entry_points(group="pdf_toolbox.pptx_renderers"):
+        for ep in importlib.metadata.entry_points(group="pdf_toolbox.pptx_renderers"):
             if ep.name == name:
-                renderer_cls = ep.load()
-                return renderer_cls()
+                return ep.load()()
     return NullRenderer()
 
 
-__all__ = ["BasePptxRenderer", "NullRenderer", "get_pptx_renderer"]
+__all__ = [
+    "BasePptxRenderer",
+    "NullRenderer",
+    "PptxRenderingError",
+    "get_pptx_renderer",
+]

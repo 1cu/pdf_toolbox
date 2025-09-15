@@ -137,15 +137,31 @@ def pptx_to_images(
     input_pptx: str,
     out_dir: str | None = None,
     max_size_mb: float | None = None,
-    img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+    format: Literal["jpeg", "png", "tiff"] = "jpeg",
+    width: int | None = None,
+    height: int | None = None,
 ) -> str:
-    """Render a PPTX file to images using the configured provider."""
+    """Render a PPTX file to images using the configured provider.
+
+    Args:
+        input_pptx: Presentation to render.
+        out_dir: Destination directory for exported images.
+        max_size_mb: Optional size limit per image in megabytes.
+        format: Output image format (``"jpeg"``, ``"png"``, or ``"tiff"``).
+        width: Optional pixel width; requires ``height``.
+        height: Optional pixel height; requires ``width``.
+
+    Returns:
+        Path to the directory containing the images.
+    """
     renderer = get_pptx_renderer()
     return renderer.to_images(
         input_pptx,
         out_dir=out_dir,
         max_size_mb=max_size_mb,
-        img_format=img_format,
+        format=format,
+        width=width,
+        height=height,
     )
 
 

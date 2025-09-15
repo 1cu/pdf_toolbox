@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf-toolbox"
-version = "0.6.15"
+version = "0.6.16"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
@@ -31,7 +31,10 @@ dev = [
   "coverage-badge",
   "bandit",
 ]
-pptx-render = []
+pptx-render = ["pywin32>=306"]
+
+[project.entry-points."pdf_toolbox.pptx_renderers"]
+ms_office = "pdf_toolbox.renderers.ms_office:PptxMsOfficeRenderer"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -95,6 +98,7 @@ omit = [
   "*/pdf_toolbox/gui/__main__.py",
   "*/pdf_toolbox/gui/config.py",
   "*/pdf_toolbox/__main__.py",
+  "*/pdf_toolbox/renderers/ms_office.py",
 ]
 
 [tool.coverage.report]

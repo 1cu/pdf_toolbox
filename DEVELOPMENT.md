@@ -51,6 +51,13 @@ point in the `pdf_toolbox.pptx_renderers` group and implement
 `BasePptxRenderer`. Without such a provider the default `NullRenderer`
 raises a translated `NotImplementedError`.
 
+### MS-Office Provider
+
+The optional `PptxMsOfficeRenderer` uses Microsoft PowerPoint via COM
+automation. Install the `pptx-render` extra and set
+`PDF_TOOLBOX_PPTX_RENDERER=ms_office` on Windows systems with PowerPoint
+installed to enable it.
+
 ## Pre-commit hooks
 
 The configuration uses `language: system` so hooks run in the active virtual environment. Markdown documentation and YAML configuration files are automatically formatted with `mdformat` and `pretty-format-yaml` (configured with an extra two-space offset and preserved quotes for GitHub Actions compatibility) to avoid introducing a Node.js dependency like Prettier. Hooks lint, format, type-check, and run tests on every commit, even if you only edit documentation. Test coverage must reach at least 95% for each module; modules excluded by the coverage configuration in `pyproject.toml` are exempt, and the hooks enforce this threshold. Ruff applies an extensive rule set, covering bugbear, pyupgrade, naming, builtins, comprehensions, tidy imports, return-value checks, common simplifications, docstring style, security checks, and Pylint-inspired rules. Activate the `.venv` before installing or running them:
