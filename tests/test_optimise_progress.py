@@ -13,6 +13,8 @@ def _pdf_with_pages(path, pages=2):
 
     document.save(path)
     document.close()
+    with path.open("ab") as fh:
+        fh.write(b"% pad" + b"0" * 1000)
 
 
 def test_optimise_with_progress_no_compress(tmp_path):

@@ -11,6 +11,8 @@ def _make_pdf(path):
     document.new_page()
     document.save(path)
     document.close()
+    with path.open("ab") as fh:
+        fh.write(b"% pad" + b"0" * 1000)
 
 
 def test_batch_optimise(tmp_path):

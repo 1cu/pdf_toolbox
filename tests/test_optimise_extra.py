@@ -36,6 +36,8 @@ def test_compress_images_grayscale(tmp_path):
     page.insert_image(rect, stream=img_bytes)
     document.save(pdf_path)
     document.close()
+    with pdf_path.open("ab") as fh:
+        fh.write(b"% pad" + b"0" * 1000)
 
     output, _ = optimise_pdf(str(pdf_path), compress_images=True, out_dir=str(tmp_path))
     assert Path(output).exists()
