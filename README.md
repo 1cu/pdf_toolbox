@@ -118,7 +118,7 @@ Examples:
 
 ```bash
 python -c "from pdf_toolbox.actions.pptx import pptx_to_pdf; print(pptx_to_pdf('deck.pptx'))"
-python -c "from pdf_toolbox.actions.pptx import pptx_to_images; print(pptx_to_images('deck.pptx', format='png'))"
+python -c "from pdf_toolbox.actions.pptx import pptx_to_images; print(pptx_to_images('deck.pptx', img_format='png'))"
 ```
 
 Basic examples:

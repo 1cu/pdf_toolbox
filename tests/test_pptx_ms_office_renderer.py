@@ -5,12 +5,12 @@ from pathlib import Path
 import pytest
 from pptx import Presentation
 
+from pdf_toolbox.renderers.ms_office import PptxMsOfficeRenderer
+
 pytestmark = pytest.mark.skipif(
     not sys.platform.startswith("win") or not os.getenv("PDF_TOOLBOX_TEST_MS_OFFICE"),
     reason="MS Office Integration nur auf Windows mit PDF_TOOLBOX_TEST_MS_OFFICE=1",
 )
-
-from pdf_toolbox.renderers.ms_office import PptxMsOfficeRenderer
 
 
 def _make_pptx(tmp: Path, slides: int = 1) -> Path:
@@ -20,7 +20,7 @@ def _make_pptx(tmp: Path, slides: int = 1) -> Path:
         box = slide.shapes.add_textbox(100, 100, 300, 50)
         box.text_frame.text = f"Slide {i + 1}"
     file = tmp / "demo.pptx"
-    prs.save(file)
+    prs.save(str(file))
     return file
 
 
@@ -37,7 +37,7 @@ def test_to_images(tmp_path: Path) -> None:
     got = PptxMsOfficeRenderer().to_images(
         str(src),
         out_dir=str(out),
-        format="png",
+        img_format="png",
         width=1920,
         height=1080,
     )

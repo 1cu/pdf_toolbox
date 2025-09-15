@@ -18,12 +18,12 @@ class BasePptxRenderer(ABC):
     """Abstract base class for PPTX rendering backends."""
 
     @abstractmethod
-    def to_images(
+    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
         self,
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
         width: int | None = None,
         height: int | None = None,
     ) -> str:
@@ -44,16 +44,17 @@ class BasePptxRenderer(ABC):
 class NullRenderer(BasePptxRenderer):
     """Renderer placeholder that signals missing backend."""
 
-    def to_images(
+    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
         self,
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
         width: int | None = None,
         height: int | None = None,
     ) -> str:
         """Always raise because no renderer is configured."""
+        del input_pptx, out_dir, max_size_mb, img_format, width, height
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
     def to_pdf(

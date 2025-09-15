@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
-from importlib import metadata
 from pathlib import Path
 
 import pytest
@@ -91,8 +91,12 @@ def test_reorder_pptx_range_and_invalid(simple_pptx):
     assert Path(out).exists()
     out_all = reorder_pptx(simple_pptx, "")
     assert Path(out_all).exists()
+    out_gap = reorder_pptx(simple_pptx, "1,,2")
+    assert Path(out_gap).exists()
     with pytest.raises(ValueError, match="out of range"):
         reorder_pptx(simple_pptx, "0")
+    with pytest.raises(ValueError, match="invalid range"):
+        reorder_pptx(simple_pptx, "3-2")
 
 
 def test_rendering_actions_raise(simple_pptx):
@@ -107,13 +111,24 @@ def test_renderer_env(monkeypatch):
         def to_images(
             self,
             _input_pptx: str,
-            _out_dir: str | None = None,
-            _max_size_mb: float | None = None,
-            _img_format: str = "jpeg",
+            out_dir: str | None = None,
+            max_size_mb: float | None = None,
+            img_format: str = "jpeg",
+            width: int | None = None,
+            height: int | None = None,
         ) -> str:
+            del out_dir, max_size_mb, img_format, width, height
             return "ok"
 
-        def to_pdf(self, _input_pptx: str, _output_path: str | None = None) -> str:
+        def to_pdf(
+            self,
+            _input_pptx: str,
+            output_path: str | None = None,
+            notes: bool = False,
+            handout: bool = False,
+            range_spec: str | None = None,
+        ) -> str:
+            del output_path, notes, handout, range_spec
             return "ok.pdf"
 
     class EP:
@@ -124,9 +139,11 @@ def test_renderer_env(monkeypatch):
 
     monkeypatch.setenv("PDF_TOOLBOX_PPTX_RENDERER", "dummy")
     monkeypatch.setattr(
-        metadata,
+        importlib.metadata,
         "entry_points",
         lambda group: [EP()] if group == "pdf_toolbox.pptx_renderers" else [],
     )
     renderer = get_pptx_renderer()
     assert isinstance(renderer, DummyRenderer)
+    assert pptx_to_images(simple_pptx) == "ok"
+    assert pptx_to_pdf(simple_pptx) == "ok.pdf"

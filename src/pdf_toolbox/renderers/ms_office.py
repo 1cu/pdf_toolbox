@@ -1,18 +1,19 @@
-from __future__ import annotations
-
 """Microsoft PowerPoint based PPTX renderer."""
 
+from __future__ import annotations
+
+import contextlib
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Literal
 
 from pdf_toolbox.renderers.pptx import BasePptxRenderer, PptxRenderingError
 from pdf_toolbox.utils import logger
 
-try:  # pragma: no cover - import guarded for non-Windows platforms
-    import pythoncom  # type: ignore
-    import win32com.client  # type: ignore
-except Exception:  # pragma: no cover - handled in _require_env
-    win32com = None  # type: ignore
+try:  # pragma: no cover - import guarded for non-Windows platforms  # pdf-toolbox: Windows-only COM modules | issue:-
+    import pythoncom  # type: ignore  # pdf-toolbox: pywin32 missing on non-Windows | issue:-
+    import win32com.client  # type: ignore  # pdf-toolbox: pywin32 missing on non-Windows | issue:-
+except Exception:  # pragma: no cover - handled in _require_env  # pdf-toolbox: gracefully handle missing COM | issue:-
+    win32com = None  # type: ignore  # pdf-toolbox: indicate COM unavailability | issue:-
 
 
 class PptxMsOfficeRenderer(BasePptxRenderer):
@@ -33,32 +34,36 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
 
     def _require_env(self) -> None:
         if win32com is None:
-            msg = (
-                "MS-Office Renderer nicht verfügbar: Windows/PowerPoint/pywin32 erforderlich."
-            )
+            msg = "MS-Office Renderer nicht verfügbar: Windows/PowerPoint/pywin32 erforderlich."
             raise PptxRenderingError(msg)
 
-    def _open_app(self):  # pragma: no cover - Windows only
+    def _open_app(
+        self,
+    ):  # pragma: no cover - Windows only  # pdf-toolbox: relies on PowerPoint COM | issue:-
+        """Start a hidden PowerPoint instance."""
         pythoncom.CoInitialize()
         app = win32com.client.DispatchEx("PowerPoint.Application")
-        try:
+        with contextlib.suppress(Exception):
             app.DisplayAlerts = 1  # ppAlertsNone
-        except Exception:  # noqa: BLE001 - best effort
-            pass
         app.Visible = False
         return app
 
-    def _close_app(self, app) -> None:  # pragma: no cover - Windows only
+    def _close_app(
+        self, app
+    ) -> None:  # pragma: no cover - Windows only  # pdf-toolbox: PowerPoint COM cleanup | issue:-
         try:
             app.Quit()
         finally:
             pythoncom.CoUninitialize()
 
-    def _open_presentation(self, app, path: Path):  # pragma: no cover - Windows only
+    def _open_presentation(
+        self, app, path: Path
+    ):  # pragma: no cover - Windows only  # pdf-toolbox: PowerPoint COM | issue:-
+        """Open ``path`` as read-only presentation."""
         return app.Presentations.Open(str(path), True, False, False)
 
     @staticmethod
-    def _parse_range(spec: Optional[str], max_index: int) -> set[int]:
+    def _parse_range(spec: str | None, max_index: int) -> set[int]:
         if not spec:
             return set(range(1, max_index + 1))
         s = spec.replace(" ", "")
@@ -84,14 +89,16 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         self,
         input_pptx: str,
         output_path: str | None = None,
-        notes: bool = False,
-        handout: bool = False,
+        _notes: bool = False,
+        _handout: bool = False,
         range_spec: str | None = None,
     ) -> str:
+        """Render ``input_pptx`` to a PDF file."""
         self._require_env()
         inp = Path(input_pptx).resolve()
         if not inp.exists():
-            raise PptxRenderingError(f"Eingabe nicht gefunden: {inp}")
+            msg = f"Eingabe nicht gefunden: {inp}"
+            raise PptxRenderingError(msg)
 
         out = Path(output_path) if output_path else inp.with_suffix(".pdf")
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -108,8 +115,9 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                 logger.info("Rendered %d slide(s) to %s", len(wanted), out)
             finally:
                 prs.Close()
-        except Exception as exc:  # pragma: no cover - Windows only
-            raise PptxRenderingError(f"Export nach PDF fehlgeschlagen: {exc}") from exc
+        except Exception as exc:  # pragma: no cover - Windows only  # pdf-toolbox: COM export failures | issue:-
+            msg = f"Export nach PDF fehlgeschlagen: {exc}"
+            raise PptxRenderingError(msg) from exc
         finally:
             self._close_app(app)
         return str(out)
@@ -118,23 +126,25 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         self,
         input_pptx: str,
         out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        _max_size_mb: float | None = None,
+        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
         width: int | None = None,
         height: int | None = None,
     ) -> str:
+        """Render ``input_pptx`` slides to images."""
         self._require_env()
         inp = Path(input_pptx).resolve()
         if not inp.exists():
-            raise PptxRenderingError(f"Eingabe nicht gefunden: {inp}")
+            msg = f"Eingabe nicht gefunden: {inp}"
+            raise PptxRenderingError(msg)
 
         out = Path(out_dir) if out_dir else inp.with_suffix("")
         out.mkdir(parents=True, exist_ok=True)
 
         ext_map = {"jpeg": "JPG", "png": "PNG", "tiff": "TIFF"}
-        ext = ext_map[format.lower()]
+        ext = ext_map[img_format.lower()]
 
-        logger.info("Rendering %s to images (%s)", inp, format)
+        logger.info("Rendering %s to images (%s)", inp, img_format)
         app = self._open_app()
         try:
             prs = self._open_presentation(app, inp)
@@ -143,12 +153,13 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                     prs.Export(str(out), ext, int(width), int(height))
                 else:
                     prs.Export(str(out), ext)
-                count = len(list(out.glob(f"*.{format.lower()}")))
+                count = len(list(out.glob(f"*.{img_format.lower()}")))
                 logger.info("Exported %d image(s) to %s", count, out)
             finally:
                 prs.Close()
-        except Exception as exc:  # pragma: no cover - Windows only
-            raise PptxRenderingError(f"Export nach Bildern fehlgeschlagen: {exc}") from exc
+        except Exception as exc:  # pragma: no cover - Windows only  # pdf-toolbox: COM export failures | issue:-
+            msg = f"Export nach Bildern fehlgeschlagen: {exc}"
+            raise PptxRenderingError(msg) from exc
         finally:
             self._close_app(app)
         return str(out)
