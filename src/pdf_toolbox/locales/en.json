@@ -11,6 +11,7 @@
     "email": "Email",
     "english": "English",
     "error": "Error",
+    "extract_pptx_images": "Extract PPTX Images",
     "extract_range": "Extract Range",
     "field_cannot_be_empty": "Field '{name}' cannot be empty.",
     "german": "Deutsch",
@@ -22,7 +23,12 @@
     "optimised_unchanged": "No optimisation: size unchanged",
     "pdf_to_docx": "PDF to DOCX",
     "pdf_to_images": "PDF to Images",
+    "pptx_properties": "PPTX Properties",
+    "pptx_renderer_missing": "Rendering PPTX is not available without Office/LibreOffice. Configure an external provider",
+    "pptx_to_images": "PPTX to Images",
+    "pptx_to_pdf": "PPTX to PDF",
     "ready": "Ready",
+    "reorder_pptx": "Reorder PPTX",
     "repair_pdf": "Repair PDF",
     "running": "Running...",
     "select_directory": "Select directory",
@@ -37,8 +43,11 @@
   },
   "labels": {
     "input_pdf": "Input PDF",
+    "input_pptx": "Input PPTX",
     "max_size_mb": "Max Size (MB)",
     "out_dir": "Output Directory",
-    "output_dir": "Output Directory"
+    "output_dir": "Output Directory",
+    "output_path": "Output Path",
+    "range_spec": "Range Specification"
   }
 }

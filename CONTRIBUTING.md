@@ -92,6 +92,9 @@ ______________________________________________________________________
 pre-commit run tests --all-files
 ```
 
+PPTX fixtures are generated dynamically during tests; do not commit binary
+presentation files.
+
 ______________________________________________________________________
 
 ## Pull Requests

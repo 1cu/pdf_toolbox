@@ -165,10 +165,10 @@ class MainWindow(QMainWindow):
     ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Respond to tree item clicks by showing the action form."""
         act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.UserRole | issue:-
-        if isinstance(act, Action):
+        if act:
             self.current_action = act
             self.build_form(act)
-            self.info_btn.setEnabled(bool(act.help))
+            self.info_btn.setEnabled(bool(getattr(act, "help", "")))
 
     def build_form(self, action: Action) -> None:  # noqa: PLR0912, PLR0915  # pdf-toolbox: dynamic form builder is inherently complex | issue:-
         """Create input widgets for the given action parameters."""

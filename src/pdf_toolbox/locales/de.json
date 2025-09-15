@@ -11,6 +11,7 @@
     "email": "E-Mail",
     "english": "Englisch",
     "error": "Fehler",
+    "extract_pptx_images": "PPTX-Bilder extrahieren",
     "extract_range": "Bereich extrahieren",
     "field_cannot_be_empty": "Feld '{name}' darf nicht leer sein.",
     "german": "Deutsch",
@@ -22,7 +23,12 @@
     "optimised_unchanged": "Nicht optimiert: Größe unverändert",
     "pdf_to_docx": "PDF zu DOCX",
     "pdf_to_images": "PDF zu Bildern",
+    "pptx_properties": "PPTX-Eigenschaften",
+    "pptx_renderer_missing": "Rendering von PPTX ist ohne Office/LibreOffice nicht verfügbar. Ein externer Provider kann konfiguriert werden",
+    "pptx_to_images": "PPTX zu Bildern",
+    "pptx_to_pdf": "PPTX zu PDF",
     "ready": "Bereit",
+    "reorder_pptx": "PPTX neu anordnen",
     "repair_pdf": "PDF reparieren",
     "running": "Läuft...",
     "select_directory": "Verzeichnis auswählen",
@@ -37,8 +43,11 @@
   },
   "labels": {
     "input_pdf": "Eingabe PDF",
+    "input_pptx": "Eingabe-PPTX",
     "max_size_mb": "Maximale Größe (MB)",
     "out_dir": "Ausgabeverzeichnis",
-    "output_dir": "Ausgabeverzeichnis"
+    "output_dir": "Ausgabeverzeichnis",
+    "output_path": "Ausgabepfad",
+    "range_spec": "Bereichsspezifikation"
   }
 }

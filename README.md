@@ -7,15 +7,14 @@ Utilities for manipulating PDF files. A Qt-based GUI discovers available functio
 
 See [CONTRIBUTING](CONTRIBUTING.md) for the contributor workflow and [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter exceptions, and the release process. Repository-wide rules live in [AGENTS.md](AGENTS.md).
 
-The toolbox can also export PPTX presentations to images (JPEG, PNG, or TIFF) using Microsoft PowerPoint. TIFF exports are lossless for higher-quality results, and images are organized in a format-specific subdirectory.
-
-PDF pages can likewise be rasterized to images. When a `max_size_mb` limit is used, JPEG and WebP images lower their quality while PNG or TIFF images boost compression and are only downscaled if necessary, with a warning emitted when resizing occurs.
+PDF pages can be rasterized to images. When a `max_size_mb` limit is used, JPEG and WebP images lower their quality while PNG or TIFF images boost compression and are only downscaled if necessary, with a warning emitted when resizing occurs.
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Optimisation](#optimisation)
+- [PPTX Support](#pptx-support)
 - [Development](#development)
 
 ## Quick Start
@@ -90,6 +89,26 @@ python -c "from pdf_toolbox.actions.extract import extract_text; print(extract_t
 - Page rendering streams directly to disk to keep memory usage low.
 - User-supplied paths are validated to prevent directory traversal.
 
+## PPTX Support
+
+The toolbox can manipulate PowerPoint files using pure Python dependencies. Basic actions:
+
+- `extract_pptx_images` – extract embedded images
+- `pptx_properties` – write document properties to JSON
+- `reorder_pptx` – select and reorder slides
+
+Rendering to images or PDF requires external Office/LibreOffice software and is disabled by default. When a provider is configured, additional actions become available:
+
+- `pptx_to_images` – render slides to images
+- `pptx_to_pdf` – render slides to PDF
+
+Examples:
+
+```bash
+python -c "from pdf_toolbox.actions.pptx import extract_pptx_images; extract_pptx_images('deck.pptx')"
+python -c "from pdf_toolbox.actions.pptx import reorder_pptx; reorder_pptx('deck.pptx','2,1')"
+```
+
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and workflow guidance and [DEVELOPMENT.md](DEVELOPMENT.md) for developer notes, documented linting exceptions, and the release process.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and workflow guidance and [DEVELOPMENT.md](DEVELOPMENT.md) for developer notes, documented linter exceptions, and the release process.

@@ -144,6 +144,7 @@ def _register_module(mod_name: str) -> None:
 
 ACTION_MODULES = [
     "docx",
+    "pptx",
     "extract",
     "images",
     "optimise",
@@ -182,6 +183,7 @@ __all__ = [
     "images",
     "list_actions",
     "optimise",
+    "pptx",
     "repair",
     "unlock",
 ]
