@@ -47,9 +47,9 @@ Since the file resides outside the repository it remains private and is not trac
 
 `optimise_pdf` (action) supports several quality presets (e.g. `screen`, `ebook`). Each preset also controls the internal compression level by mapping a `pdf_quality` value to the `compression_effort` passed to `fitz.Document.save`. Lower quality values therefore result in higher compression and smaller output files.
 
-After running, the action logs the optimised PDF path and the percentage size
-change. A negative value means the resulting file is larger, typically because
-the input was already efficiently encoded.
+After running, the action logs the percentage size change and writes the
+optimised file only when the result is smaller. Larger or unchanged outputs are
+discarded with an explanatory log message.
 
 See the function docstrings (e.g., via your IDE) for examples and details.
 The GUI uses the progress-enabled optimise action for improved responsiveness.

@@ -103,26 +103,28 @@ def optimise_pdf(  # noqa: PLR0913  # pdf-toolbox: optimisation API exposes many
     """Optimise *input_pdf* and report the size change.
 
     The document is rewritten with garbage collection, deflated streams and an
-    optional JPEG recompression pass for embedded images.  When
+    optional JPEG recompression pass for embedded images. When
     ``progress_callback`` is provided it receives ``current`` and ``total``
-    counts as the work advances.  ``total`` equals the number of pages when
-    ``compress_images`` is enabled; otherwise it is ``1``.  Depending on the
-    content, the rewritten file may be larger or unchanged and is then reported
-    as not optimised.
+    counts as the work advances. ``total`` equals the number of pages when
+    ``compress_images`` is enabled; otherwise it is ``1``. If the rewritten
+    file is not smaller than the input it is discarded and ``None`` is
+    returned.
 
     Args:
         input_pdf: Path to the PDF to optimise.
         quality: Preset that controls compression effort.
         compress_images: Recompress images as JPEG if ``True``.
         keep: Preserve the output if the size reduction is below the preset
-            minimum.
+            minimum. Has no effect when the optimised file is not smaller than
+            the input.
         out_dir: Optional directory for the output file.
         cancel: Cancellation event.
         progress_callback: Function receiving progress updates.
 
     Returns:
-        Tuple of the output path and the size reduction ratio.  A negative
-        ratio indicates that the optimised file is larger than the input.
+        Tuple of the output path (``None`` if discarded) and the size reduction
+        ratio. A negative ratio indicates that the optimised file would have
+        been larger than the input and was therefore removed.
 
     Examples:
         >>> # Optimise a PDF with image compression and observe progress
@@ -190,28 +192,28 @@ def optimise_pdf(  # noqa: PLR0913  # pdf-toolbox: optimisation API exposes many
     optimised_size = out_path.stat().st_size
     reduction = 1 - (optimised_size / original_size)
     change_pct = reduction * 100
-    if reduction < QUALITY_SETTINGS[quality]["min_reduction"] and not keep:
+    if reduction <= 0:
         out_path.unlink(missing_ok=True)
-        if reduction >= 0:
-            logger.info(
-                "Optimised PDF discarded; reduction %.2f%% below threshold",
-                change_pct,
-            )
-        else:
+        if reduction < 0:
             logger.info(
                 "Optimised PDF discarded; size increased by %.2f%%",
                 abs(change_pct),
             )
-        return None, reduction
-    if reduction > 0:
-        msg = f"size reduced by {change_pct:.2f}%"
-        logger.info("Optimised PDF written to %s (%s)", out_path, msg)
-    else:
-        if reduction < 0:
-            msg = f"size increased by {abs(change_pct):.2f}%"
         else:
-            msg = "size unchanged"
-        logger.info("PDF written to %s (%s)", out_path, msg)
+            logger.info("Optimised PDF discarded; size unchanged")
+        return None, reduction
+    if reduction < QUALITY_SETTINGS[quality]["min_reduction"] and not keep:
+        out_path.unlink(missing_ok=True)
+        logger.info(
+            "Optimised PDF discarded; reduction %.2f%% below threshold",
+            change_pct,
+        )
+        return None, reduction
+    logger.info(
+        "Optimised PDF written to %s (size reduced by %.2f%%)",
+        out_path,
+        change_pct,
+    )
     return str(out_path), reduction
 
 

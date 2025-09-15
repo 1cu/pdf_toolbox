@@ -54,12 +54,14 @@ def test_optimise_pdf_internal_path(tmp_path):
     document.new_page()
     document.save(pdf_path)
     document.close()
+    with pdf_path.open("ab") as fh:
+        fh.write(b"% pad" + b"0" * 1000)
     output, reduction = optimise_pdf(str(pdf_path))
     assert output is not None
     assert reduction <= 1
 
 
-def test_logs_size_increase(sample_pdf, tmp_path, monkeypatch):
+def test_logs_and_discards_size_increase(sample_pdf, tmp_path, monkeypatch):
     import logging
 
     from pdf_toolbox.utils import logger
@@ -83,7 +85,10 @@ def test_logs_size_increase(sample_pdf, tmp_path, monkeypatch):
     list_handler = ListHandler()
     logger.addHandler(list_handler)
     try:
-        optimise_pdf(sample_pdf, out_dir=str(tmp_path))
+        out, _ = optimise_pdf(sample_pdf, out_dir=str(tmp_path))
     finally:
         logger.removeHandler(list_handler)
+    out_path = Path(tmp_path) / "sample_optimised_default.pdf"
+    assert out is None
+    assert not out_path.exists()
     assert any("size increased by" in msg for msg in list_handler.messages)

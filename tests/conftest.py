@@ -31,6 +31,8 @@ def pdf_with_image(tmp_path):
     pdf_path = tmp_path / "with_image.pdf"
     doc.save(pdf_path)
     doc.close()
+    with pdf_path.open("ab") as fh:
+        fh.write(b"% pad" + b"0" * 1000)
     return str(pdf_path)
 
 
