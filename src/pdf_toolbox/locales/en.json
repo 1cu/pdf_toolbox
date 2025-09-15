@@ -18,6 +18,7 @@
     "german": "Deutsch",
     "language": "Language",
     "log_level": "Log Level",
+    "miro_export": "Miro Export",
     "open_folder": "Open folder",
     "optimise_pdf": "Optimise PDF",
     "optimised_increased": "No optimisation: size increased by {pct}%",
@@ -35,6 +36,10 @@
     "select_directory": "Select directory",
     "select_file": "Select file",
     "select_files": "Select files",
+    "gui.export.profile.label": "Export profile",
+    "gui.export.profile.standard": "Standard",
+    "gui.export.profile.miro": "Miro (optimized for Miro boards)",
+    "gui.export.profile.miro.help": "Max. 40 MB per page, sharp at 400% zoom, uses SVG when possible.",
     "settings_file": "Settings file",
     "split_pdf": "Split PDF",
     "start": "Start",
@@ -50,6 +55,7 @@
     "out_dir": "Output Directory",
     "output_dir": "Output Directory",
     "output_path": "Output Path",
+    "input_path": "Input File",
     "range_spec": "Range Specification"
   }
 }

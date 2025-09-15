@@ -18,6 +18,7 @@
     "german": "Deutsch",
     "language": "Sprache",
     "log_level": "Log Level",
+    "miro_export": "Miro-Export",
     "open_folder": "Ordner öffnen",
     "optimise_pdf": "PDF optimieren",
     "optimised_increased": "Nicht optimiert: Größe um {pct}% erhöht",
@@ -35,6 +36,10 @@
     "select_directory": "Verzeichnis auswählen",
     "select_file": "Datei auswählen",
     "select_files": "Dateien auswählen",
+    "gui.export.profile.label": "Exportprofil",
+    "gui.export.profile.standard": "Standard",
+    "gui.export.profile.miro": "Miro (optimiert für Boards)",
+    "gui.export.profile.miro.help": "Max. 40 MB pro Seite, scharf bei 400 % Zoom, SVG wenn möglich.",
     "settings_file": "Settings-Datei",
     "split_pdf": "PDF teilen",
     "start": "Start",
@@ -50,6 +55,7 @@
     "out_dir": "Ausgabeverzeichnis",
     "output_dir": "Ausgabeverzeichnis",
     "output_path": "Ausgabepfad",
+    "input_path": "Eingabedatei",
     "range_spec": "Bereichsspezifikation"
   }
 }

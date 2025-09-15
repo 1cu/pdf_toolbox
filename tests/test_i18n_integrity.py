@@ -13,8 +13,8 @@ def _load_locale(root: Path, lang: str) -> dict:
 
 def _scan_referenced_keys(root: Path) -> tuple[set[str], set[str]]:
     src = root / "src"
-    tr_re = re.compile(r"\btr\(\"([a-z0-9_]+)\"")
-    lab_re = re.compile(r"\blabel\(\"([a-z0-9_]+)\"\)")
+    tr_re = re.compile(r"\btr\(\"([a-z0-9_.]+)\"")
+    lab_re = re.compile(r"\blabel\(\"([a-z0-9_.]+)\"\)")
     strings: set[str] = set()
     labels: set[str] = set()
     for file_path in src.rglob("*.py"):
