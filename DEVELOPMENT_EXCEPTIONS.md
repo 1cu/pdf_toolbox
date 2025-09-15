@@ -18,38 +18,38 @@
 | src/pdf_toolbox/actions/optimise.py:65     | type: ignore[assignment]                 | PyMuPDF page typing mismatch                        | -        |
 | src/pdf_toolbox/actions/optimise.py:94     | PLR0913                                  | optimisation API exposes many options               | -        |
 | src/pdf_toolbox/actions/optimise.py:221    | PLR0913                                  | batch optimisation needs several arguments          | -        |
-| src/pdf_toolbox/actions/pptx.py:136        | PLR0913                                  | action interface requires many parameters           | -        |
+| src/pdf_toolbox/actions/pptx.py:110        | PLR0913                                  | action interface requires many parameters           | -        |
 | src/pdf_toolbox/actions/unlock.py:8        | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | src/pdf_toolbox/gui/__init__.py:44         | pragma: no cover                         | environment dependent                               | -        |
 | src/pdf_toolbox/gui/main_window.py:55      | PLR0915                                  | constructor sets up many widgets                    | -        |
 | src/pdf_toolbox/gui/main_window.py:108     | type: ignore[attr-defined]               | PySide6 stubs miss form layout policy enum          | -        |
-| src/pdf_toolbox/gui/main_window.py:134     | type: ignore[attr-defined]               | PySide6 stubs miss tool button enum                 | -        |
-| src/pdf_toolbox/gui/main_window.py:165     | type: ignore[attr-defined]               | PySide6 stubs miss Qt.UserRole                      | -        |
-| src/pdf_toolbox/gui/main_window.py:171     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:173     | type: ignore[attr-defined]               | PySide6 stubs miss Qt.UserRole                      | -        |
-| src/pdf_toolbox/gui/main_window.py:179     | PLR0912, PLR0915                         | dynamic form builder is inherently complex          | -        |
-| src/pdf_toolbox/gui/main_window.py:198     | type: ignore[attr-defined]               | `types.UnionType` absent from stubs                 | -        |
-| src/pdf_toolbox/gui/main_window.py:281     | type: ignore[arg-type]                   | PySide6 stubs reject tuple variant                  | -        |
-| src/pdf_toolbox/gui/main_window.py:284     | PLR0912                                  | argument collection involves many branches          | -        |
-| src/pdf_toolbox/gui/main_window.py:299     | type: ignore[attr-defined]               | PySide6 stubs miss Qt enum                          | -        |
-| src/pdf_toolbox/gui/main_window.py:353     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:370     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:404     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:445     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:144     | type: ignore[attr-defined]               | PySide6 stubs miss tool button enum                 | -        |
+| src/pdf_toolbox/gui/main_window.py:175     | type: ignore[attr-defined]               | PySide6 stubs miss Qt.UserRole                      | -        |
+| src/pdf_toolbox/gui/main_window.py:181     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:183     | type: ignore[attr-defined]               | PySide6 stubs miss Qt.UserRole                      | -        |
+| src/pdf_toolbox/gui/main_window.py:189     | PLR0912, PLR0915                         | dynamic form builder is inherently complex          | -        |
+| src/pdf_toolbox/gui/main_window.py:208     | type: ignore[attr-defined]               | `types.UnionType` absent from stubs                 | -        |
+| src/pdf_toolbox/gui/main_window.py:297     | type: ignore[arg-type]                   | PySide6 stubs reject tuple variant                  | -        |
+| src/pdf_toolbox/gui/main_window.py:300     | PLR0912                                  | argument collection involves many branches          | -        |
+| src/pdf_toolbox/gui/main_window.py:315     | type: ignore[attr-defined]               | PySide6 stubs miss Qt enum                          | -        |
+| src/pdf_toolbox/gui/main_window.py:369     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:386     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:420     | pragma: no cover                         | GUI handler                                         | -        |
 | src/pdf_toolbox/gui/main_window.py:461     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:476     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:485     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:489     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:496     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:505     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:509     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:517     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:529     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:533     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:554     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:582     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:586     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:596     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:477     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:492     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:501     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:505     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:512     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:521     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:525     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:533     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:545     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:549     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:570     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:585     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:589     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:599     | pragma: no cover                         | GUI handler                                         | -        |
 | src/pdf_toolbox/gui/widgets.py:17          | pragma: no cover                         | GUI helper                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:38          | type: ignore[override], pragma: no cover | override signal emitter with broader type; GUI-only | -        |
 | src/pdf_toolbox/gui/widgets.py:43          | pragma: no cover                         | GUI widget                                          | -        |
@@ -67,9 +67,10 @@
 | src/pdf_toolbox/renderers/ms_office.py:53  | pragma: no cover                         | PowerPoint COM cleanup                              | -        |
 | src/pdf_toolbox/renderers/ms_office.py:61  | pragma: no cover                         | PowerPoint COM                                      | -        |
 | src/pdf_toolbox/renderers/ms_office.py:118 | pragma: no cover                         | COM export failures                                 | -        |
-| src/pdf_toolbox/renderers/ms_office.py:160 | pragma: no cover                         | COM export failures                                 | -        |
+| src/pdf_toolbox/renderers/ms_office.py:125 | PLR0913                                  | renderer API requires many parameters               | -        |
+| src/pdf_toolbox/renderers/ms_office.py:162 | pragma: no cover                         | COM export failures                                 | -        |
 | src/pdf_toolbox/renderers/pptx.py:21       | PLR0913                                  | renderer API requires many parameters               | -        |
-| src/pdf_toolbox/renderers/pptx.py:47       | PLR0913                                  | renderer API requires many parameters               | -        |
+| src/pdf_toolbox/renderers/pptx.py:48       | PLR0913                                  | renderer API requires many parameters               | -        |
 | src/pdf_toolbox/utils.py:13                | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/conftest.py:3                        | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_batch_optimise.py:3             | type: ignore                             | PyMuPDF lacks type hints                            | -        |
@@ -78,4 +79,5 @@
 | tests/test_optimise.py:50                  | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_optimise_extra.py:5             | type: ignore                             | PyMuPDF lacks type hints                            | -        |
 | tests/test_optimise_progress.py:3          | type: ignore                             | PyMuPDF lacks type hints                            | -        |
+| tests/test_pptx.py:99                      | PLR0913                                  | renderer API requires many parameters               | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                            | -        |

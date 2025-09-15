@@ -94,7 +94,6 @@ python -c "from pdf_toolbox.actions.extract import extract_text; print(extract_t
 The toolbox can manipulate PowerPoint files using pure Python dependencies. Basic actions:
 
 - `extract_pptx_images` – extract embedded images
-- `pptx_properties` – write document properties to JSON
 - `reorder_pptx` – select and reorder slides
 
 Rendering to images or PDF requires external Office/LibreOffice software and is disabled by default. When a provider is configured, additional actions become available:
@@ -117,7 +116,7 @@ Examples:
 
 ```bash
 python -c "from pdf_toolbox.actions.pptx import pptx_to_pdf; print(pptx_to_pdf('deck.pptx'))"
-python -c "from pdf_toolbox.actions.pptx import pptx_to_images; print(pptx_to_images('deck.pptx', img_format='png'))"
+python -c "from pdf_toolbox.actions.pptx import pptx_to_images; print(pptx_to_images('deck.pptx', image_format='PNG'))"
 ```
 
 Basic examples:

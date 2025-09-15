@@ -128,6 +128,16 @@ class MainWindow(QMainWindow):
         self.action_renderer = settings_menu.addAction(
             "PPTX Renderer", self.on_pptx_renderer
         )
+        cfg_menu = settings_menu.addMenu(tr("settings_file"))
+        cfg_menu.addAction(
+            tr("open_folder"),
+            lambda: QDesktopServices.openUrl(
+                QUrl.fromLocalFile(str(CONFIG_PATH.parent))
+            ),
+        )
+        cfg_menu.addAction(
+            tr("copy_path"), lambda: QApplication.clipboard().setText(str(CONFIG_PATH))
+        )
         self.action_about = settings_menu.addAction(tr("about"), self.on_about)
         self.settings_menu = settings_menu
         self.settings_btn.setMenu(settings_menu)
@@ -232,7 +242,13 @@ class MainWindow(QMainWindow):
                 if isinstance(param.default, str) and param.default in choices:
                     combo_box.setCurrentText(param.default)
                 widget = combo_box
-            elif lower in {"input_pdf", "input_path", "pptx_path", "path"}:
+            elif lower in {
+                "input_pdf",
+                "input_pptx",
+                "input_path",
+                "pptx_path",
+                "path",
+            }:
                 widget = FileEdit(self.cfg)
             elif lower in {"out_dir", "output_dir"}:
                 widget = FileEdit(self.cfg, directory=True)
@@ -564,19 +580,6 @@ class MainWindow(QMainWindow):
         index = combo.findData(current)
         combo.setCurrentIndex(max(index, 0))
         form.addRow("PPTX Renderer", combo)
-        path = CONFIG_PATH
-        path_label = QLabel(str(path))
-        path_row = QHBoxLayout()
-        path_row.addWidget(path_label)
-        open_btn = QPushButton("Open folder")
-        open_btn.clicked.connect(
-            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(path.parent)))
-        )
-        path_row.addWidget(open_btn)
-        copy_btn = QPushButton("Copy path")
-        copy_btn.clicked.connect(lambda: QApplication.clipboard().setText(str(path)))
-        path_row.addWidget(copy_btn)
-        form.addRow("Settings file", path_row)
         eff = QLabel(type(get_pptx_renderer()).__name__)
         form.addRow("Effective renderer", eff)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-

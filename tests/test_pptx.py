@@ -13,7 +13,6 @@ from pptx.util import Inches
 from pdf_toolbox import config
 from pdf_toolbox.actions.pptx import (
     extract_pptx_images,
-    pptx_properties,
     pptx_to_images,
     pptx_to_pdf,
     reorder_pptx,
@@ -63,18 +62,6 @@ def test_extract_pptx_images_default_dir(pptx_with_images):
     assert Path(out_dir).exists()
 
 
-def test_pptx_properties(tmp_path):
-    prs = Presentation()
-    prs.core_properties.author = "Tester"
-    prs.core_properties.title = "Demo"
-    path = tmp_path / "props.pptx"
-    prs.save(path)
-    json_path = pptx_properties(str(path))
-    data = json.loads(Path(json_path).read_text())
-    assert data["author"] == "Tester"
-    assert data["title"] == "Demo"
-
-
 def test_reorder_pptx(simple_pptx, tmp_path):
     out = reorder_pptx(simple_pptx, "3,1,2,5,4", output_path=str(tmp_path / "out.pptx"))
     prs = Presentation(out)
@@ -109,16 +96,17 @@ def test_rendering_actions_raise(simple_pptx):
 
 def test_renderer_config(monkeypatch, tmp_path):
     class DummyRenderer(BasePptxRenderer):
-        def to_images(
+        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
             self,
             _input_pptx: str,
             out_dir: str | None = None,
             max_size_mb: float | None = None,
-            img_format: str = "jpeg",
+            image_format: str = "JPEG",
+            quality: int | None = None,
             width: int | None = None,
             height: int | None = None,
         ) -> str:
-            del out_dir, max_size_mb, img_format, width, height
+            del out_dir, max_size_mb, image_format, quality, width, height
             return "ok"
 
         def to_pdf(

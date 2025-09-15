@@ -23,7 +23,8 @@ class BasePptxRenderer(ABC):
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
+        quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
     ) -> str:
@@ -49,12 +50,13 @@ class NullRenderer(BasePptxRenderer):
         input_pptx: str,
         out_dir: str | None = None,
         max_size_mb: float | None = None,
-        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
+        quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
     ) -> str:
         """Always raise because no renderer is configured."""
-        del input_pptx, out_dir, max_size_mb, img_format, width, height
+        del input_pptx, out_dir, max_size_mb, image_format, quality, width, height
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
     def to_pdf(
