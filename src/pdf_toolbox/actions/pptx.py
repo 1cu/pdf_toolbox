@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from pdf_toolbox.actions import action
+from pdf_toolbox.actions.images import QualityChoice, resolve_image_settings
 from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import get_pptx_renderer
 from pdf_toolbox.utils import logger
@@ -75,32 +75,6 @@ def extract_pptx_images(input_pptx: str, out_dir: str | None = None) -> str:
 
 
 @action(category="PPTX")
-def pptx_properties(input_pptx: str) -> str:
-    """Write core document properties of ``input_pptx`` to JSON.
-
-    Args:
-        input_pptx: Path to the presentation.
-
-    Returns:
-        Path to the JSON file with extracted properties.
-    """
-    pres = Presentation(str(validate_path(input_pptx, must_exist=True)))
-    props = pres.core_properties
-    data = {
-        "author": props.author,
-        "title": props.title,
-        "subject": props.subject,
-        "keywords": props.keywords,
-        "created": props.created.isoformat() if props.created else None,
-        "modified": props.modified.isoformat() if props.modified else None,
-    }
-    out_path = Path(input_pptx).with_name(f"{Path(input_pptx).stem}_props.json")
-    out_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    logger.info("Properties for %s written to %s", input_pptx, out_path)
-    return str(out_path)
-
-
-@action(category="PPTX")
 def reorder_pptx(
     input_pptx: str,
     range_spec: str,
@@ -137,7 +111,8 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
     input_pptx: str,
     out_dir: str | None = None,
     max_size_mb: float | None = None,
-    img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+    image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
+    quality: int | QualityChoice = "High (95)",
     width: int | None = None,
     height: int | None = None,
 ) -> str:
@@ -147,19 +122,27 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
         input_pptx: Presentation to render.
         out_dir: Destination directory for exported images.
         max_size_mb: Optional size limit per image in megabytes.
-        img_format: Output image format (``"jpeg"``, ``"png"``, or ``"tiff"``).
+        image_format: Output image format (``"JPEG"``, ``"PNG"``, or ``"TIFF"``).
+        quality: JPEG/WebP quality (ignored for other formats).
         width: Optional pixel width; requires ``height``.
         height: Optional pixel height; requires ``width``.
 
     Returns:
         Path to the directory containing the images.
     """
+    fmt, quality_val, _dpi = resolve_image_settings(
+        image_format,
+        quality,
+        allowed_formats={"PNG", "JPEG", "TIFF"},
+    )
+    fmt_literal = cast(Literal["PNG", "JPEG", "TIFF"], fmt)
     renderer = get_pptx_renderer()
     return renderer.to_images(
         input_pptx,
         out_dir=out_dir,
         max_size_mb=max_size_mb,
-        img_format=img_format,
+        image_format=fmt_literal,
+        quality=quality_val,
         width=width,
         height=height,
     )
@@ -174,7 +157,6 @@ def pptx_to_pdf(input_pptx: str, output_path: str | None = None) -> str:
 
 __all__ = [
     "extract_pptx_images",
-    "pptx_properties",
     "pptx_to_images",
     "pptx_to_pdf",
     "reorder_pptx",

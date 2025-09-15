@@ -122,17 +122,19 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
             self._close_app(app)
         return str(out)
 
-    def to_images(
+    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
         self,
         input_pptx: str,
         out_dir: str | None = None,
         _max_size_mb: float | None = None,
-        img_format: Literal["jpeg", "png", "tiff"] = "jpeg",
+        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
+        quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to images."""
         self._require_env()
+        del quality
         inp = Path(input_pptx).resolve()
         if not inp.exists():
             msg = f"Eingabe nicht gefunden: {inp}"
@@ -141,10 +143,15 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         out = Path(out_dir) if out_dir else inp.with_suffix("")
         out.mkdir(parents=True, exist_ok=True)
 
-        ext_map = {"jpeg": "JPG", "png": "PNG", "tiff": "TIFF"}
-        ext = ext_map[img_format.lower()]
+        ext_map = {"JPEG": "JPG", "PNG": "PNG", "TIFF": "TIFF"}
+        fmt = image_format.upper()
+        try:
+            ext = ext_map[fmt]
+        except KeyError as exc:
+            msg = f"Unsupported image format: {image_format}"
+            raise PptxRenderingError(msg) from exc
 
-        logger.info("Rendering %s to images (%s)", inp, img_format)
+        logger.info("Rendering %s to images (%s)", inp, fmt)
         app = self._open_app()
         try:
             prs = self._open_presentation(app, inp)
@@ -153,7 +160,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                     prs.Export(str(out), ext, int(width), int(height))
                 else:
                     prs.Export(str(out), ext)
-                count = len(list(out.glob(f"*.{img_format.lower()}")))
+                count = len(list(out.glob(f"*.{fmt.lower()}")))
                 logger.info("Exported %d image(s) to %s", count, out)
             finally:
                 prs.Close()

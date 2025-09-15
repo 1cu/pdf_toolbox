@@ -116,7 +116,7 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
     monkeypatch.setattr(images_mod.fitz.Document, "load_page", fake_load_page)
     monkeypatch.setattr(images_mod.fitz, "Pixmap", fake_pixmap)
     with images_mod.open_pdf(sample_pdf) as doc:
-        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG")
+        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG", 95)
     assert outputs
 
 
@@ -144,5 +144,5 @@ def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
     monkeypatch.setattr(images_mod.fitz.Document, "load_page", fake_load_page)
     monkeypatch.setattr(images_mod.fitz, "Pixmap", fake_pixmap)
     with images_mod.open_pdf(sample_pdf) as doc:
-        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG")
+        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG", 95)
     assert outputs

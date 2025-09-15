@@ -93,6 +93,28 @@ def test_build_form_handles_pep604_union(app, monkeypatch):
         win.close()
 
 
+def test_build_form_union_int_default(app, monkeypatch):
+    _ = app
+    from typing import Literal
+
+    def sample(dpi: int | Literal["Low", "High"] = 150) -> None:
+        pass
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    win = gui.MainWindow()
+    try:
+        win.build_form(act)
+        win.show()
+        QApplication.processEvents()
+        combo, spin = win.current_widgets["dpi"]
+        assert combo.currentText() == "Custom"
+        assert spin.isVisible()
+        assert spin.value() == 150
+    finally:
+        win.close()
+
+
 def test_float_none_spinbox_range(app, monkeypatch):
     _ = app
 

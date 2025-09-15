@@ -37,7 +37,7 @@ def test_to_images(tmp_path: Path) -> None:
     got = PptxMsOfficeRenderer().to_images(
         str(src),
         out_dir=str(out),
-        img_format="png",
+        image_format="PNG",
         width=1920,
         height=1080,
     )
