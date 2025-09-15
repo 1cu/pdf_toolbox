@@ -217,11 +217,19 @@ class MainWindow(QMainWindow):
                 if literal:
                     combo_box = QComboBox()
                     spin_box = QSpinBox()
+                    spin_box.setMinimum(0)
+                    spin_box.setMaximum(10_000)
                     choices = list(get_args(literal))
                     combo_box.addItems([*choices, "Custom"])
                     if isinstance(param.default, str) and param.default in choices:
                         combo_box.setCurrentText(param.default)
-                    spin_box.setVisible(combo_box.currentText() == "Custom")
+                        spin_box.setVisible(False)
+                    elif isinstance(param.default, int):
+                        combo_box.setCurrentText("Custom")
+                        spin_box.setValue(param.default)
+                        spin_box.setVisible(True)
+                    else:
+                        spin_box.setVisible(combo_box.currentText() == "Custom")
                     combo_box.currentTextChanged.connect(
                         lambda text_value, sb=spin_box: sb.setVisible(
                             text_value == "Custom"

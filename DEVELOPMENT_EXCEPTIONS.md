@@ -29,27 +29,27 @@
 | src/pdf_toolbox/gui/main_window.py:183     | type: ignore[attr-defined]               | PySide6 stubs miss Qt.UserRole                      | -        |
 | src/pdf_toolbox/gui/main_window.py:189     | PLR0912, PLR0915                         | dynamic form builder is inherently complex          | -        |
 | src/pdf_toolbox/gui/main_window.py:208     | type: ignore[attr-defined]               | `types.UnionType` absent from stubs                 | -        |
-| src/pdf_toolbox/gui/main_window.py:297     | type: ignore[arg-type]                   | PySide6 stubs reject tuple variant                  | -        |
-| src/pdf_toolbox/gui/main_window.py:300     | PLR0912                                  | argument collection involves many branches          | -        |
-| src/pdf_toolbox/gui/main_window.py:315     | type: ignore[attr-defined]               | PySide6 stubs miss Qt enum                          | -        |
-| src/pdf_toolbox/gui/main_window.py:369     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:386     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:420     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:461     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:477     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:492     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:501     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:505     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:512     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:521     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:525     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:533     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:545     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:549     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:570     | pragma: no cover                         | GUI handler                                         | -        |
-| src/pdf_toolbox/gui/main_window.py:585     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
-| src/pdf_toolbox/gui/main_window.py:589     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
-| src/pdf_toolbox/gui/main_window.py:599     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:305     | type: ignore[arg-type]                   | PySide6 stubs reject tuple variant                  | -        |
+| src/pdf_toolbox/gui/main_window.py:308     | PLR0912                                  | argument collection involves many branches          | -        |
+| src/pdf_toolbox/gui/main_window.py:323     | type: ignore[attr-defined]               | PySide6 stubs miss Qt enum                          | -        |
+| src/pdf_toolbox/gui/main_window.py:377     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:394     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:428     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:469     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:485     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:500     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:509     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:513     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:520     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:529     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:533     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:541     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:553     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:557     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:578     | pragma: no cover                         | GUI handler                                         | -        |
+| src/pdf_toolbox/gui/main_window.py:593     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum               | -        |
+| src/pdf_toolbox/gui/main_window.py:597     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                 | -        |
+| src/pdf_toolbox/gui/main_window.py:607     | pragma: no cover                         | GUI handler                                         | -        |
 | src/pdf_toolbox/gui/widgets.py:17          | pragma: no cover                         | GUI helper                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:38          | type: ignore[override], pragma: no cover | override signal emitter with broader type; GUI-only | -        |
 | src/pdf_toolbox/gui/widgets.py:43          | pragma: no cover                         | GUI widget                                          | -        |
