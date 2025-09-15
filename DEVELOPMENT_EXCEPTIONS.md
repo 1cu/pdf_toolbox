@@ -4,7 +4,7 @@
 | ------------------------------------------ | ---------------------------------------- | --------------------------------------------------- | -------- |
 | scripts/check_coverage.py:8                | B405                                     | stdlib XML parser on trusted coverage file          | -        |
 | scripts/check_coverage.py:38               | B314                                     | parsing trusted coverage report                     | -        |
-| scripts/generate_exception_overview.py:21  | PLR0912                                  | parsing requires several branches                   | -        |
+| scripts/generate_exception_overview.py:23  | PLR0912                                  | parsing requires several branches                   | -        |
 | scripts/prune_releases.py:28               | S310                                     | urllib Request for GitHub API                       | -        |
 | scripts/prune_releases.py:33               | S310, B310                               | urllib urlopen for GitHub API                       | -        |
 | scripts/prune_releases.py:60               | type: ignore[arg-type]                   | GitHub API returns untyped data                     | -        |
