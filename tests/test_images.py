@@ -2,6 +2,7 @@ import math
 import warnings
 from pathlib import Path
 
+import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
 
@@ -121,7 +122,16 @@ def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
     )
     assert len(outputs) == 3
     img = Image.open(outputs[0])
-    assert img.size == (414, 585)
+    doc = fitz.open(sample_pdf)
+    try:
+        page = doc.load_page(0)
+        w_in = page.rect.width / 72
+        h_in = page.rect.height / 72
+    finally:
+        doc.close()
+    dpi_val = round(max(413 / w_in, 585 / h_in))
+    expected = (math.ceil(w_in * dpi_val), math.ceil(h_in * dpi_val))
+    assert img.size == expected
 
 
 def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):

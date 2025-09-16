@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from pdf_toolbox.actions.miro import miro_export
-from pdf_toolbox.miro import ExportProfile, PROFILE_MIRO, export_pdf_for_miro
+from pdf_toolbox.miro import PROFILE_MIRO, ExportProfile, export_pdf_for_miro
 
 
 def test_export_pdf_prefers_svg(sample_pdf, tmp_path):
@@ -54,8 +54,10 @@ def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):
     def fake_render(_page, dpi: int) -> DummyImage:
         return DummyImage(dpi)
 
-    def fake_encode(image, max_bytes: int, allow_transparency: bool):
-        del allow_transparency
+    def fake_encode(
+        image, max_bytes: int, allow_transparency: bool, *, apply_unsharp: bool = True
+    ):
+        del allow_transparency, apply_unsharp
         size = image.width
         attempt = miro.PageExportAttempt(
             dpi=0,
@@ -63,7 +65,7 @@ def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):
             size_bytes=size,
             encoder="fake",
         )
-        return b"x" * size, "WEBP", attempt, size <= max_bytes
+        return b"x" * size, "WEBP", attempt, [attempt], size <= max_bytes
 
     profile = ExportProfile(
         name="binary",
@@ -111,18 +113,35 @@ def test_miro_export_miro_pdf(sample_pdf, tmp_path):
 
 
 def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
-    from pdf_toolbox.actions import miro as actions_miro
+    from pdf_toolbox import config
+    from pdf_toolbox.renderers import pptx as pptx_module
 
     class DummyRenderer:
-        def to_pdf(self, input_pptx: str, output_path: str | None = None, **_kwargs) -> str:
-            target = Path(output_path) if output_path else Path(input_pptx).with_suffix(".pdf")
+        def to_pdf(
+            self, input_pptx: str, output_path: str | None = None, **_kwargs
+        ) -> str:
+            target = (
+                Path(output_path)
+                if output_path
+                else Path(input_pptx).with_suffix(".pdf")
+            )
             target.write_bytes(Path(sample_pdf).read_bytes())
             return str(target)
 
         def to_images(self, *args, **kwargs):  # pragma: no cover - not used here
             raise NotImplementedError
 
-    monkeypatch.setattr(actions_miro, "get_pptx_renderer", lambda: DummyRenderer())
+    original_loader = pptx_module._load_via_registry
+
+    def loader(name: str):
+        if name == "dummy":
+            return DummyRenderer()
+        return original_loader(name)
+
+    monkeypatch.setattr(pptx_module, "_load_via_registry", loader)
+    cfg_path = tmp_path / "pptx.json"
+    cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
+    monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
     pptx_path = tmp_path / "deck.pptx"
     pptx_path.write_bytes(b"pptx")
     outputs = miro_export(str(pptx_path), out_dir=str(tmp_path), export_profile="miro")
