@@ -4,167 +4,116 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/1cu/pdf_toolbox?utm_source=oss&utm_medium=github&utm_campaign=1cu%2Fpdf_toolbox&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
-Utilities for manipulating PDF files. A Qt-based GUI discovers available functions dynamically and builds forms from their signatures. Launch it with `python -m pdf_toolbox.gui`.
+PDF Toolbox is a Python 3.13 toolkit for PDF and PPTX automation. A Qt GUI
+(entry point `src/pdf_toolbox/gui/__main__.py`) discovers functions registered
+with the `@action` decorator and builds forms from their signatures. You can run
+those same actions from the command line or import them in scripts.
 
-See [CONTRIBUTING](CONTRIBUTING.md) for the contributor workflow and [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter exceptions, and the release process. Repository-wide rules live in [AGENTS.md](AGENTS.md).
+## Learn what it does
 
-PDF pages can be rasterized to images. When a `max_size_mb` limit is used, JPEG and WebP images lower their quality while PNG or TIFF images boost compression and are only downscaled if necessary, with a warning emitted when resizing occurs.
+- Manage PDFs: merge, split, rasterise, optimise, and export assets.
+- Operate on PPTX files: extract assets, reorder slides, or render with an
+  optional provider.
+- Use the Miro export profile to create slide images that respect Miro’s size
+  limits while keeping vector pages crisp.
+- Extend the GUI by adding new `@action`-decorated callables in
+  `pdf_toolbox.actions`. The GUI updates automatically.
 
-## Table of Contents
-
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Optimisation](#optimisation)
-- [PPTX Support](#pptx-support)
-- [Miro Export (GUI)](#miro-export-gui)
-- [Development](#development)
-
-## Quick Start
+## Start quickly
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 pre-commit install
-python -m pdf_toolbox.gui          # launch the GUI
-python -c "from pdf_toolbox.actions.pdf_images import pdf_to_images; pdf_to_images('doc.pdf')"  # run an action from the CLI
-pre-commit run tests --all-files   # run tests
+python -m pdf_toolbox.gui          # launch the Qt GUI
+pre-commit run tests --all-files   # run pytest with coverage
 ```
 
-## Configuration
+## Run an action from Python
 
-`pdf_toolbox` requires a `pdf_toolbox_config.json` file in the user's platform-specific configuration directory (e.g. `~/.config/pdf_toolbox/` on Linux or `%APPDATA%\\pdf_toolbox\\` on Windows) determined via the `platformdirs` library that specifies the document author and contact email. The Qt GUI warns on startup if the information is missing and lets you set it via the **Author** button. Create the file manually with the following content:
+Any registered action is available from the CLI or your own scripts:
+
+```bash
+python -c "from pdf_toolbox.actions.pdf_images import pdf_to_images; pdf_to_images('doc.pdf', max_size_mb=20)"
+```
+
+## Configure the app
+
+Configuration lives in `pdf_toolbox_config.json` inside the platform-specific
+config directory returned by `platformdirs` (for example `~/.config/pdf_toolbox/`
+on Linux or `%APPDATA%\pdf_toolbox\` on Windows). Create the file manually to
+set author metadata and optionally choose a PPTX renderer:
 
 ```json
 {
   "author": "Your Name",
-  "email": "you@example.com"
-}
-```
-
-Since the file resides outside the repository it remains private and is not tracked by Git.
-
-## Optimisation
-
-`optimise_pdf` (action) supports several quality presets (e.g. `screen`, `ebook`). Each preset also controls the internal compression level by mapping a `pdf_quality` value to the `compression_effort` passed to `fitz.Document.save`. Lower quality values therefore result in higher compression and smaller output files.
-
-After running, the action logs the percentage size change and writes the
-optimised file only when the result is smaller. Larger or unchanged outputs are
-discarded with an explanatory log message.
-
-See the function docstrings (e.g., via your IDE) for examples and details.
-The GUI uses the progress-enabled optimise action for improved responsiveness.
-
-Internationalization: The GUI supports English and German for common UI strings.
-Language is auto-detected but can be overridden programmatically using
-`pdf_toolbox.i18n.set_language("de")`.
-
-### Adding a New Action
-
-Actions are plain Python callables registered via the `@action` decorator. They
-appear in the GUI and are importable for automation. To add one:
-
-```python
-from pdf_toolbox.actions import action
-
-@action(category="PDF")
-def merge_pdfs(first: str, second: str) -> str:
-    """Merge two PDFs into a new file."""
-    ...
-```
-
-Add a translation key for the function name in `src/pdf_toolbox/locales/en.json`
-and `de.json`. Use `tr("key")` for any additional user-facing strings.
-
-Actions can be scripted directly, e.g.:
-
-```bash
-python -c "from pdf_toolbox.actions.extract import extract_text; print(extract_text('doc.pdf'))"
-```
-
-### Design Notes
-
-- Actions are registered explicitly via an `@action` decorator; only decorated
-  callables appear in the GUI.
-- Author configuration is cached and missing or malformed files fall back to
-  empty strings.
-- Page rendering streams directly to disk to keep memory usage low.
-- User-supplied paths are validated to prevent directory traversal.
-
-## PPTX Support
-
-The toolbox can manipulate PowerPoint files using pure Python dependencies. Basic actions:
-
-- `extract_pptx_images` – extract embedded images
-- `reorder_pptx` – select and reorder slides
-
-Rendering to images or PDF requires external Office/LibreOffice software and is disabled by default. When a provider is configured, additional actions become available:
-
-- `pptx_to_images` – render slides to images
-- `pptx_to_pdf` – render slides to PDF
-
-### PPTX → PDF/Bilder (MS Office Provider)
-
-An experimental provider uses Microsoft PowerPoint via COM automation. It is
-**optional** and only works on Windows with PowerPoint installed.
-
-Prerequisites::
-
-```bash
-pip install .[pptx-render]
-```
-
-Examples:
-
-```bash
-python -c "from pdf_toolbox.actions.pptx import pptx_to_pdf; print(pptx_to_pdf('deck.pptx'))"
-python -c "from pdf_toolbox.actions.pptx import pptx_to_images; print(pptx_to_images('deck.pptx', image_format='PNG'))"
-```
-
-Basic examples:
-
-```bash
-python -c "from pdf_toolbox.actions.pptx import extract_pptx_images; extract_pptx_images('deck.pptx')"
-python -c "from pdf_toolbox.actions.pptx import reorder_pptx; reorder_pptx('deck.pptx','2,1')"
-```
-
-### Renderer aktivieren (Desktop-Binary)
-
-Prerequisites: Windows and Microsoft PowerPoint installed.
-
-Activate via GUI: `Settings → PPTX Renderer → MS Office (PowerPoint) → Save`.
-
-Alternatively edit the configuration file `${CONFIG_DIR}/pdf_toolbox/pdf_toolbox_config.json`:
-
-```json
-{
+  "email": "you@example.com",
   "pptx_renderer": "ms_office"
 }
 ```
 
-If the key is absent or empty the renderer remains disabled.
+Leave `pptx_renderer` unset or `null` to keep the default `NullRenderer`. The
+Qt GUI surfaces missing metadata at startup and lets you update the config.
 
-Note: Frozen binaries may lack entry-point metadata. The renderer is then
-loaded via an internal registry without loss of functionality.
+## Select a PPTX renderer
 
-## Miro Export (GUI)
+The renderer plugin system loads implementations registered under the
+`pdf_toolbox.pptx_renderers` entry point group. The default `NullRenderer`
+explains that rendering is unavailable. On Windows, the optional
+`ms_office` provider automates Microsoft PowerPoint via COM once you install the
+`pptx-render` extra and set `"pptx_renderer": "ms_office"` in the config file.
+Future providers plug into the same interface.
 
-The **Miro Export** action in the Qt GUI produces per-page slide images that
-remain crisp when zoomed to 400% inside Miro boards while keeping every file
-within Miro's 30 MB / 32 MP / 8192×4096 limits. The preset automatically
-analyses each page and exports vector slides as SVG (with fonts converted to
-paths and metadata stripped) whenever the size budget allows it. Image-heavy
-slides are rendered using a tuned raster pipeline (lossless WebP by default,
-falling back to high-quality WebP/PNG or JPEG if necessary) that performs a DPI
-search to stay above an effective 200 DPI at the target zoom level and records
-warnings when the board constraints require additional downscaling.
+## Internationalise the UI
 
-Choose the "Miro (optimised for Miro/Boards)" export profile to hide advanced
-parameters and rely on the automatic strategy. The manifest `miro_export.json`
-records the DPI, format, file size, and any warnings for each page. The
-standard profile remains available for manual control when the same action is
-used for traditional exports.
+Locale files in `src/pdf_toolbox/locales/{en,de}.json` map JSON keys such as
+`actions`, `select_file`, `field_cannot_be_empty`, `input_pdf`, `out_dir`, and
+`max_size_mb` to translated strings. Use the helper API:
 
-## Development
+```python
+from pdf_toolbox.i18n import label, set_language, tr
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and workflow guidance and [DEVELOPMENT.md](DEVELOPMENT.md) for developer notes, documented linter exceptions, and the release process.
+set_language("de")          # override auto-detected language during tests
+label("actions")            # look up a label by key
+tr("field_cannot_be_empty", field="Password")
+```
+
+Add keys to both locale files when you introduce new user-facing strings and
+wire them through the GUI instead of hard-coding text.
+
+## Understand the action framework
+
+Register new callables with `@action(category="PDF")`. The decorator captures
+metadata, exposes the function under `pdf_toolbox.actions`, and makes it
+available in the GUI. The GUI inspects the function signature to build widgets
+for typed parameters and handles validation.
+
+## Export for Miro
+
+Choose the “Miro (optimised for Miro/Boards)” profile in the GUI to create
+per-page exports that respect Miro’s 30 MB / 32 MP / 8192×4096 limits. Vector
+pages render as SVG with fonts converted to paths; raster-heavy slides use an
+adaptive pipeline that keeps DPI high while staying within limits. The export
+writes `miro_export.json` with per-page metadata and warnings.
+
+## Development quick facts
+
+- Target Python 3.13; CI and tooling run only on 3.13.
+- Install dependencies with `pip install -e '.[dev]'` and enable hooks via
+  `pre-commit install`.
+- Pre-commit runs ruff format (Black-compatible formatting), ruff linting,
+  mypy, bandit, locale checks, pytest with coverage, and per-file coverage
+  enforcement.
+- Maintain ≥95% coverage overall **and per file**. Exceptions must be justified
+  inline and appear in `DEVELOPMENT_EXCEPTIONS.md` via
+  `scripts/generate_exception_overview.py`.
+- Use the shared logger utilities for diagnostics; do not use `print` for
+  logging.
+
+## Read next
+
+- [CONTRIBUTING](CONTRIBUTING.md) — contributor workflow and review checklist.
+- [DEVELOPMENT](DEVELOPMENT.md) — maintainer notes, architecture, and testing
+  guidance.
+- [AGENTS](AGENTS.md) — enforcement rules for Codex agents and reviewers.

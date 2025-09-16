@@ -1,0 +1,50 @@
+language: en-US
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  path_filters:
+    - "src/pdf_toolbox/**"
+    - "tests/**"
+    - "scripts/**"
+    - "README.md"
+    - "CONTRIBUTING.md"
+    - "DEVELOPMENT.md"
+    - "**/AGENTS.md"
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+pre_merge_checks:
+  description:
+    mode: error
+  title:
+    mode: warning
+  custom_checks:
+    - mode: error
+      name: "Coverage ≥95% overall and per-file"
+      instructions: >
+        Fail if the latest coverage status context does not indicate ≥95% overall
+        AND for each modified file. If a coverage check exists, require it to be green.
+    - mode: error
+      name: "Tests accompany code changes"
+      instructions: >
+        If files under src/pdf_toolbox/** change, require at least one test file under tests/**
+        to change in the same PR.
+    - mode: error
+      name: "Inline exceptions documented"
+      instructions: >
+        Flag any use of '# noqa', 'ruff: noqa', or '# type: ignore' that lacks the suffix
+        '# pdf-toolbox: <reason> | issue:<id or ->'. Require re-running scripts/generate_exception_overview.py
+        so DEVELOPMENT_EXCEPTIONS.md is updated.
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "src/pdf_toolbox/AGENTS.md"
+      - "scripts/AGENTS.md"
+      - "tests/AGENTS.md"
+tools:
+  ruff: {enabled: true}
+  markdownlint: {enabled: true}
+  github-checks: {enabled: true, timeout_ms: 180000}
+  languagetool: {enabled: true, level: default}

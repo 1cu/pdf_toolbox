@@ -1,21 +1,17 @@
 # Development
 
-Notes for contributing to PDF Toolbox. All Python modules live inside the `pdf_toolbox` package located in the `src` directory to provide a clear project structure.
+You maintain PDF Toolbox here. Use this guide alongside the concise overview in
+[README](README.md), the contributor checklist in [CONTRIBUTING](CONTRIBUTING.md),
+and the enforcement rules in [AGENTS](AGENTS.md).
 
-For a project overview and quick start, see the [README](README.md). The main contributor workflow is documented in [CONTRIBUTING](CONTRIBUTING.md). Repository-wide rules are enforced via [AGENTS.md](AGENTS.md).
+## Read this first
 
-GUI is split under `pdf_toolbox/gui/` into `widgets.py`, `worker.py`, and `main_window.py` with a thin facade in `pdf_toolbox/gui/__init__.py`. Configuration helpers live in `pdf_toolbox/config.py`. Headless helpers (`gui/__init__.py`) are covered by tests; pure GUI modules are excluded from coverage in `pyproject.toml`.
-
-Internationalization: basic English/German translations are provided by `pdf_toolbox.i18n`. Use `i18n.tr()` for UI strings and `i18n.set_language()` to override auto-detection when testing.
-
-## Table of Contents
-
-- [Set up the environment](#set-up-the-environment)
-- [Build the distribution](#build-the-distribution)
-- [Run the source](#run-the-source)
-- [Pre-commit hooks](#pre-commit-hooks)
-- [Linting Policy: Fix, Don’t Silence](#linting-policy-fix-dont-silence)
-- [Release](#release)
+- Python 3.13 is the only supported runtime. Ensure your local environment
+  matches CI.
+- Work inside the `src/pdf_toolbox` package; tests live under `tests` and helper
+  scripts under `scripts`.
+- Discover architecture and API details through docstrings and your IDE. No
+  Sphinx documentation exists.
 
 ## Set up the environment
 
@@ -23,114 +19,116 @@ Internationalization: basic English/German translations are provided by `pdf_too
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
+pre-commit install
 ```
 
-This installs the development dependencies, including the `build` package used to create distributions. The quotes around `.[dev]` ensure compatibility across different shells.
+Set `QT_QPA_PLATFORM=offscreen` when running hooks or tests on headless systems
+(the CI and pre-commit configuration do this for you).
 
-## Build the distribution
+## Run the sources
 
-Create source and wheel distributions in the `dist/` folder:
-
-```bash
-python -m build
-```
-
-## Run the source
-
-Start the GUI application directly from the source tree:
+Launch the Qt GUI entry point from source:
 
 ```bash
 python -m pdf_toolbox.gui
 ```
 
-## PPTX Renderer Providers
+The module `src/pdf_toolbox/gui/__main__.py` wires the window, background worker
+threads, and action registry together.
 
-PPTX rendering (slides to images or PDF) uses a provider interface defined in
-`pdf_toolbox.renderers.pptx`. Third-party renderers register an entry point in
-the `pdf_toolbox.pptx_renderers` group and implement `BasePptxRenderer`, which
-exposes `to_pdf`, `to_images`, `capabilities()`, and `probe()`. Without a
-provider the default `NullRenderer` raises a translated `NotImplementedError`
-with remediation guidance.
+## Understand the action framework
 
-Set `pptx_renderer = "auto"` in configuration to probe all registered providers
-and activate the first healthy one. Use an explicit provider key (for example,
-`"ms_office"`) to pin the backend or `"null"` to surface the stub provider. The
-auto mode is the production default; `null` can be helpful in development when
-you prefer explicit failure.
+- Register new functionality with `@action` in `pdf_toolbox.actions`. The
+  decorator records metadata, exposes the callable for scripting, and makes it
+  discoverable by the GUI.
+- The GUI inspects type hints and default values to build forms. Keep signatures
+  explicit and prefer typed enums/`Literal` values for choice fields.
+- Actions run in worker threads so long-running operations do not block the UI.
+  Factor heavy lifting into reusable helpers under `pdf_toolbox` so they can be
+  unit-tested without the GUI.
 
-Architecture decisions for PPTX rendering are tracked in the
-[ADR index](docs/adr/README.md); see
-[ADR 0001: PPTX Provider Architecture](docs/adr/0001-pptx-provider-architecture.md).
+## Configure renderers and profiles
 
-### Microsoft Office provider
+- User configuration lives in `pdf_toolbox_config.json` inside the directory
+  returned by `platformdirs` (for example `~/.config/pdf_toolbox/`). Keys:
+  - `author` and `email` populate document metadata and GUI prompts.
+  - `pptx_renderer` chooses a renderer: omit or `null` for the default
+    `NullRenderer`, `"ms_office"` for the COM-based renderer on Windows, and
+    future plugin identifiers for additional providers.
+- Renderer plugins implement `BasePptxRenderer` in
+  `pdf_toolbox.renderers.pptx`. They register under the
+  `pdf_toolbox.pptx_renderers` entry point group and expose
+  `probe()`, `capabilities()`, `to_pdf()`, and `to_images()`.
+- The GUI uses export profiles (including **Miro (optimised for Miro/Boards)**)
+  to expose tuned defaults. Profiles live alongside their actions so they can be
+  scripted without the GUI.
 
-The optional Microsoft Office provider uses Microsoft PowerPoint via COM
-automation. Install the `pptx-render` extra and set `pptx_renderer = "ms_office"`
-in the configuration file on Windows systems with PowerPoint installed to enable
-it.
+## Internationalise correctly
 
-## Pre-commit hooks
+- Locale files reside in `src/pdf_toolbox/locales/en.json` and `de.json`. Keys
+  include `actions`, `select_file`, `field_cannot_be_empty`, `input_pdf`,
+  `out_dir`, and `max_size_mb`.
+- Use the helper functions `tr(key, **kwargs)`, `label(name)`, and
+  `set_language(language_code)` from `pdf_toolbox.i18n` instead of hard-coded
+  strings.
+- Update **both** locale files when adding keys. Keep JSON sorted and let
+  `pre-commit` run the locale formatting hook.
 
-The configuration uses `language: system` so hooks run in the active virtual environment. Markdown documentation and YAML configuration files are automatically formatted with `mdformat` and `pretty-format-yaml` (configured with an extra two-space offset and preserved quotes for GitHub Actions compatibility) to avoid introducing a Node.js dependency like Prettier. Hooks lint, format, type-check, and run tests on every commit, even if you only edit documentation. Test coverage must reach at least 95% for each module; modules excluded by the coverage configuration in `pyproject.toml` are exempt, and the hooks enforce this threshold. Ruff applies an extensive rule set, covering bugbear, pyupgrade, naming, builtins, comprehensions, tidy imports, return-value checks, common simplifications, docstring style, security checks, and Pylint-inspired rules. Activate the `.venv` before installing or running them:
+## Log with the shared logger
 
-```bash
-pre-commit install
-```
+Use the utilities in `pdf_toolbox.utils.logging` (imported via convenience
+wrappers) for diagnostics. Avoid `print` and avoid inventing new logging setups;
+Bandit runs in hooks and CI to catch insecure logging or file handling.
 
-To check the entire codebase manually:
+## Test effectively
 
-```bash
-pre-commit run --all-files
-```
+- Run `pre-commit run tests --all-files` to execute `pytest` with coverage
+  reporting. Hooks also run ruff, mypy, bandit, locale validation, and the
+  coverage checker.
+- Maintain ≥95% coverage overall **and per file**. The helper script
+  `scripts/check_coverage.py` enforces per-file thresholds after pytest.
+- Keep GUI-only components thin. Factor logic into pure helpers so you can cover
+  it with tests. GUI widgets listed in `pyproject.toml` under coverage `omit`
+  are the only accepted exclusions.
+- Use fixtures such as `tmp_path` for filesystem interactions and prefer
+  deterministic tests.
 
-`pre-commit run --all-files` executes tests, so no separate `pytest` step is required. The CI workflow runs `pre-commit run --all-files` and `python -m compileall .` to ensure the codebase passes checks and compiles.
+## Manage exceptions deliberately
 
-Hooks share aliases so related groups can run independently:
+- When a linter, type-checker, bandit, or coverage rule truly cannot be fixed,
+  add a one-line inline comment using the format:
 
-```bash
-pre-commit run format --all-files  # formatters
-pre-commit run lint --all-files    # linters and static analysis
-pre-commit run tests --all-files   # test suite
-```
+  ```python
+  import xml.etree.ElementTree as ET  # nosec B405  # pdf-toolbox: stdlib XML parser on trusted coverage file | issue:-
+  ```
 
-Bandit performs static security checks during pre-commit. Dependency
-vulnerability auditing is omitted because the project is not published on
-PyPI.
+- Only single-line scopes are allowed; never use blanket `# noqa` or
+  `# type: ignore` comments.
+- Run `python scripts/generate_exception_overview.py` (or let pre-commit do it)
+  to refresh `DEVELOPMENT_EXCEPTIONS.md`. Never edit that file manually.
+- Review new exceptions during PR review and remove them once the underlying
+  issue is resolved.
 
-## Linting Policy: Fix, Don’t Silence
+## Use the tooling
 
-PDF Toolbox follows a **“Fix, Don’t Silence”** linting policy (see [AGENTS.md](AGENTS.md) and [CONTRIBUTING](CONTRIBUTING.md)):
+- `pre-commit run --all-files` executes the full suite of formatters, linters,
+  tests, security checks, and the exception overview generator.
+- Shortcuts exist:
 
-- Warnings should be fixed through refactoring, not disabled.
-- No new `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore` are allowed unless justified.
+  ```bash
+  pre-commit run format --all-files
+  pre-commit run lint --all-files
+  pre-commit run tests --all-files
+  ```
 
-If an exception is truly unavoidable:
+- CI runs the same hooks on Linux, macOS, and Windows (all on Python 3.13) and
+  verifies bytecode compilation with `python -m compileall .`.
+- We intentionally skip `pip-audit`; dependency publishing is out of scope for
+  this project.
 
-1. Add a one-line justification in code (1–2 sentences).
-1. Restrict the scope to a single line (never a file or module).
-1. Run `scripts/generate_exception_overview.py` via pre-commit to update `DEVELOPMENT_EXCEPTIONS.md`.
-1. Link the related Issue/PR for visibility.
+## Cut a release
 
-### Documented Exceptions
-
-See [DEVELOPMENT_EXCEPTIONS.md](DEVELOPMENT_EXCEPTIONS.md). The file is generated; never edit it manually. Reviewers will reject PRs that introduce undocumented disables.
-
-## Release
-
-The release workflow runs only when a version tag (matching `v*`) is pushed. This allows releases to be cut manually instead of on every commit.
-
-To cut a new release:
-
-1. Update the version in `pyproject.toml`.
-1. Commit the change.
-1. Create and push a matching tag, for example:
-
-```bash
-git tag v0.2.62
-git push origin v0.2.62
-```
-
-The workflow will build the package and publish a GitHub release for that tag.
-
-```
-```
+1. Update `version` in `pyproject.toml`.
+2. Commit the change and create a tag matching `v*` (for example `v0.6.21`).
+3. Push the tag; the `release` workflow builds wheels and platform executables
+   and attaches them to the GitHub release while pruning older artifacts.

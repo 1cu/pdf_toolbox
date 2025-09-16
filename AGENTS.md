@@ -1,97 +1,62 @@
-# Agent Guidelines
+# Agent Rules
 
-Repository-wide rules for PDF Toolbox. Directory-specific overrides live in
-nested `AGENTS.md` files such as `src/pdf_toolbox/AGENTS.md`,
-`tests/AGENTS.md`, and `scripts/AGENTS.md`. Apply the guidance from this file
-and any more specific one.
+These rules apply to the whole repository. Combine them with any nested
+`AGENTS.md` files (`src/pdf_toolbox/AGENTS.md`, `tests/AGENTS.md`, and
+`scripts/AGENTS.md`). The most specific file wins.
 
-See the [README](README.md) for a quick start, [CONTRIBUTING](CONTRIBUTING.md)
-for the contributor workflow, and [DEVELOPMENT](DEVELOPMENT.md) for detailed
-notes, documented linter exceptions, and the release process.
+Read the primary docs before making changes:
 
-## Environment
+- [README](README.md) — project overview and usage.
+- [CONTRIBUTING](CONTRIBUTING.md) — contributor workflow and review checklist.
+- [DEVELOPMENT](DEVELOPMENT.md) — maintainer notes and tooling details.
+- [DEVELOPMENT_EXCEPTIONS](DEVELOPMENT_EXCEPTIONS.md) — generated overview of
+  accepted exceptions.
 
+## Set up the environment
+
+- Use Python 3.13 only.
 - Install dependencies with `pip install -e '.[dev]'`.
-- Install git hooks via `pre-commit install`.
-- Export `QT_QPA_PLATFORM=offscreen` when running pre-commit or tests.
-- PPTX rendering providers are optional; without configuration the
-  `NullRenderer` is used and no Office software is required.
+- Enable git hooks with `pre-commit install`.
+- Export `QT_QPA_PLATFORM=offscreen` when running hooks or tests without a
+  display.
 
-## Workflow
+## Follow the workflow
 
-- Run `pre-commit run --all-files` before every commit. Hooks format, lint,
-  type-check, run tests, and perform security checks.
-- Use `pre-commit run format|lint|tests` to run subsets when needed.
-- If hooks modify files, stage the changes and re-run `pre-commit run --files <file>`.
-- Bump the `version` in `pyproject.toml` once per pull request.
-- Write descriptive commit messages: short imperative summary (≤72 characters), blank line, then details.
+- Run `pre-commit run --all-files` before committing. Hooks format code, lint,
+  type-check, run tests, enforce coverage, scan with bandit, and refresh the
+  exception overview.
+- Use the shorter aliases when iterating (`pre-commit run format|lint|tests`).
+- Keep commits focused and use short imperative subject lines (≤72 characters).
 
-## Quality
+## Meet the quality bar
 
-- Maintain ≥95% test coverage for every module (modules excluded in the
-  coverage configuration in `pyproject.toml` are exempt).
-- Use clear, descriptive names for functions and variables.
-- Prefer `logging` for messages; do not swap `print` for `sys.stderr.write`.
+- Maintain ≥95% coverage overall **and per file**. GUI-only modules listed in
+  `pyproject.toml` are the only allowed omissions.
+- Prefer clear naming and small, testable units. Factor logic out of GUI modules
+  when possible.
+- Use the shared logging utilities; do not introduce `print` statements for
+  logging.
+- Keep configuration, locales, and renderer metadata in sync with the docs.
 
-See the `AGENTS.md` in each subdirectory for additional guidance. The most
-deeply nested instructions take precedence.
+## Document exceptions precisely
 
-______________________________________________________________________
+- Never add blanket disables such as `# noqa`, `# ruff: noqa`, or `# type: ignore`
+  without justification.
+- When a single-line exception is unavoidable, add a concise inline comment in
+  this format:
 
-## Linting Policy: Fix, Don’t Silence
+  ```python
+  import xml.etree.ElementTree as ET  # nosec B405  # pdf-toolbox: stdlib XML parser on trusted coverage file | issue:-
+  ```
 
-Our rule: **Fix the code instead of silencing linters.**
+- Run `python scripts/generate_exception_overview.py` (or rely on the pre-commit
+  hook) so `DEVELOPMENT_EXCEPTIONS.md` stays current. Never edit the Markdown file
+  manually.
 
-### Strictly forbidden
+## Review checklist
 
-- `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore` without
-  justification.
-- File‑ or block‑wide disables such as `# ruff: noqa`, `flake8: noqa`, or
-  `pylint: disable=...`.
-- Weakening linter settings in `pyproject.toml` to hide a single warning.
-
-### Expected workflow
-
-1. Understand the warning and read the rule documentation.
-1. Refactor or strengthen typing instead of disabling.
-1. Update or add tests if behavior changes.
-1. Only if truly unavoidable, follow the exception process below.
-
-### Exceptions (rare)
-
-A disable is allowed **only if all conditions are met**:
-
-- One‑line justification in code.
-- Minimal scope (single line).
-- Temporary? link to a follow‑up ticket.
-- Use short format with `# pdf-toolbox: <reason> | issue:<id or ->`.
-- Run `scripts/generate_exception_overview.py` via pre-commit to update
-  `DEVELOPMENT_EXCEPTIONS.md`; never document exceptions manually in any
-  Markdown file.
-
-### Changes to linter configuration
-
-Rules may be modified only after team decision (PR with justification,
-alternatives, and impact). Never lower severity as a workaround.
-
-### PR checklist
-
-- [ ] `pre-commit run --all-files` passes.
-- [ ] No new linter disables.
-- [ ] Tests cover the change.
-
-### Review guidelines
-
-Reject PRs that silence rules without proper justification and
-documentation. Request refactoring when complexity, duplication, or typing
-issues trigger warnings. Check existing exceptions periodically to keep the
-codebase clean.
-
-______________________________________________________________________
-
-## Quick Reference for Common Ruff Rules
-
-- `PLR0915` (too complex): split into helpers, early returns.
-- `ANN401` (Any): use precise types or adapters; `Any` only with justification + doc.
-- `E/F` (Syntax/Name errors): must be fixed, never ignored.
-- `I` (Import sort): sort imports; do not disable.
+- [ ] Hooks pass locally (`pre-commit run --all-files`).
+- [ ] Coverage still meets the 95% overall/per-file thresholds.
+- [ ] No undocumented exceptions or blanket disables appeared.
+- [ ] Docs mention `python -m pdf_toolbox.gui` as the GUI entry point.
+- [ ] New user-facing strings use locale keys and the i18n helpers.
