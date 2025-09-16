@@ -22,6 +22,9 @@ pip install -e '.[dev]'
 pre-commit install
 ```
 
+Use `pip install .[dev]` for a non-editable installation when the editable mode
+isn't required.
+
 Set `QT_QPA_PLATFORM=offscreen` when running hooks or tests on headless systems
 (the CI and pre-commit configuration do this for you).
 
