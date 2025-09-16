@@ -51,6 +51,9 @@ point in the `pdf_toolbox.pptx_renderers` group and implement
 `BasePptxRenderer`. Without such a provider the default `NullRenderer`
 raises a translated `NotImplementedError`.
 
+Architecture decisions for PPTX rendering are documented in
+[ADR 0001: PPTX Provider Architecture](docs/adr/0001-pptx-provider-architecture.md).
+
 ### MS-Office Provider
 
 The optional `PptxMsOfficeRenderer` uses Microsoft PowerPoint via COM
