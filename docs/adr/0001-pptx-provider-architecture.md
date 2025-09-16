@@ -1,8 +1,8 @@
 # 0001. PPTX Provider Architecture
 
 Status: Accepted
-Date: 2024-05-20
-Last updated: 2024-05-21
+Date: 2025-09-16
+Last updated: 2025-09-16
 Deciders: Core maintainers (@1cu, @pdf-toolbox/maintainers)
 Consulted: —
 Tags: pptx, rendering, providers, plugin-architecture
@@ -59,10 +59,12 @@ Interface:
       - Slide indexing is 1-based.
       - Filenames: `slide-<NNN>.<ext>` where the pad width is `max(3, ceil(log10(total_slides + 1)))` for the input deck (e.g., 42 slides → width 3; 1,234 slides → width 4). Extension MUST match `format` (`jpeg`, not `jpg`).
       - When `slides` is `None`, return value is sorted by slide index ascending. When `slides` is provided, return paths in the order of `slides` after de-duplicating indices.
+      - Slide index validation: indices MUST be ≥ 1; 0 or negatives are invalid and MUST raise `PptxRenderingError("invalid_range")`. Out-of-bounds indices MAY be ignored if any valid indices remain; otherwise raise `PptxRenderingError("empty_selection")`.
       - Unsupported `format`/`dpi` MUST raise `PptxRenderingError("unsupported_option")`.
     - Implementations MUST document DPI bounds and any backend-specific limits.
   - `capabilities() -> Capabilities`
   - `probe() -> bool`
+  - `probe()` MUST be side‑effect free, complete under a bounded timeout (e.g., \<500 ms), and avoid network/disk I/O beyond lightweight existence checks.
 
 Where `Capabilities` includes (minimum):
 
@@ -97,6 +99,13 @@ Discovery:
 
 - Python entry points group: `pdf_toolbox.pptx_renderers`
 - Entry point names follow `vendor[_flavor]` (for example, `ms_office`, `libreoffice_uno`) and MUST be unique.
+  Example (pyproject.toml):
+
+```toml
+[project.entry-points."pdf_toolbox.pptx_renderers"]
+ms_office = "pdf_toolbox_ms:Renderer"
+libreoffice_uno = "pdf_toolbox_lo:Renderer"
+```
 
 Selection:
 
@@ -105,7 +114,7 @@ Selection:
   - `null` → selects `NullRenderer`, an explicit stub with guidance.
   - `auto` → selection algorithm:
     1. Filter providers by platform compatibility.
-    1. If running headless (no DISPLAY/Wayland/GUI), exclude providers where `needs_ui` is True.
+    1. If running headless (no DISPLAY/Wayland/GUI; on Windows, no interactive desktop/Session 0), exclude providers where `needs_ui` is True.
     1. Exclude providers with `needs_network` unless `allow_network_egress` is explicitly enabled.
     1. Respect configured allow and deny lists.
     1. Probe remaining providers in priority order and select the first where `probe() == True`.
