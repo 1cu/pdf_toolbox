@@ -1,15 +1,28 @@
-# Agent Guidelines for `src/pdf_toolbox`
+# Agent Rules for `src/pdf_toolbox`
 
-This package follows the repository-wide [AGENTS.md](../../AGENTS.md). Document
-any linter exceptions in
-[DEVELOPMENT.md](../../DEVELOPMENT.md#documented-exceptions).
+Follow the repository-wide [AGENTS.md](../../AGENTS.md). Additions for the
+package source live here.
 
-Additional rules:
+## Structure the code
 
-- Use absolute imports; avoid relative imports.
-- Provide module-level docstrings and detailed docstrings for all public
-  classes and functions. Write them in Google style so `sphinx`/`autodoc`
-  can render proper documentation.
-- Apply type hints to all function and method signatures.
-- Keep functions focused and small; extract helpers when logic grows.
-- When functionality changes, add or update tests in `tests/`.
+- Use absolute imports within the package.
+- Keep modules typed; add annotations to public functions, methods, and return
+  values.
+- Document public APIs with concise docstrings that IDEs can surface. No Sphinx
+  directives are required.
+- Place reusable business logic in plain modules so tests can cover it without
+  the GUI.
+
+## Integrate with the GUI and actions
+
+- Register new user-facing operations with the `@action` decorator so the GUI can
+  discover them.
+- Route user-facing strings through `pdf_toolbox.i18n.tr`/`label` and update
+  locale JSON files.
+- Use the shared logging utilities; avoid `print` and ad-hoc loggers.
+
+## Respect exception handling
+
+- Inline exceptions must follow the repository format and appear in
+  [DEVELOPMENT_EXCEPTIONS.md](../../DEVELOPMENT_EXCEPTIONS.md) via
+  `scripts/generate_exception_overview.py`.

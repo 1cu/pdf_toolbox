@@ -1,0 +1,54 @@
+version: 1
+pull_request:
+  reviewers_required: 1
+  require_description:
+    sections:
+      - What changed
+      - Why
+      - Testing
+      - Exception overview
+  focus_paths:
+    include:
+      - "src/pdf_toolbox/**"
+      - "tests/**"
+      - "scripts/**"
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "DEVELOPMENT.md"
+      - "AGENTS.md"
+  fail_on:
+    precommit_fail: true
+    missing_tests_for_changed_code: true
+    coverage_drop: true
+    undocumented_exception: true
+  coverage:
+    overall_threshold: 0.95
+    per_file_threshold: 0.95
+    require_report: true
+  required_status_checks:
+    - "CI"
+    - "coverage"
+  guidance:
+    - "Docs must instruct contributors to run `python -m pdf_toolbox.gui` for the GUI entry point."
+    - "Reject references to removed Sphinx or autodoc flows; direct readers to IDE discovery instead."
+    - "Flag broad `# noqa` or `# type: ignore` comments without the `# pdf-toolbox: <reason> | issue:<id or ->` suffix."
+    - "Ask for locale updates when new user-facing strings are added."
+    - "Encourage contributors to factor GUI-heavy logic into testable helpers."
+comment_templates:
+  - id: request-i18n
+    title: "Use i18n helpers"
+    body: |
+      Please move this user-facing string into `src/pdf_toolbox/locales/en.json` and `de.json`,
+      then retrieve it with `pdf_toolbox.i18n.tr(...)` or `label(...)`. The GUI builds its forms
+      from locale keys so keeping translations in sync avoids regressions.
+  - id: request-tests
+    title: "Add or update tests"
+    body: |
+      This change alters executable code. Please cover it with tests (ideally via `pre-commit run tests --all-files`).
+      We block merges if coverage drops below 95% overall or for the touched modules.
+  - id: request-exception-doc
+    title: "Document exceptions"
+    body: |
+      Exceptions must use the inline format `# ...  # pdf-toolbox: reason | issue:<id or ->` and be captured by
+      `scripts/generate_exception_overview.py`. Please update the comment and re-run the script so
+      `DEVELOPMENT_EXCEPTIONS.md` reflects the change.

@@ -1,117 +1,67 @@
-# Contributing to PDF Toolbox
+# Contribute to PDF Toolbox
 
-Thank you for considering contributing! This document explains how to set up your environment, follow our workflow, and meet our quality standards.
+Thank you for helping improve PDF Toolbox. Follow this guide to align with the
+project’s tooling, coverage policy, and review expectations.
 
-See the [README](README.md) for a project overview and quick start, [DEVELOPMENT](DEVELOPMENT.md) for detailed notes, documented linter exceptions, and the release process, and [AGENTS](AGENTS.md) for the enforcement rules.
+Read these documents before starting:
 
-______________________________________________________________________
+- [README](README.md) — what the project does and how to use it.
+- [DEVELOPMENT](DEVELOPMENT.md) — maintainer notes and deep dives.
+- [AGENTS](AGENTS.md) — enforcement rules for contributors and reviewers.
 
-## Table of Contents
-
-- [Environment Setup](#environment-setup)
-- [Workflow](#workflow)
-- [Code Quality](#code-quality)
-- [Linting Policy: Fix, Don’t Silence](#linting-policy-fix-dont-silence)
-- [Testing](#testing)
-- [Pull Requests](#pull-requests)
-
-______________________________________________________________________
-
-## Environment Setup
-
-Create a virtual environment and install development dependencies:
+## Prepare your environment
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
-```
-
-Install pre-commit hooks:
-
-```bash
 pre-commit install
 ```
 
-Run the GUI directly from source:
+Use Python 3.13. Export `QT_QPA_PLATFORM=offscreen` when running hooks or tests
+without a display.
+
+Launch the GUI from source to verify changes:
 
 ```bash
 python -m pdf_toolbox.gui
 ```
 
-______________________________________________________________________
+## Follow the workflow
 
-## Workflow
+- Run `pre-commit run --all-files` before every commit. Hooks format, lint,
+  type-check, run pytest with coverage, enforce per-file coverage via
+  `scripts/check_coverage.py`, refresh `DEVELOPMENT_EXCEPTIONS.md`, and run
+  bandit.
+- Iterate with the shorter aliases (`pre-commit run format|lint|tests`).
+- Keep commits focused and use short imperative messages (≤72 characters).
 
-- Run `pre-commit run --all-files` before every commit.
-- Hooks format, lint, type-check, run tests, and perform security checks.
-- Stage modified files and re-run pre-commit until clean.
-- Use descriptive commit messages: short imperative summary (≤72 chars), blank line, then details.
-- Bump `version` in `pyproject.toml` once per pull request.
+## Run tests locally
 
-______________________________________________________________________
+- Prefer `pre-commit run tests --all-files` so the same arguments as CI are used.
+- Maintain ≥95% coverage overall **and** per file. The only exclusions are the
+  GUI-only modules listed in `pyproject.toml`.
+- Add or update tests for every functional change, including negative paths.
 
-## Code Quality
+## Document exceptions correctly
 
-- Maintain ≥95% coverage for all non-exempt modules.
-- Use clear, descriptive names for variables and functions.
-- Provide type annotations and meaningful docstrings.
-- Keep functions small and focused.
-- Prefer `logging` for messages; avoid replacing `print` with `sys.stderr.write`.
+When a rule cannot be satisfied, add a single-line justification and capture it
+with the generator script:
 
-______________________________________________________________________
-
-## Linting Policy: Fix, Don’t Silence
-
-This project follows a strict no-silencing policy (see [AGENTS.md](AGENTS.md)):
-
-- Do **not** add `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore` unless absolutely unavoidable.
-- Do **not** disable rules globally or change linter config to “make it green”.
-
-If you must add an exception:
-
-1. Add a one-line justification directly in code.
-1. Restrict scope to a single line (never file/module-wide).
-1. Use `# pdf-toolbox: <reason> | issue:<id or ->`.
-1. Do not edit `DEVELOPMENT_EXCEPTIONS.md`; run pre-commit to regenerate it.
-1. Never document exceptions manually in any Markdown file.
-1. Link to the relevant Issue/PR.
-
-Pull requests that violate this policy will be rejected.
-
-______________________________________________________________________
-
-## Testing
-
-- All existing tests must pass.
-- Add unit or integration tests for new functionality.
-- Cover negative/error cases.
-- Run the full test suite with:
-
-```bash
-pre-commit run tests --all-files
+```python
+value = json.loads(payload)  # noqa: S506  # pdf-toolbox: trusted payload from config file | issue:-
 ```
 
-PPTX fixtures are generated dynamically during tests; do not commit binary
-presentation files.
+- Keep the scope to one line; never add file-wide disables.
+- Use the `# pdf-toolbox: <reason> | issue:<id or ->` suffix.
+- Run `python scripts/generate_exception_overview.py` (or rely on the hook) so
+  `DEVELOPMENT_EXCEPTIONS.md` stays updated.
 
-______________________________________________________________________
+## Submit your pull request
 
-## Pull Requests
-
-- Use the [PR template](.github/pull_request_template.md).
-- Verify the linting checklist is complete.
-- Ensure no undocumented linter disables; each uses `# pdf-toolbox:` and passes `scripts/generate_exception_overview.py`.
-- Document breaking changes and update `README.md` if needed.
-- Keep PRs focused: one logical change per PR.
-
-______________________________________________________________________
-
-## Questions and Support
-
-- Use [GitHub Discussions](https://github.com/1cu/pdf_toolbox/discussions) for questions and ideas.
-- Report bugs or request features using the provided [issue templates](.github/ISSUE_TEMPLATE/).
-
-______________________________________________________________________
-
-By following these guidelines, you help keep PDF Toolbox reliable, maintainable, and contributor-friendly.
+- Complete the PR template checklist. Mention testing commands that ran locally.
+- Explain why the change is needed, user impact, and any exception additions or
+  removals.
+- Link related issues and describe follow-up work when applicable.
+- Expect reviews to block merges if coverage drops, hooks fail, or exceptions are
+  undocumented.
