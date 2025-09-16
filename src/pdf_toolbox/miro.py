@@ -5,10 +5,12 @@ from __future__ import annotations
 import dataclasses
 import io
 import json
+import math
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event
+from typing import Any
 
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image, ImageFilter
@@ -48,9 +50,14 @@ class ExportProfile:
         return int(self.target_zoom * self.min_effective_dpi)
 
 
+MIRO_MAX_BYTES = 30 * 1024 * 1024
+MIRO_MAX_PIXELS = 32_000_000
+MIRO_MAX_LONG_EDGE = 8192
+MIRO_MAX_SHORT_EDGE = 4096
+
 PROFILE_MIRO = ExportProfile(
     name="miro",
-    max_bytes=40 * 1024 * 1024,
+    max_bytes=MIRO_MAX_BYTES,
     target_zoom=4.0,
     min_effective_dpi=200,
     render_dpi=800,
@@ -60,6 +67,29 @@ PROFILE_MIRO = ExportProfile(
 VECTOR_DOMINANCE_THRESHOLD = 0.4
 NO_RASTER_ENCODER_MSG = "no raster encoders produced output"
 NO_RASTER_ATTEMPT_MSG = "no raster attempt produced output"
+
+
+def _calculate_dpi_window(page: fitz.Page, profile: ExportProfile) -> tuple[int, int]:
+    """Return the effective min/max DPI window respecting board limits."""
+    rect = page.rect
+    width_in = rect.width / 72 if rect.width > 0 else 0.0
+    height_in = rect.height / 72 if rect.height > 0 else 0.0
+    candidates = [profile.max_dpi]
+
+    if width_in > 0 and height_in > 0:
+        long_in, short_in = sorted((width_in, height_in), reverse=True)
+        area_in = width_in * height_in
+        if long_in > 0:
+            candidates.append(int(MIRO_MAX_LONG_EDGE / long_in))
+        if short_in > 0:
+            candidates.append(int(MIRO_MAX_SHORT_EDGE / short_in))
+        if area_in > 0:
+            candidates.append(int(math.sqrt(MIRO_MAX_PIXELS / area_in)))
+
+    positive = [value for value in candidates if value > 0]
+    allowed_max = max(min(positive), 1) if positive else max(profile.max_dpi, 1)
+    effective_min = max(1, min(profile.min_dpi, allowed_max))
+    return effective_min, allowed_max
 
 
 @dataclass(slots=True)
@@ -225,12 +255,12 @@ def _encode_webp(
 ) -> bytes:
     """Return WEBP-encoded bytes for ``image``."""
     with io.BytesIO() as buf:
-        extra_params: dict[str, int | bool] = {"method": 6}
+        params: dict[str, Any] = {"method": 6}
         if lossless:
-            extra_params["lossless"] = True
+            params["lossless"] = True
         if quality is not None:
-            extra_params["quality"] = quality
-        image.save(buf, format="WEBP", **extra_params)
+            params["quality"] = int(quality)
+        image.save(buf, format="WEBP", **params)
         return buf.getvalue()
 
 
@@ -382,14 +412,14 @@ def _encode_raster(
 
 def _binary_search_dpi_candidates(
     page: fitz.Page,
-    profile: ExportProfile,
+    min_dpi: int,
+    max_dpi: int,
     max_bytes: int,
     attempts: list[PageExportAttempt],
 ) -> list[int]:
     """Return promising DPI values discovered via binary search."""
-    min_dpi = profile.min_dpi
     low = min_dpi
-    high = profile.max_dpi
+    high = max_dpi
     best_within_dpi: int | None = None
     best_any: tuple[int, int] | None = None
 
@@ -531,17 +561,7 @@ def _select_raster_output(
                 dpi_used,
             )
 
-    (
-        dpi_used,
-        final_data,
-        final_fmt,
-        final_attempt,
-        final_within,
-        final_width,
-        final_height,
-    ) = refine(dpi_used)
-
-    return (
+    fallback = (
         final_data,
         final_fmt,
         final_attempt,
@@ -551,6 +571,32 @@ def _select_raster_output(
         dpi_used,
     )
 
+    if dpi_used <= min_dpi:
+        return fallback
+
+    (
+        refined_dpi,
+        final_data,
+        final_fmt,
+        final_attempt,
+        final_within,
+        final_width,
+        final_height,
+    ) = refine(dpi_used)
+
+    if final_attempt is None or not final_data:
+        return fallback
+
+    return (
+        final_data,
+        final_fmt,
+        final_attempt,
+        final_width,
+        final_height,
+        final_within,
+        refined_dpi,
+    )
+
 
 def _rasterise_page(
     page: fitz.Page,
@@ -558,9 +604,16 @@ def _rasterise_page(
     max_bytes: int,
     *,
     attempts: list[PageExportAttempt],
-) -> tuple[bytes, str, int, int, int, bool]:
+) -> tuple[bytes, str, int, int, int, bool, bool]:
     """Return encoded raster bytes for *page* respecting ``profile``."""
-    candidate_dpis = _binary_search_dpi_candidates(page, profile, max_bytes, attempts)
+    effective_min_dpi, effective_max_dpi = _calculate_dpi_window(page, profile)
+    candidate_dpis = _binary_search_dpi_candidates(
+        page,
+        effective_min_dpi,
+        effective_max_dpi,
+        max_bytes,
+        attempts,
+    )
     if not candidate_dpis:
         raise RuntimeError(NO_RASTER_ATTEMPT_MSG)
 
@@ -577,13 +630,22 @@ def _rasterise_page(
         max_bytes,
         attempts,
         candidate_dpis,
-        profile.min_dpi,
+        effective_min_dpi,
     )
 
     if final_attempt is None:
         raise RuntimeError(NO_RASTER_ATTEMPT_MSG)
 
-    return final_data, final_fmt, dpi_used, final_width, final_height, final_within
+    resolution_limited = effective_max_dpi < profile.min_dpi
+    return (
+        final_data,
+        final_fmt,
+        dpi_used,
+        final_width,
+        final_height,
+        final_within,
+        resolution_limited,
+    )
 
 
 def _export_page(
@@ -642,7 +704,15 @@ def _export_page(
             out_path.unlink(missing_ok=True)
 
         attempts: list[PageExportAttempt] = []
-        data, fmt, dpi, width_px, height_px, within = _rasterise_page(
+        (
+            data,
+            fmt,
+            dpi,
+            width_px,
+            height_px,
+            within,
+            resolution_limited,
+        ) = _rasterise_page(
             page,
             profile,
             max_bytes,
@@ -661,6 +731,10 @@ def _export_page(
         if not within:
             result.warnings.append(
                 "File exceeds limit at minimum acceptable sharpness",
+            )
+        if resolution_limited or (dpi and dpi < profile.min_dpi):
+            result.warnings.append(
+                "Clamped by Miro dimension limits (max 8192x4096 @ 32 MP)",
             )
     except Exception as exc:  # pragma: no cover - defensive against rendering edge cases  # pdf-toolbox: keep GUI responsive despite renderer crashes | issue:-
         logger.exception("Failed to export page %d", page_number)

@@ -27,6 +27,7 @@ class BasePptxRenderer(ABC):
         quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
+        range_spec: str | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to images."""
 
@@ -54,9 +55,19 @@ class NullRenderer(BasePptxRenderer):
         quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
+        range_spec: str | None = None,
     ) -> str:
         """Always raise because no renderer is configured."""
-        del input_pptx, out_dir, max_size_mb, image_format, quality, width, height
+        del (
+            input_pptx,
+            out_dir,
+            max_size_mb,
+            image_format,
+            quality,
+            width,
+            height,
+            range_spec,
+        )
         raise NotImplementedError(tr("pptx_renderer_missing"))
 
     def to_pdf(

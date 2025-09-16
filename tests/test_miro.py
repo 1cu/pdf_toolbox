@@ -179,6 +179,11 @@ def test_remove_svg_metadata_strips_block():
     assert cleaned == "<svg><rect/></svg>"
 
 
+def test_remove_svg_metadata_missing_end_tag():
+    svg = "<svg><metadata>foo<rect/></svg>"
+    assert miro._remove_svg_metadata(svg) == svg
+
+
 def test_page_is_vector_heavy_only_images():
     class DummyPage:
         def get_drawings(self) -> list[str]:
@@ -192,6 +197,29 @@ def test_page_is_vector_heavy_only_images():
             return ""
 
     assert not miro._page_is_vector_heavy(DummyPage())
+
+
+def test_calculate_dpi_window_clamps_resolution():
+    class DummyRect:
+        def __init__(self, width: float, height: float) -> None:
+            self.width = width
+            self.height = height
+
+    class DummyPage:
+        def __init__(self, width_pt: float, height_pt: float) -> None:
+            self.rect = DummyRect(width_pt, height_pt)
+
+    # 10" x 5" slide hits the 32 MP / 8192x4096 limit
+    wide_page = DummyPage(720, 360)
+    min_dpi, max_dpi = miro._calculate_dpi_window(wide_page, PROFILE_MIRO)
+    assert min_dpi == PROFILE_MIRO.min_dpi
+    assert max_dpi == 800
+
+    # Square page within limits preserves profile max
+    small_page = DummyPage(144, 144)
+    min_dpi, max_dpi = miro._calculate_dpi_window(small_page, PROFILE_MIRO)
+    assert min_dpi == PROFILE_MIRO.min_dpi
+    assert max_dpi == PROFILE_MIRO.max_dpi
 
 
 def test_render_page_bitmap_converts_colorspace(monkeypatch):
@@ -325,10 +353,10 @@ def test_select_raster_output_refines_dpi(monkeypatch):
         850: (b"c", "WEBP", build_attempt(850), True, 80, 80),
     }
 
-    def fake_finalise(page, dpi: int, max_bytes: int, attempts):
+    def fake_finalise(page, _dpi: int, max_bytes: int, attempts):
         del page, max_bytes
-        calls.append(dpi)
-        data, fmt, attempt, within, width, height = responses[dpi]
+        calls.append(_dpi)
+        data, fmt, attempt, within, width, height = responses[_dpi]
         attempt.size_bytes = len(data)
         attempts.append(attempt)
         return data, fmt, attempt, within, width, height
@@ -353,13 +381,105 @@ def test_select_raster_output_refines_dpi(monkeypatch):
     assert attempt is attempt_map[850]
 
 
+def test_select_raster_output_refine_returns_fallback(monkeypatch):
+    def fake_finalise(page, dpi: int, max_bytes: int, attempts):
+        del page, max_bytes
+        attempt = miro.PageExportAttempt(
+            dpi=dpi, fmt="WEBP", size_bytes=0, encoder="webp"
+        )
+        attempts.append(attempt)
+        if dpi == 900:
+            return b"base", "WEBP", attempt, False, 100, 100
+        return b"", "", None, False, 0, 0
+
+    monkeypatch.setattr(miro, "_finalise_candidate", fake_finalise)
+    dummy_page = object()
+    attempts: list[miro.PageExportAttempt] = []
+    data, fmt, attempt, width, height, within, dpi_used = miro._select_raster_output(
+        dummy_page,
+        max_bytes=100,
+        attempts=attempts,
+        candidate_dpis=[900],
+        min_dpi=800,
+    )
+    assert data == b"base"
+    assert fmt == "WEBP"
+    assert attempt is attempts[0]
+    assert width == 100
+    assert height == 100
+    assert not within
+    assert dpi_used == 900
+
+
+def test_select_raster_output_retains_minimum(monkeypatch):
+    attempt = miro.PageExportAttempt(dpi=0, fmt="WEBP", size_bytes=0, encoder="webp")
+
+    def fake_finalise(page, _dpi: int, max_bytes: int, attempts):
+        del page, max_bytes, _dpi
+        attempt.size_bytes = 10
+        attempts.append(attempt)
+        return b"x" * 10, "WEBP", attempt, False, 100, 100
+
+    monkeypatch.setattr(miro, "_finalise_candidate", fake_finalise)
+    dummy_page = object()
+    attempts: list[miro.PageExportAttempt] = []
+    data, fmt, selected, width, height, within, dpi_used = miro._select_raster_output(
+        dummy_page,
+        max_bytes=5,
+        attempts=attempts,
+        candidate_dpis=[PROFILE_MIRO.min_dpi],
+        min_dpi=PROFILE_MIRO.min_dpi,
+    )
+    assert data == b"x" * 10
+    assert fmt == "WEBP"
+    assert selected is attempt
+    assert not within
+    assert dpi_used == PROFILE_MIRO.min_dpi
+    assert width == 100
+    assert height == 100
+
+
 def test_rasterise_page_errors_without_candidates(monkeypatch):
+    class DummyRect:
+        width = 72
+        height = 72
+
+    class DummyPage:
+        rect = DummyRect()
+
     monkeypatch.setattr(
         miro, "_binary_search_dpi_candidates", lambda *_args, **_kwargs: []
     )
     with pytest.raises(RuntimeError):
         miro._rasterise_page(
-            page=object(),
+            page=DummyPage(),
+            profile=PROFILE_MIRO,
+            max_bytes=100,
+            attempts=[],
+        )
+
+
+def test_rasterise_page_raises_when_select_returns_none(monkeypatch):
+    class DummyRect:
+        width = 72
+        height = 72
+
+    class DummyPage:
+        rect = DummyRect()
+
+    monkeypatch.setattr(
+        miro,
+        "_binary_search_dpi_candidates",
+        lambda *_args, **_kwargs: [PROFILE_MIRO.min_dpi],
+    )
+    monkeypatch.setattr(
+        miro,
+        "_select_raster_output",
+        lambda *_args, **_kwargs: (b"", "", None, 0, 0, False, PROFILE_MIRO.min_dpi),
+    )
+    with pytest.raises(RuntimeError):
+        miro._rasterise_page(
+            page=DummyPage(),
             profile=PROFILE_MIRO,
             max_bytes=100,
             attempts=[],
@@ -403,7 +523,7 @@ def test_export_page_svg_fallback_adds_warning(monkeypatch, tmp_path):
             encoder="webp",
         )
         attempts.append(attempt)
-        return b"data", "WEBP", profile.render_dpi, 100, 100, True
+        return b"data", "WEBP", profile.render_dpi, 100, 100, True, False
 
     monkeypatch.setattr(miro, "_export_page_as_svg", fake_export_svg)
     monkeypatch.setattr(miro, "_rasterise_page", fake_rasterise)
@@ -444,7 +564,7 @@ def test_export_page_raster_limit_warning(monkeypatch, tmp_path):
             encoder="webp",
         )
         attempts.append(attempt)
-        return b"data", "WEBP", profile.render_dpi, 100, 100, False
+        return b"data", "WEBP", profile.render_dpi, 100, 100, False, False
 
     monkeypatch.setattr(miro, "_rasterise_page", fake_rasterise)
     result = miro._export_page(
@@ -455,6 +575,45 @@ def test_export_page_raster_limit_warning(monkeypatch, tmp_path):
         max_bytes=PROFILE_MIRO.max_bytes,
     )
     assert any("minimum acceptable sharpness" in warning for warning in result.warnings)
+
+
+def test_export_page_resolution_warning(monkeypatch, tmp_path):
+    class DummyDoc:
+        name = "dummy.pdf"
+
+        def load_page(self, index: int):
+            assert index == 0
+            return DummyPage()
+
+    class DummyRect:
+        width = 72
+        height = 72
+
+    class DummyPage:
+        rect = DummyRect()
+
+    monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: False)
+
+    def fake_rasterise(page, profile, max_bytes, attempts):
+        del page, max_bytes
+        attempt = miro.PageExportAttempt(
+            dpi=profile.render_dpi,
+            fmt="WEBP",
+            size_bytes=20,
+            encoder="webp",
+        )
+        attempts.append(attempt)
+        return b"data", "WEBP", profile.min_dpi - 100, 100, 100, True, True
+
+    monkeypatch.setattr(miro, "_rasterise_page", fake_rasterise)
+    result = miro._export_page(
+        doc=DummyDoc(),
+        page_number=1,
+        out_base=tmp_path,
+        profile=PROFILE_MIRO,
+        max_bytes=PROFILE_MIRO.max_bytes,
+    )
+    assert any("Clamped" in warning for warning in result.warnings)
 
 
 def test_export_pdf_for_miro_respects_page_selection(sample_pdf, tmp_path):

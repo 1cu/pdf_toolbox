@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from pdf_toolbox.renderers.pptx import BasePptxRenderer, PptxRenderingError
-from pdf_toolbox.utils import logger
+from pdf_toolbox.utils import logger, parse_page_spec
 
 try:  # pragma: no cover - import guarded for non-Windows platforms  # pdf-toolbox: Windows-only COM modules | issue:-
     import pythoncom  # type: ignore  # pdf-toolbox: pywin32 missing on non-Windows | issue:-
@@ -64,23 +64,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
 
     @staticmethod
     def _parse_range(spec: str | None, max_index: int) -> set[int]:
-        if not spec:
-            return set(range(1, max_index + 1))
-        s = spec.replace(" ", "")
-        result: set[int] = set()
-        for part in s.split(","):
-            if "-" in part:
-                a, b = part.split("-", 1)
-                start = max_index if a.lower() == "n" else int(a)
-                end = max_index if b.lower() == "n" else int(b)
-                if start > end:
-                    start, end = end, start
-                result.update(range(max(1, start), min(max_index, end) + 1))
-            elif part:
-                idx = max_index if part.lower() == "n" else int(part)
-                if 1 <= idx <= max_index:
-                    result.add(idx)
-        return result
+        return set(parse_page_spec(spec, max_index))
 
     # ------------------------------------------------------------------
     # BasePptxRenderer API
@@ -126,15 +110,16 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         self,
         input_pptx: str,
         out_dir: str | None = None,
-        _max_size_mb: float | None = None,
+        max_size_mb: float | None = None,
         image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
         quality: int | None = None,
         width: int | None = None,
         height: int | None = None,
+        range_spec: str | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to images."""
         self._require_env()
-        del quality
+        del quality, max_size_mb
         inp = Path(input_pptx).resolve()
         if not inp.exists():
             msg = f"Eingabe nicht gefunden: {inp}"
@@ -156,11 +141,22 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         try:
             prs = self._open_presentation(app, inp)
             try:
-                if width is not None and height is not None:
-                    prs.Export(str(out), ext, int(width), int(height))
-                else:
-                    prs.Export(str(out), ext)
-                count = len(list(out.glob(f"*.{fmt.lower()}")))
+                slides = list(prs.Slides)
+                numbers = parse_page_spec(range_spec, len(slides))
+                if not numbers:
+                    numbers = list(range(1, len(slides) + 1))
+                for existing in out.glob(f"Slide*.{fmt.lower()}"):
+                    with contextlib.suppress(Exception):
+                        existing.unlink()
+                count = 0
+                for number in numbers:
+                    slide = slides[number - 1]
+                    filename = out / f"Slide{number}.{fmt.lower()}"
+                    if width is not None and height is not None:
+                        slide.Export(str(filename), ext, int(width), int(height))
+                    else:
+                        slide.Export(str(filename), ext)
+                    count += 1
                 logger.info("Exported %d image(s) to %s", count, out)
             finally:
                 prs.Close()

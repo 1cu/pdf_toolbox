@@ -150,12 +150,13 @@ loaded via an internal registry without loss of functionality.
 
 The **Miro Export** action in the Qt GUI produces per-page slide images that
 remain crisp when zoomed to 400% inside Miro boards while keeping every file
-below 40 MB. The preset automatically analyses each page and exports vector
-slides as SVG (with fonts converted to paths and metadata stripped) whenever
-the size budget allows it. Image-heavy slides are rendered using a tuned raster
-pipeline (lossless WebP by default, falling back to high-quality WebP/PNG or
-JPEG if necessary) that performs a DPI search to stay above an effective 200
-DPI at the target zoom level.
+within Miro's 30 MB / 32 MP / 8192×4096 limits. The preset automatically
+analyses each page and exports vector slides as SVG (with fonts converted to
+paths and metadata stripped) whenever the size budget allows it. Image-heavy
+slides are rendered using a tuned raster pipeline (lossless WebP by default,
+falling back to high-quality WebP/PNG or JPEG if necessary) that performs a DPI
+search to stay above an effective 200 DPI at the target zoom level and records
+warnings when the board constraints require additional downscaling.
 
 Choose the "Miro (optimised for Miro/Boards)" export profile to hide advanced
 parameters and rely on the automatic strategy. The manifest `miro_export.json`

@@ -38,20 +38,22 @@
 | src/pdf_toolbox/gui/main_window.py:477     | pragma: no cover                         | GUI handler                                            | -        |
 | src/pdf_toolbox/gui/main_window.py:511     | pragma: no cover                         | GUI handler                                            | -        |
 | src/pdf_toolbox/gui/main_window.py:552     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:568     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:583     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:592     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
-| src/pdf_toolbox/gui/main_window.py:596     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
-| src/pdf_toolbox/gui/main_window.py:603     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:612     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
-| src/pdf_toolbox/gui/main_window.py:616     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
-| src/pdf_toolbox/gui/main_window.py:624     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:636     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
-| src/pdf_toolbox/gui/main_window.py:640     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
-| src/pdf_toolbox/gui/main_window.py:661     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:676     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
-| src/pdf_toolbox/gui/main_window.py:680     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
-| src/pdf_toolbox/gui/main_window.py:690     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:566     | N802                                     | Qt requires camelCase event name                       | -        |
+| src/pdf_toolbox/gui/main_window.py:569     | pragma: no cover                         | ensure worker shutdown on close                        | -        |
+| src/pdf_toolbox/gui/main_window.py:577     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:592     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:601     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
+| src/pdf_toolbox/gui/main_window.py:605     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
+| src/pdf_toolbox/gui/main_window.py:612     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:621     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
+| src/pdf_toolbox/gui/main_window.py:625     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
+| src/pdf_toolbox/gui/main_window.py:633     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:645     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
+| src/pdf_toolbox/gui/main_window.py:649     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
+| src/pdf_toolbox/gui/main_window.py:670     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:685     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
+| src/pdf_toolbox/gui/main_window.py:689     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
+| src/pdf_toolbox/gui/main_window.py:699     | pragma: no cover                         | GUI handler                                            | -        |
 | src/pdf_toolbox/gui/widgets.py:17          | pragma: no cover                         | GUI helper                                             | -        |
 | src/pdf_toolbox/gui/widgets.py:38          | type: ignore[override], pragma: no cover | override signal emitter with broader type; GUI-only    | -        |
 | src/pdf_toolbox/gui/widgets.py:43          | pragma: no cover                         | GUI widget                                             | -        |
@@ -60,12 +62,12 @@
 | src/pdf_toolbox/gui/widgets.py:96          | pragma: no cover                         | GUI widget                                             | -        |
 | src/pdf_toolbox/gui/widgets.py:101         | N802                                     | Qt requires camelCase event name                       | -        |
 | src/pdf_toolbox/gui/worker.py:11           | pragma: no cover                         | thread/GUI                                             | -        |
-| src/pdf_toolbox/miro.py:13                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| src/pdf_toolbox/miro.py:261                | pragma: no cover                         | guard against environment-specific WebP encoder issues | -        |
-| src/pdf_toolbox/miro.py:276                | pragma: no cover                         | Pillow sometimes lacks WebP support                    | -        |
-| src/pdf_toolbox/miro.py:296                | pragma: no cover                         | PNG encoder failure varies by platform                 | -        |
-| src/pdf_toolbox/miro.py:316                | pragma: no cover                         | JPEG encoder may be unavailable                        | -        |
-| src/pdf_toolbox/miro.py:665                | pragma: no cover                         | keep GUI responsive despite renderer crashes           | -        |
+| src/pdf_toolbox/miro.py:15                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| src/pdf_toolbox/miro.py:291                | pragma: no cover                         | guard against environment-specific WebP encoder issues | -        |
+| src/pdf_toolbox/miro.py:306                | pragma: no cover                         | Pillow sometimes lacks WebP support                    | -        |
+| src/pdf_toolbox/miro.py:326                | pragma: no cover                         | PNG encoder failure varies by platform                 | -        |
+| src/pdf_toolbox/miro.py:346                | pragma: no cover                         | JPEG encoder may be unavailable                        | -        |
+| src/pdf_toolbox/miro.py:739                | pragma: no cover                         | keep GUI responsive despite renderer crashes           | -        |
 | src/pdf_toolbox/renderers/ms_office.py:12  | pragma: no cover                         | Windows-only COM modules                               | -        |
 | src/pdf_toolbox/renderers/ms_office.py:13  | type: ignore                             | pywin32 missing on non-Windows                         | -        |
 | src/pdf_toolbox/renderers/ms_office.py:14  | type: ignore                             | pywin32 missing on non-Windows                         | -        |
@@ -74,11 +76,11 @@
 | src/pdf_toolbox/renderers/ms_office.py:42  | pragma: no cover                         | relies on PowerPoint COM                               | -        |
 | src/pdf_toolbox/renderers/ms_office.py:53  | pragma: no cover                         | PowerPoint COM cleanup                                 | -        |
 | src/pdf_toolbox/renderers/ms_office.py:61  | pragma: no cover                         | PowerPoint COM                                         | -        |
-| src/pdf_toolbox/renderers/ms_office.py:118 | pragma: no cover                         | COM export failures                                    | -        |
-| src/pdf_toolbox/renderers/ms_office.py:125 | PLR0913                                  | renderer API requires many parameters                  | -        |
-| src/pdf_toolbox/renderers/ms_office.py:167 | pragma: no cover                         | COM export failures                                    | -        |
+| src/pdf_toolbox/renderers/ms_office.py:102 | pragma: no cover                         | COM export failures                                    | -        |
+| src/pdf_toolbox/renderers/ms_office.py:109 | PLR0913                                  | renderer API requires many parameters                  | -        |
+| src/pdf_toolbox/renderers/ms_office.py:163 | pragma: no cover                         | COM export failures                                    | -        |
 | src/pdf_toolbox/renderers/pptx.py:21       | PLR0913                                  | renderer API requires many parameters                  | -        |
-| src/pdf_toolbox/renderers/pptx.py:48       | PLR0913                                  | renderer API requires many parameters                  | -        |
+| src/pdf_toolbox/renderers/pptx.py:49       | PLR0913                                  | renderer API requires many parameters                  | -        |
 | src/pdf_toolbox/utils.py:13                | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/conftest.py:3                        | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_batch_optimise.py:3             | type: ignore                             | PyMuPDF lacks type hints                               | -        |
@@ -89,8 +91,8 @@
 | tests/test_optimise.py:50                  | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise_extra.py:5             | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise_progress.py:3          | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| tests/test_pptx.py:99                      | PLR0913                                  | renderer API requires many parameters                  | -        |
-| tests/test_pptx.py:141                     | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:101                     | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:146                     | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_pptx_ms_office_renderer.py:22   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_pptx_ms_office_renderer.py:27   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_pptx_ms_office_renderer.py:50   | pragma: no cover                         | requires Windows PowerPoint                            | -        |

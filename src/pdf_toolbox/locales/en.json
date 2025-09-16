@@ -18,7 +18,7 @@
     "german": "Deutsch",
     "gui_export_profile_label": "Export profile",
     "gui_export_profile_miro": "Miro (optimized for Miro boards)",
-    "gui_export_profile_miro_help": "Max. 40 MB per page, sharp at 400% zoom, uses SVG when possible.",
+    "gui_export_profile_miro_help": "Max. 30 MB per page, capped at 8192x4096 (32 MP), sharp at 400% zoom with SVG when possible.",
     "gui_export_profile_standard": "Standard",
     "language": "Language",
     "log_level": "Log Level",
@@ -56,6 +56,7 @@
     "out_dir": "Output Directory",
     "output_dir": "Output Directory",
     "output_path": "Output Path",
+    "pages": "Pages",
     "range_spec": "Range Specification"
   }
 }

@@ -10,7 +10,7 @@ from importlib import metadata
 from typing import Any, Literal, Union, get_args, get_origin
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -562,6 +562,15 @@ class MainWindow(QMainWindow):
         self.update_status(tr("error"), "error")
         self.resize(self.width(), self.base_height + self.log.height())
         self.worker = None
+
+    def closeEvent(  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
+        self, event: QCloseEvent
+    ) -> None:
+        """Cancel running workers before closing the window."""  # pragma: no cover  # pdf-toolbox: ensure worker shutdown on close | issue:-
+        if self.worker and self.worker.isRunning():
+            self.worker.cancel()
+            self.worker.wait(1000)
+        super().closeEvent(event)
 
     def toggle_log(
         self,
