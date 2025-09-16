@@ -3,16 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TypeVar
 
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
-
-RendererT = TypeVar("RendererT", bound=BasePptxRenderer)
 
 _REGISTRY: dict[str, type[BasePptxRenderer]] = {}
 
 
-def register(renderer_cls: type[RendererT]) -> type[RendererT]:
+def register[RendererT: BasePptxRenderer](
+    renderer_cls: type[RendererT],
+) -> type[RendererT]:
     """Register ``renderer_cls`` under its ``name`` attribute.
 
     Args:
@@ -26,7 +25,6 @@ def register(renderer_cls: type[RendererT]) -> type[RendererT]:
             attribute or if the name is already registered with a different
             class.
     """
-
     name = getattr(renderer_cls, "name", "")
     if not isinstance(name, str) or not name.strip():
         msg = (
@@ -50,7 +48,6 @@ def register(renderer_cls: type[RendererT]) -> type[RendererT]:
 
 def available() -> tuple[str, ...]:
     """Return registered renderer names in registration order."""
-
     return tuple(_REGISTRY.keys())
 
 
@@ -71,7 +68,6 @@ def select(name: str) -> type[BasePptxRenderer] | None:
         ``name`` is ``"auto"`` the first non-``null`` renderer is returned if
         available. The ``null`` renderer is used as a fallback when registered.
     """
-
     key = (name or "").strip().lower()
     if not key:
         return None
