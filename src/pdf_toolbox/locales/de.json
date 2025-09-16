@@ -16,6 +16,10 @@
     "extract_range": "Bereich extrahieren",
     "field_cannot_be_empty": "Feld '{name}' darf nicht leer sein.",
     "german": "Deutsch",
+    "gui_export_profile_label": "Exportprofil",
+    "gui_export_profile_miro": "Miro (optimiert für Boards)",
+    "gui_export_profile_miro_help": "Max. 40 MB pro Seite, scharf bei 400 % Zoom, SVG wenn möglich.",
+    "gui_export_profile_standard": "Standard",
     "language": "Sprache",
     "log_level": "Log Level",
     "miro_export": "Miro-Export",
@@ -36,10 +40,6 @@
     "select_directory": "Verzeichnis auswählen",
     "select_file": "Datei auswählen",
     "select_files": "Dateien auswählen",
-    "gui.export.profile.label": "Exportprofil",
-    "gui.export.profile.standard": "Standard",
-    "gui.export.profile.miro": "Miro (optimiert für Boards)",
-    "gui.export.profile.miro.help": "Max. 40 MB pro Seite, scharf bei 400 % Zoom, SVG wenn möglich.",
     "settings_file": "Settings-Datei",
     "split_pdf": "PDF teilen",
     "start": "Start",
@@ -49,13 +49,13 @@
     "warning": "Hinweis"
   },
   "labels": {
+    "input_path": "Eingabedatei",
     "input_pdf": "Eingabe PDF",
     "input_pptx": "Eingabe-PPTX",
     "max_size_mb": "Maximale Größe (MB)",
     "out_dir": "Ausgabeverzeichnis",
     "output_dir": "Ausgabeverzeichnis",
     "output_path": "Ausgabepfad",
-    "input_path": "Eingabedatei",
     "range_spec": "Bereichsspezifikation"
   }
 }

@@ -150,8 +150,8 @@ def test_build_form_hides_cancel(app, monkeypatch):
 
 def test_miro_profile_toggles_fields(app, monkeypatch):
     _ = app
-    from pdf_toolbox.actions.miro import miro_export
     import pdf_toolbox.gui.main_window as mw
+    from pdf_toolbox.actions.miro import miro_export
 
     act = actions.build_action(miro_export, name="miro_export")
     monkeypatch.setattr(gui, "list_actions", lambda: [act])
@@ -177,7 +177,8 @@ def test_miro_profile_toggles_fields(app, monkeypatch):
             widget = win.field_rows.get(name)
             assert widget is not None
             assert not widget.isVisible()
-        assert win.profile_help_label is not None and win.profile_help_label.isVisible()
+        assert win.profile_help_label is not None
+        assert win.profile_help_label.isVisible()
         assert win.cfg["last_export_profile"] == "miro"
         assert saved.get("last_export_profile") == "miro"
     finally:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import io
 import json
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event
@@ -55,6 +56,10 @@ PROFILE_MIRO = ExportProfile(
     render_dpi=800,
     max_dpi=1200,
 )
+
+VECTOR_DOMINANCE_THRESHOLD = 0.4
+NO_RASTER_ENCODER_MSG = "no raster encoders produced output"
+NO_RASTER_ATTEMPT_MSG = "no raster attempt produced output"
 
 
 @dataclass(slots=True)
@@ -153,8 +158,7 @@ def _remove_svg_metadata(svg: str) -> str:
     if end == -1:
         return svg
     end += len(end_tag)
-    cleaned = svg[:start] + svg[end:]
-    return cleaned
+    return svg[:start] + svg[end:]
 
 
 def _page_is_vector_heavy(page: fitz.Page) -> bool:
@@ -169,7 +173,7 @@ def _page_is_vector_heavy(page: fitz.Page) -> bool:
     if vector_elements == 0:
         return False
     ratio = image_count / (image_count + vector_elements)
-    return ratio < 0.4
+    return ratio < VECTOR_DOMINANCE_THRESHOLD
 
 
 def _export_page_as_svg(
@@ -210,8 +214,7 @@ def _render_page_bitmap(page: fitz.Page, dpi: int) -> Image.Image:
     if pix.colorspace is None or pix.colorspace.n not in (1, 3):
         pix = fitz.Pixmap(fitz.csRGB, pix)
     mode = "RGBA" if pix.alpha else "RGB"
-    img = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
-    return img
+    return Image.frombytes(mode, (pix.width, pix.height), pix.samples)
 
 
 def _encode_webp(
@@ -222,12 +225,12 @@ def _encode_webp(
 ) -> bytes:
     """Return WEBP-encoded bytes for ``image``."""
     with io.BytesIO() as buf:
-        save_args: dict[str, object] = {"format": "WEBP", "method": 6}
+        extra_params: dict[str, int | bool] = {"method": 6}
         if lossless:
-            save_args["lossless"] = True
+            extra_params["lossless"] = True
         if quality is not None:
-            save_args["quality"] = quality
-        image.save(buf, **save_args)
+            extra_params["quality"] = quality
+        image.save(buf, format="WEBP", **extra_params)
         return buf.getvalue()
 
 
@@ -249,6 +252,81 @@ def _encode_jpeg(image: Image.Image, quality: int) -> bytes:
         return buf.getvalue()
 
 
+def _iter_webp_candidates(
+    image: Image.Image,
+) -> Iterator[tuple[str, bytes, PageExportAttempt]]:
+    """Yield WebP encoding attempts for ``image``."""
+    try:
+        lossless_bytes = _encode_webp(image, lossless=True, quality=None)
+    except Exception:  # pragma: no cover - WebP encoding may fail unexpectedly  # pdf-toolbox: guard against environment-specific WebP encoder issues | issue:-
+        logger.exception("WebP lossless export failed")
+    else:
+        attempt = PageExportAttempt(
+            dpi=0,
+            fmt="WEBP",
+            size_bytes=0,
+            encoder="webp",
+            lossless=True,
+        )
+        yield "WEBP", lossless_bytes, attempt
+
+    for quality in (95, 90, 85):
+        try:
+            webp_bytes = _encode_webp(image, lossless=False, quality=quality)
+        except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: Pillow sometimes lacks WebP support | issue:-
+            logger.exception("WebP quality export failed", exc_info=True)
+            continue
+        attempt = PageExportAttempt(
+            dpi=0,
+            fmt="WEBP",
+            size_bytes=0,
+            encoder="webp",
+            quality=quality,
+            lossless=False,
+        )
+        yield "WEBP", webp_bytes, attempt
+
+
+def _iter_png_candidates(
+    image: Image.Image, palette: bool
+) -> Iterator[tuple[str, bytes, PageExportAttempt]]:
+    """Yield PNG encoding attempts for ``image``."""
+    try:
+        png_bytes = _encode_png(image, palette=palette)
+    except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: PNG encoder failure varies by platform | issue:-
+        logger.exception("PNG export failed", exc_info=True)
+        return
+    attempt = PageExportAttempt(
+        dpi=0,
+        fmt="PNG",
+        size_bytes=0,
+        encoder="png",
+        lossless=True,
+    )
+    yield "PNG", png_bytes, attempt
+
+
+def _iter_jpeg_candidates(
+    image: Image.Image,
+) -> Iterator[tuple[str, bytes, PageExportAttempt]]:
+    """Yield JPEG encoding attempts for ``image``."""
+    for quality in (95, 90):
+        try:
+            jpeg_bytes = _encode_jpeg(image, quality)
+        except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: JPEG encoder may be unavailable | issue:-
+            logger.exception("JPEG export failed", exc_info=True)
+            continue
+        attempt = PageExportAttempt(
+            dpi=0,
+            fmt="JPEG",
+            size_bytes=0,
+            encoder="jpeg",
+            quality=quality,
+            lossless=False,
+        )
+        yield "JPEG", jpeg_bytes, attempt
+
+
 def _encode_raster(
     image: Image.Image,
     max_bytes: int,
@@ -261,7 +339,7 @@ def _encode_raster(
     attempts: list[PageExportAttempt] = []
     best: tuple[int, bytes, str, PageExportAttempt] | None = None
 
-    def record_attempt(
+    def record_candidate(
         fmt: str,
         data: bytes,
         attempt: PageExportAttempt,
@@ -271,111 +349,55 @@ def _encode_raster(
         size = len(data)
         attempt.size_bytes = size
         attempts.append(attempt)
-        if fmt == "JPEG":
-            attempt.lossless = False
         if size <= max_bytes:
             return data, fmt, attempt, list(attempts), True
         if best is None or size < best[0]:
             best = (size, data, fmt, attempt)
         return None
 
-    try:
-        lossless_bytes = _encode_webp(working_image, lossless=True, quality=None)
-    except Exception:  # pragma: no cover - WebP encoding may fail unexpectedly
-        logger.exception("WebP lossless export failed")
-    else:
-        attempt = PageExportAttempt(
-            dpi=0,
-            fmt="WEBP",
-            size_bytes=len(lossless_bytes),
-            encoder="webp",
-            lossless=True,
-        )
-        result = record_attempt("WEBP", lossless_bytes, attempt)
+    for fmt, data, attempt in _iter_webp_candidates(working_image):
+        result = record_candidate(fmt, data, attempt)
         if result is not None:
             return result
 
-    for quality in (95, 90, 85):
-        try:
-            webp_bytes = _encode_webp(working_image, lossless=False, quality=quality)
-        except Exception:  # pragma: no cover - guard for Pillow edge cases
-            logger.exception("WebP quality export failed", exc_info=True)
-            continue
-        attempt = PageExportAttempt(
-            dpi=0,
-            fmt="WEBP",
-            size_bytes=len(webp_bytes),
-            encoder="webp",
-            quality=quality,
-            lossless=False,
-        )
-        result = record_attempt("WEBP", webp_bytes, attempt)
-        if result is not None:
-            return result
-
-    png_palette = working_image.mode not in {"RGBA", "LA"}
-    try:
-        png_bytes = _encode_png(working_image, palette=png_palette)
-    except Exception:  # pragma: no cover - guard for Pillow edge cases
-        logger.exception("PNG export failed", exc_info=True)
-    else:
-        attempt = PageExportAttempt(
-            dpi=0,
-            fmt="PNG",
-            size_bytes=len(png_bytes),
-            encoder="png",
-            lossless=True,
-        )
-        result = record_attempt("PNG", png_bytes, attempt)
+    palette = working_image.mode not in {"RGBA", "LA"}
+    for fmt, data, attempt in _iter_png_candidates(working_image, palette):
+        result = record_candidate(fmt, data, attempt)
         if result is not None:
             return result
 
     if not allow_transparency:
-        for quality in (95, 90):
-            try:
-                jpeg_bytes = _encode_jpeg(working_image, quality)
-            except Exception:  # pragma: no cover - guard for Pillow edge cases
-                logger.exception("JPEG export failed", exc_info=True)
-                continue
-            attempt = PageExportAttempt(
-                dpi=0,
-                fmt="JPEG",
-                size_bytes=len(jpeg_bytes),
-                encoder="jpeg",
-                quality=quality,
-                lossless=False,
-            )
-            result = record_attempt("JPEG", jpeg_bytes, attempt)
+        for fmt, data, attempt in _iter_jpeg_candidates(working_image):
+            result = record_candidate(fmt, data, attempt)
             if result is not None:
                 return result
 
     if best is None:
-        raise RuntimeError("no raster encoders produced output")
+        raise RuntimeError(NO_RASTER_ENCODER_MSG)
 
     size, data, fmt, attempt = best
     attempt.size_bytes = size
     return data, fmt, attempt, attempts, False
 
 
-def _rasterise_page(
+def _binary_search_dpi_candidates(
     page: fitz.Page,
     profile: ExportProfile,
     max_bytes: int,
-    *,
     attempts: list[PageExportAttempt],
-) -> tuple[bytes, str, int, int, int, bool]:
-    """Return encoded raster bytes for *page* respecting ``profile``."""
+) -> list[int]:
+    """Return promising DPI values discovered via binary search."""
     min_dpi = profile.min_dpi
     low = min_dpi
     high = profile.max_dpi
     best_within_dpi: int | None = None
-    best_any: tuple[int, int] | None = None  # (size_bytes, dpi)
+    best_any: tuple[int, int] | None = None
 
     while low <= high:
         dpi = (low + high) // 2
         image = _render_page_bitmap(page, dpi)
         allow_transparency = image.mode in {"RGBA", "LA"}
-        data, fmt, _selected_attempt, encode_attempts, within = _encode_raster(
+        data, _fmt, _selected, encode_attempts, within = _encode_raster(
             image,
             max_bytes,
             allow_transparency=allow_transparency,
@@ -399,91 +421,167 @@ def _rasterise_page(
                 best_any = (size, dpi)
             high = dpi - 25
 
-    candidate_dpis: list[int] = []
+    candidates: list[int] = []
     if best_within_dpi is not None:
-        candidate_dpis.append(best_within_dpi)
-    if best_any is not None and best_any[1] not in candidate_dpis:
-        candidate_dpis.append(best_any[1])
+        candidates.append(best_within_dpi)
+    if best_any is not None and best_any[1] not in candidates:
+        candidates.append(best_any[1])
+    return candidates
 
-    if not candidate_dpis:
-        raise RuntimeError("no raster attempt produced output")
 
-    def encode_final(
-        dpi: int,
-    ) -> tuple[bytes, str, PageExportAttempt, list[PageExportAttempt], bool, int, int]:
-        image = _render_page_bitmap(page, dpi)
-        allow_transparency = image.mode in {"RGBA", "LA"}
-        data, fmt, selected_attempt, encode_attempts, within = _encode_raster(
-            image,
-            max_bytes,
-            allow_transparency=allow_transparency,
-            apply_unsharp=True,
-        )
-        return (
-            data,
-            fmt,
-            selected_attempt,
-            encode_attempts,
-            within,
-            image.width,
-            image.height,
-        )
+def _finalise_candidate(
+    page: fitz.Page,
+    dpi: int,
+    max_bytes: int,
+    attempts: list[PageExportAttempt],
+) -> tuple[bytes, str, PageExportAttempt, bool, int, int]:
+    """Render and encode ``page`` at ``dpi`` capturing result metadata."""
+    image = _render_page_bitmap(page, dpi)
+    allow_transparency = image.mode in {"RGBA", "LA"}
+    data, fmt, selected_attempt, encode_attempts, within = _encode_raster(
+        image,
+        max_bytes,
+        allow_transparency=allow_transparency,
+        apply_unsharp=True,
+    )
+    for attempt in encode_attempts:
+        attempt.dpi = dpi
+    attempts.extend(encode_attempts)
+    return data, fmt, selected_attempt, within, image.width, image.height
 
+
+def _select_raster_output(
+    page: fitz.Page,
+    max_bytes: int,
+    attempts: list[PageExportAttempt],
+    candidate_dpis: list[int],
+    min_dpi: int,
+) -> tuple[bytes, str, PageExportAttempt | None, int, int, bool, int]:
+    """Evaluate candidates and choose the final raster export."""
     tested_dpis: set[int] = set()
     final_data = b""
     final_fmt = ""
-    final_width = 0
-    final_height = 0
     final_attempt: PageExportAttempt | None = None
     final_within = False
+    final_width = 0
+    final_height = 0
     dpi_used = candidate_dpis[0]
+
+    def refine(
+        start_dpi: int,
+    ) -> tuple[int, bytes, str, PageExportAttempt | None, bool, int, int]:
+        """Try progressively lower DPIs when results exceed the size limit."""
+        refined_data = b""
+        refined_fmt = ""
+        refined_attempt: PageExportAttempt | None = None
+        refined_within = False
+        refined_width = 0
+        refined_height = 0
+        dpi = start_dpi
+
+        while dpi > min_dpi:
+            next_dpi = max(min_dpi, dpi - 25)
+            if next_dpi in tested_dpis and next_dpi == dpi:
+                break
+            if next_dpi in tested_dpis:
+                dpi = next_dpi
+                continue
+            (
+                refined_data,
+                refined_fmt,
+                refined_attempt,
+                refined_within,
+                refined_width,
+                refined_height,
+            ) = _finalise_candidate(page, next_dpi, max_bytes, attempts)
+            tested_dpis.add(next_dpi)
+            dpi = next_dpi
+            if refined_within or dpi == min_dpi:
+                break
+
+        return (
+            dpi,
+            refined_data,
+            refined_fmt,
+            refined_attempt,
+            refined_within,
+            refined_width,
+            refined_height,
+        )
 
     for dpi in candidate_dpis:
         (
             final_data,
             final_fmt,
             final_attempt,
-            final_attempts,
             final_within,
             final_width,
             final_height,
-        ) = encode_final(dpi)
-        for attempt in final_attempts:
-            attempt.dpi = dpi
-        attempts.extend(final_attempts)
+        ) = _finalise_candidate(page, dpi, max_bytes, attempts)
         tested_dpis.add(dpi)
         dpi_used = dpi
         if final_within:
-            break
-
-    if not final_within:
-        dpi = dpi_used
-        while dpi > min_dpi:
-            previous = dpi
-            dpi = max(min_dpi, dpi - 25)
-            if dpi in tested_dpis and previous == dpi:
-                break
-            if dpi in tested_dpis:
-                continue
-            (
+            return (
                 final_data,
                 final_fmt,
                 final_attempt,
-                final_attempts,
-                final_within,
                 final_width,
                 final_height,
-            ) = encode_final(dpi)
-            for attempt in final_attempts:
-                attempt.dpi = dpi
-            attempts.extend(final_attempts)
-            tested_dpis.add(dpi)
-            dpi_used = dpi
-            if final_within or dpi == min_dpi:
-                break
+                final_within,
+                dpi_used,
+            )
+
+    (
+        dpi_used,
+        final_data,
+        final_fmt,
+        final_attempt,
+        final_within,
+        final_width,
+        final_height,
+    ) = refine(dpi_used)
+
+    return (
+        final_data,
+        final_fmt,
+        final_attempt,
+        final_width,
+        final_height,
+        final_within,
+        dpi_used,
+    )
+
+
+def _rasterise_page(
+    page: fitz.Page,
+    profile: ExportProfile,
+    max_bytes: int,
+    *,
+    attempts: list[PageExportAttempt],
+) -> tuple[bytes, str, int, int, int, bool]:
+    """Return encoded raster bytes for *page* respecting ``profile``."""
+    candidate_dpis = _binary_search_dpi_candidates(page, profile, max_bytes, attempts)
+    if not candidate_dpis:
+        raise RuntimeError(NO_RASTER_ATTEMPT_MSG)
+
+    (
+        final_data,
+        final_fmt,
+        final_attempt,
+        final_width,
+        final_height,
+        final_within,
+        dpi_used,
+    ) = _select_raster_output(
+        page,
+        max_bytes,
+        attempts,
+        candidate_dpis,
+        profile.min_dpi,
+    )
 
     if final_attempt is None:
-        raise RuntimeError("no raster attempt produced output")
+        raise RuntimeError(NO_RASTER_ATTEMPT_MSG)
 
     return final_data, final_fmt, dpi_used, final_width, final_height, final_within
 
@@ -564,6 +662,13 @@ def _export_page(
             result.warnings.append(
                 "File exceeds limit at minimum acceptable sharpness",
             )
+    except Exception as exc:  # pragma: no cover - defensive against rendering edge cases  # pdf-toolbox: keep GUI responsive despite renderer crashes | issue:-
+        logger.exception("Failed to export page %d", page_number)
+        result.error = str(exc)
+        result.warnings.append(f"Export failed: {exc}")
+        out_path.unlink(missing_ok=True)
+        return result
+    else:
         logger.info(
             "Page %d exported as %s (%dx%d @ %d dpi, %.1f MB)%s",
             page_number,
@@ -574,14 +679,6 @@ def _export_page(
             size / (1024 * 1024),
             " [warning]" if result.warnings else "",
         )
-        return result
-    except (
-        Exception
-    ) as exc:  # pragma: no cover - defensive against rendering edge cases
-        logger.exception("Failed to export page %d", page_number)
-        result.error = str(exc)
-        result.warnings.append(f"Export failed: {exc}")
-        out_path.unlink(missing_ok=True)
         return result
 
 

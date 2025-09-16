@@ -216,11 +216,11 @@ class MainWindow(QMainWindow):
             if param.name == "export_profile":
                 combo_box = QComboBox()
                 combo_box.addItem(
-                    tr("gui.export.profile.standard"),
+                    tr("gui_export_profile_standard"),
                     userData="standard",
                 )
                 combo_box.addItem(
-                    tr("gui.export.profile.miro"),
+                    tr("gui_export_profile_miro"),
                     userData="miro",
                 )
                 saved = self.cfg.get("last_export_profile", "standard")
@@ -233,16 +233,18 @@ class MainWindow(QMainWindow):
                         combo.currentData() or combo.currentText()
                     )
                 )
-                help_label = QLabel(tr("gui.export.profile.miro.help"))
+                help_label = QLabel(tr("gui_export_profile_miro_help"))
                 help_label.setWordWrap(True)
                 help_label.setVisible(False)
-                self.form_layout.addRow(tr("gui.export.profile.label"), combo_box)
+                self.form_layout.addRow(tr("gui_export_profile_label"), combo_box)
                 self.form_layout.addRow("", help_label)
                 self.current_widgets[param.name] = combo_box
                 self.profile_help_label = help_label
                 self.profile_combo = combo_box
                 self._remember_field(param.name, combo_box)
-                profile_initial_value = combo_box.currentData() or combo_box.currentText()
+                profile_initial_value = (
+                    combo_box.currentData() or combo_box.currentText()
+                )
                 continue
 
             if get_origin(ann) in (types.UnionType, Union) and int in get_args(ann):  # type: ignore[attr-defined]  # pdf-toolbox: `types.UnionType` absent from stubs | issue:-
@@ -425,12 +427,10 @@ class MainWindow(QMainWindow):
 
     def _remember_field(self, name: str, widget: QWidget) -> None:
         """Store the widget representing *name* for later visibility tweaks."""
-
         self.field_rows[name] = widget
 
     def _set_row_visible(self, name: str, visible: bool) -> None:
         """Show or hide the form row for parameter *name*."""
-
         widget = self.field_rows.get(name)
         if widget is None:
             return
@@ -441,7 +441,6 @@ class MainWindow(QMainWindow):
 
     def _apply_profile_ui(self, profile_value: str, persist: bool = True) -> None:
         """Adjust form elements based on the selected export profile."""
-
         is_miro = profile_value == "miro"
         for field_name in self.profile_sensitive_fields:
             self._set_row_visible(field_name, not is_miro)

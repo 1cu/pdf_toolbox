@@ -16,6 +16,10 @@
     "extract_range": "Extract Range",
     "field_cannot_be_empty": "Field '{name}' cannot be empty.",
     "german": "Deutsch",
+    "gui_export_profile_label": "Export profile",
+    "gui_export_profile_miro": "Miro (optimized for Miro boards)",
+    "gui_export_profile_miro_help": "Max. 40 MB per page, sharp at 400% zoom, uses SVG when possible.",
+    "gui_export_profile_standard": "Standard",
     "language": "Language",
     "log_level": "Log Level",
     "miro_export": "Miro Export",
@@ -36,10 +40,6 @@
     "select_directory": "Select directory",
     "select_file": "Select file",
     "select_files": "Select files",
-    "gui.export.profile.label": "Export profile",
-    "gui.export.profile.standard": "Standard",
-    "gui.export.profile.miro": "Miro (optimized for Miro boards)",
-    "gui.export.profile.miro.help": "Max. 40 MB per page, sharp at 400% zoom, uses SVG when possible.",
     "settings_file": "Settings file",
     "split_pdf": "Split PDF",
     "start": "Start",
@@ -49,13 +49,13 @@
     "warning": "Warning"
   },
   "labels": {
+    "input_path": "Input File",
     "input_pdf": "Input PDF",
     "input_pptx": "Input PPTX",
     "max_size_mb": "Max Size (MB)",
     "out_dir": "Output Directory",
     "output_dir": "Output Directory",
     "output_path": "Output Path",
-    "input_path": "Input File",
     "range_spec": "Range Specification"
   }
 }
