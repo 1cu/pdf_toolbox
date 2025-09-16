@@ -48,7 +48,9 @@ def apply_unsharp_mask(
 ) -> Image.Image:
     """Return a mildly sharpened copy of ``image`` using an unsharp mask."""
     percent = int(amount * 100)
-    return image.filter(ImageFilter.UnsharpMask(radius=radius, percent=percent, threshold=threshold))
+    return image.filter(
+        ImageFilter.UnsharpMask(radius=radius, percent=percent, threshold=threshold)
+    )
 
 
 def encode_webp(

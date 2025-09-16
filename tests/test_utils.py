@@ -142,6 +142,10 @@ def test_parse_page_spec_examples():
     assert parse_page_spec("-2", 6) == [1, 2]
     assert parse_page_spec("1,5,6", 6) == [1, 5, 6]
     assert parse_page_spec("1-", 3) == [1, 2, 3]
+    assert parse_page_spec("n", 6) == [6]
+    assert parse_page_spec("5-n", 6) == [5, 6]
+    assert parse_page_spec("-n", 3) == [1, 2, 3]
+    assert parse_page_spec("N", 4) == [4]
 
 
 def test_parse_page_spec_invalid():

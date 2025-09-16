@@ -107,9 +107,10 @@ def parse_page_spec(spec: str | None, total: int) -> list[int]:
     """Parse a page/slide specification into a list of 1-based numbers.
 
     ``spec`` follows a simple syntax with comma-separated parts. Each part may
-    be a single number (``"5"``), a range like ``"3-7"``, an open-ended range
-    such as ``"2-"`` or ``"-4"``, or any combination thereof
-    (e.g. ``"1,5,6"``). ``None`` or an empty string selects all pages.
+    be a single number (``"5"`` or ``"n"`` for the last page), a range like
+    ``"3-7"``, an open-ended range such as ``"2-"`` or ``"-4"``, or any
+    combination thereof (e.g. ``"1,5,6"`` or ``"8-n"``). ``None`` or an empty
+    string selects all pages.
 
     A ``ValueError`` is raised if the specification is invalid or references
     pages outside ``1..total``.
@@ -118,17 +119,27 @@ def parse_page_spec(spec: str | None, total: int) -> list[int]:
         return list(range(1, total + 1))
 
     pages: set[int] = set()
+
+    def _resolve(token: str, default: int | None) -> int:
+        if not token:
+            if default is None:
+                raise ValueError(ERR_INVALID_PAGE_SPEC)
+            return default
+        if token.lower() == "n":
+            return total
+        try:
+            return int(token)
+        except ValueError as exc:
+            raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
+
     for raw_part in spec.split(","):
         part = raw_part.strip()
         if not part:
             continue
         if "-" in part:
             start_s, end_s = part.split("-", 1)
-            try:
-                start = int(start_s) if start_s else 1
-                end = int(end_s) if end_s else total
-            except ValueError as exc:
-                raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
+            start = _resolve(start_s, 1)
+            end = _resolve(end_s, total)
             if start < 1 or end > total:
                 raise ValueError(
                     ERR_PAGE_RANGE.format(start=start, end=end, total=total)
@@ -137,10 +148,7 @@ def parse_page_spec(spec: str | None, total: int) -> list[int]:
                 raise ValueError(ERR_END_GTE_START)
             pages.update(range(start, end + 1))
         else:
-            try:
-                page = int(part)
-            except ValueError as exc:
-                raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
+            page = _resolve(part, None)
             if page < 1 or page > total:
                 raise ValueError(ERR_PAGE_OUT_OF_RANGE.format(page=page, total=total))
             pages.add(page)
