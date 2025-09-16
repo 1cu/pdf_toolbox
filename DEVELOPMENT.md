@@ -46,16 +46,28 @@ python -m pdf_toolbox.gui
 ## PPTX Renderer Providers
 
 PPTX rendering (slides to images or PDF) uses a provider interface defined in
-`pdf_toolbox.renderers.pptx`. Third-party renderers can register an entry
-point in the `pdf_toolbox.pptx_renderers` group and implement
-`BasePptxRenderer`. Without such a provider the default `NullRenderer`
-raises a translated `NotImplementedError`.
+`pdf_toolbox.renderers.pptx`. Third-party renderers register an entry point in
+the `pdf_toolbox.pptx_renderers` group and implement `BasePptxRenderer`, which
+exposes `to_pdf`, `to_images`, `capabilities()`, and `probe()`. Without a
+provider the default `NullRenderer` raises a translated `NotImplementedError`
+with remediation guidance.
 
-### MS-Office Provider
+Set `pptx_renderer = "auto"` in configuration to probe all registered providers
+and activate the first healthy one. Use an explicit provider key (for example,
+`"ms_office"`) to pin the backend or `"null"` to surface the stub provider. The
+auto mode is the production default; `null` can be helpful in development when
+you prefer explicit failure.
 
-The optional `PptxMsOfficeRenderer` uses Microsoft PowerPoint via COM
-automation. Install the `pptx-render` extra and set `pptx_renderer = "ms_office"` in the configuration file on Windows systems with PowerPoint
-installed to enable it.
+Architecture decisions for PPTX rendering are tracked in the
+[ADR index](docs/adr/README.md); see
+[ADR 0001: PPTX Provider Architecture](docs/adr/0001-pptx-provider-architecture.md).
+
+### Microsoft Office provider
+
+The optional Microsoft Office provider uses Microsoft PowerPoint via COM
+automation. Install the `pptx-render` extra and set `pptx_renderer = "ms_office"`
+in the configuration file on Windows systems with PowerPoint installed to enable
+it.
 
 ## Pre-commit hooks
 
