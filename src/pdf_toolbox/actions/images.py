@@ -12,6 +12,12 @@ import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image
 
 from pdf_toolbox.actions import action
+from pdf_toolbox.image_utils import (
+    encode_jpeg,
+    encode_png,
+    encode_webp,
+    render_page_image,
+)
 from pdf_toolbox.utils import (
     logger,
     open_pdf,
@@ -168,31 +174,37 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
         for page_no in group:
             raise_if_cancelled(cancel)
             page = doc.load_page(page_no - 1)
-            matrix = fitz.Matrix(zoom, zoom)
             if fmt == "SVG":
+                matrix = fitz.Matrix(zoom, zoom)
                 svg = page.get_svg_image(matrix=matrix)
                 out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
                 out_path.write_text(svg, encoding="utf-8")
                 outputs.append(str(out_path))
                 continue
-            pix = page.get_pixmap(matrix=matrix)
-            if pix.colorspace is None or pix.colorspace.n not in (1, 3):
-                pix = fitz.Pixmap(fitz.csRGB, pix)
-            if pix.alpha:
-                pix = fitz.Pixmap(pix, 0)
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            img = render_page_image(page, dpi_value, keep_alpha=False)
             out_path = out_base / f"{Path(input_path).stem}_Page_{page_no}.{ext}"
 
             used_quality: int | None = None
             used_level: int | None = None
             final_scale: float | None = None
             if max_bytes is None:
-                if fmt in {"JPEG", "WEBP"}:
+                if fmt == "JPEG":
                     used_quality = quality
-                    img.save(out_path, format=fmt, quality=quality)
+                    out_path.write_bytes(encode_jpeg(img, quality=quality))
+                elif fmt == "WEBP":
+                    used_quality = quality
+                    out_path.write_bytes(
+                        encode_webp(img, lossless=False, quality=quality)
+                    )
                 elif fmt == "PNG":
                     used_level = 0
-                    img.save(out_path, format=fmt, compress_level=0)
+                    out_path.write_bytes(
+                        encode_png(
+                            img,
+                            compress_level=0,
+                            optimize=False,
+                        )
+                    )
                 else:
                     img.save(out_path, format=fmt)
             elif fmt in {"JPEG", "WEBP"}:
@@ -200,10 +212,11 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
                 best: bytes | None = None
                 while q_low <= q_high:
                     mid = (q_low + q_high) // 2
-                    with io.BytesIO() as buf:
-                        img.save(buf, format=fmt, quality=mid)
-                        size = buf.tell()
-                        data = buf.getvalue()
+                    if fmt == "JPEG":
+                        data = encode_jpeg(img, quality=mid)
+                    else:
+                        data = encode_webp(img, lossless=False, quality=mid)
+                    size = len(data)
                     if size <= max_bytes:
                         best = data
                         used_quality = mid
@@ -217,10 +230,12 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
                 need_scale = True
                 if fmt == "PNG":
                     for level in range(10):
-                        with io.BytesIO() as buf:
-                            img.save(buf, format=fmt, compress_level=level)
-                            size = buf.tell()
-                            data = buf.getvalue()
+                        data = encode_png(
+                            img,
+                            compress_level=level,
+                            optimize=True,
+                        )
+                        size = len(data)
                         if size <= max_bytes:
                             out_path.write_bytes(data)
                             used_level = level
@@ -251,11 +266,13 @@ def _render_doc_pages(  # noqa: PLR0913, PLR0912, PLR0915  # pdf-toolbox: render
                             max(1, int(img.height * scale)),
                         )
                         scaled = img.resize(new_size, Image.Resampling.LANCZOS)
-                        with io.BytesIO() as buf:
-                            kwargs = {"compress_level": 9} if fmt == "PNG" else {}
-                            scaled.save(buf, format=fmt, **kwargs)
-                            size = buf.tell()
-                            data = buf.getvalue()
+                        if fmt == "PNG":
+                            data = encode_png(scaled, compress_level=9, optimize=True)
+                        else:
+                            with io.BytesIO() as buf:
+                                scaled.save(buf, format=fmt)
+                                data = buf.getvalue()
+                        size = len(data)
                         if size <= max_bytes:
                             scaled_bytes = data
                             scale_low = scale

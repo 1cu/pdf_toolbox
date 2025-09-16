@@ -3,18 +3,23 @@
 from __future__ import annotations
 
 import dataclasses
-import io
 import json
 import math
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event
-from typing import Any
 
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
-from PIL import Image, ImageFilter
+from PIL import Image
 
+from pdf_toolbox.image_utils import (
+    apply_unsharp_mask,
+    encode_jpeg,
+    encode_png,
+    encode_webp,
+    render_page_image,
+)
 from pdf_toolbox.utils import (
     logger,
     open_pdf,
@@ -231,63 +236,12 @@ def _export_page_as_svg(
     return within_limit, size, attempt
 
 
-def _apply_unsharp(image: Image.Image) -> Image.Image:
-    """Return a mildly sharpened copy of ``image``."""
-    return image.filter(ImageFilter.UnsharpMask(radius=0.6, percent=50, threshold=3))
-
-
-def _render_page_bitmap(page: fitz.Page, dpi: int) -> Image.Image:
-    """Render *page* to a PIL image at *dpi* keeping transparency."""
-    zoom = dpi / 72
-    matrix = fitz.Matrix(zoom, zoom)
-    pix = page.get_pixmap(matrix=matrix, alpha=True)
-    if pix.colorspace is None or pix.colorspace.n not in (1, 3):
-        pix = fitz.Pixmap(fitz.csRGB, pix)
-    mode = "RGBA" if pix.alpha else "RGB"
-    return Image.frombytes(mode, (pix.width, pix.height), pix.samples)
-
-
-def _encode_webp(
-    image: Image.Image,
-    *,
-    lossless: bool,
-    quality: int | None,
-) -> bytes:
-    """Return WEBP-encoded bytes for ``image``."""
-    with io.BytesIO() as buf:
-        params: dict[str, Any] = {"method": 6}
-        if lossless:
-            params["lossless"] = True
-        if quality is not None:
-            params["quality"] = int(quality)
-        image.save(buf, format="WEBP", **params)
-        return buf.getvalue()
-
-
-def _encode_png(image: Image.Image, palette: bool) -> bytes:
-    """Return PNG-encoded bytes for ``image``."""
-    target = image
-    if palette and image.mode not in {"P", "L"}:
-        target = image.convert("P", palette=Image.Palette.ADAPTIVE)
-    with io.BytesIO() as buf:
-        target.save(buf, format="PNG", compress_level=9, optimize=True)
-        return buf.getvalue()
-
-
-def _encode_jpeg(image: Image.Image, quality: int) -> bytes:
-    """Return JPEG-encoded bytes for ``image``."""
-    rgb = image.convert("RGB")
-    with io.BytesIO() as buf:
-        rgb.save(buf, format="JPEG", quality=quality, subsampling=0)
-        return buf.getvalue()
-
-
 def _iter_webp_candidates(
     image: Image.Image,
 ) -> Iterator[tuple[str, bytes, PageExportAttempt]]:
     """Yield WebP encoding attempts for ``image``."""
     try:
-        lossless_bytes = _encode_webp(image, lossless=True, quality=None)
+        lossless_bytes = encode_webp(image, lossless=True, quality=None)
     except Exception:  # pragma: no cover - WebP encoding may fail unexpectedly  # pdf-toolbox: guard against environment-specific WebP encoder issues | issue:-
         logger.exception("WebP lossless export failed")
     else:
@@ -302,7 +256,7 @@ def _iter_webp_candidates(
 
     for quality in (95, 90, 85):
         try:
-            webp_bytes = _encode_webp(image, lossless=False, quality=quality)
+            webp_bytes = encode_webp(image, lossless=False, quality=quality)
         except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: Pillow sometimes lacks WebP support | issue:-
             logger.exception("WebP quality export failed", exc_info=True)
             continue
@@ -322,7 +276,7 @@ def _iter_png_candidates(
 ) -> Iterator[tuple[str, bytes, PageExportAttempt]]:
     """Yield PNG encoding attempts for ``image``."""
     try:
-        png_bytes = _encode_png(image, palette=palette)
+        png_bytes = encode_png(image, palette=palette)
     except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: PNG encoder failure varies by platform | issue:-
         logger.exception("PNG export failed", exc_info=True)
         return
@@ -342,7 +296,7 @@ def _iter_jpeg_candidates(
     """Yield JPEG encoding attempts for ``image``."""
     for quality in (95, 90):
         try:
-            jpeg_bytes = _encode_jpeg(image, quality)
+            jpeg_bytes = encode_jpeg(image, quality=quality)
         except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: JPEG encoder may be unavailable | issue:-
             logger.exception("JPEG export failed", exc_info=True)
             continue
@@ -365,7 +319,7 @@ def _encode_raster(
     apply_unsharp: bool = True,
 ) -> tuple[bytes, str, PageExportAttempt, list[PageExportAttempt], bool]:
     """Encode ``image`` using preferred formats under ``max_bytes``."""
-    working_image = _apply_unsharp(image) if apply_unsharp else image
+    working_image = apply_unsharp_mask(image) if apply_unsharp else image
     attempts: list[PageExportAttempt] = []
     best: tuple[int, bytes, str, PageExportAttempt] | None = None
 
@@ -425,7 +379,7 @@ def _binary_search_dpi_candidates(
 
     while low <= high:
         dpi = (low + high) // 2
-        image = _render_page_bitmap(page, dpi)
+        image = render_page_image(page, dpi, keep_alpha=True)
         allow_transparency = image.mode in {"RGBA", "LA"}
         data, _fmt, _selected, encode_attempts, within = _encode_raster(
             image,
@@ -466,7 +420,7 @@ def _finalise_candidate(
     attempts: list[PageExportAttempt],
 ) -> tuple[bytes, str, PageExportAttempt, bool, int, int]:
     """Render and encode ``page`` at ``dpi`` capturing result metadata."""
-    image = _render_page_bitmap(page, dpi)
+    image = render_page_image(page, dpi, keep_alpha=True)
     allow_transparency = image.mode in {"RGBA", "LA"}
     data, fmt, selected_attempt, encode_attempts, within = _encode_raster(
         image,

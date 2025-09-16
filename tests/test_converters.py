@@ -102,8 +102,9 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
             self.samples = b"\x00\x00\x00"
 
     class DummyPage:
-        def get_pixmap(self, matrix):
+        def get_pixmap(self, matrix, alpha: bool = False):
             _ = matrix
+            assert alpha is False
             return DummyPix(4)
 
     def fake_load_page(_doc, _index):
@@ -130,8 +131,9 @@ def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
             self.samples = b"\x00\x00\x00"
 
     class DummyPage:
-        def get_pixmap(self, matrix):
+        def get_pixmap(self, matrix, alpha: bool = False):
             _ = matrix
+            assert alpha is False
             return DummyPix(1)
 
     def fake_load_page(_doc, _index):

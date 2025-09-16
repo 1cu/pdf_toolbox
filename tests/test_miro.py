@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from pdf_toolbox import miro
+from pdf_toolbox import image_utils, miro
 from pdf_toolbox.actions.miro import miro_export
 from pdf_toolbox.miro import PROFILE_MIRO, ExportProfile, export_pdf_for_miro
 
@@ -53,7 +53,8 @@ def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):
             self.height = dpi
             self.mode = "RGB"
 
-    def fake_render(_page, dpi: int) -> DummyImage:
+    def fake_render(_page, dpi: int, *, keep_alpha: bool = False) -> DummyImage:
+        assert keep_alpha is True
         return DummyImage(dpi)
 
     def fake_encode(
@@ -77,7 +78,7 @@ def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):
         render_dpi=PROFILE_MIRO.render_dpi,
         max_dpi=PROFILE_MIRO.max_dpi,
     )
-    monkeypatch.setattr(miro, "_render_page_bitmap", fake_render)
+    monkeypatch.setattr(miro, "render_page_image", fake_render)
     monkeypatch.setattr(miro, "_encode_raster", fake_encode)
     monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: False)
     outcome = export_pdf_for_miro(
@@ -222,7 +223,7 @@ def test_calculate_dpi_window_clamps_resolution():
     assert max_dpi == PROFILE_MIRO.max_dpi
 
 
-def test_render_page_bitmap_converts_colorspace(monkeypatch):
+def test_render_page_image_converts_colorspace(monkeypatch):
     class DummyPixmap:
         def __init__(self) -> None:
             self.colorspace = type("CS", (), {"n": 4})()
@@ -245,16 +246,16 @@ def test_render_page_bitmap_converts_colorspace(monkeypatch):
             assert alpha is True
             return DummyPixmap()
 
-    monkeypatch.setattr(miro.fitz, "Matrix", lambda *_args: object())
-    monkeypatch.setattr(miro.fitz, "Pixmap", ConvertedPixmap)
-    image = miro._render_page_bitmap(DummyPage(), 72)
+    monkeypatch.setattr(image_utils.fitz, "Matrix", lambda *_args: object())
+    monkeypatch.setattr(image_utils.fitz, "Pixmap", ConvertedPixmap)
+    image = image_utils.render_page_image(DummyPage(), 72, keep_alpha=True)
     assert image.mode == "RGB"
     assert image.size == (1, 1)
 
 
 def test_encode_png_palette_conversion():
     image = Image.new("RGB", (1, 1), color="red")
-    data = miro._encode_png(image, palette=True)
+    data = image_utils.encode_png(image, palette=True)
     assert data
 
 
