@@ -2,12 +2,6 @@ language: en-US
 reviews:
   profile: chill
   request_changes_workflow: true
-  path_filters:
-    - "src/pdf_toolbox/**"
-    - "tests/**"
-    - "scripts/**"
-    - "*.md"
-    - "**/AGENTS.md"
   auto_review:
     enabled: true
     auto_incremental_review: true
