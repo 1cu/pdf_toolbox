@@ -1,60 +1,30 @@
-# Pull Request
+## Summary
 
-## Description
+- Short summary of the changes in this PR
+- Use bullet points for clarity
 
-<!-- What was changed, why, and what is the impact? -->
+## Why
 
-Fixes: #\<issue_number> (if applicable)
+- Explain the motivation behind this PR
+- What problem does it solve or what value does it add?
 
-______________________________________________________________________
+## How tested
+
+- Describe how you verified the changes
+- [ ] Manual tests
+- [ ] Automated tests
+- [ ] CI/pre-commit run
+- [ ] Coverage ≥95% per file confirmed
+
+## Changelog
+
+- List relevant changes for release notes
 
 ## Checklist
 
-### Code Quality & Linting (AGENTS.md → “Fix, don’t silence”)
-
-- [ ] All files pass `pre-commit run --all-files`.
-- [ ] No new `# noqa`, `# ruff: noqa`, `# noqa: PLR...`, or `# type: ignore`.
-- [ ] If a disable was **absolutely necessary**:
-  - [ ] Inline justification (1–2 sentences) is present.
-  - [ ] Scope is minimal (single line; no file/module-wide disable).
-  - [ ] Linked Issue/Ticket reference included.
-- [ ] No loosening of linter rules in `pyproject.toml` (unless approved by team in a separate PR).
-
-### Architecture & Maintainability
-
-- [ ] High-complexity functions were refactored (no “mute PLR” shortcuts).
-- [ ] Clear, descriptive names; meaningful docstrings and type annotations.
-- [ ] Changes align with module structure and conventions.
-
-### Tests
-
-- [ ] All tests pass (`pytest`).
-- [ ] New/changed code is covered by unit/integration tests (incl. negative paths).
-- [ ] No decrease in coverage; target ≥ 95% for non-exempt modules.
-
-### Security & Stability
-
-- [ ] Path operations validated (no directory traversal; user input sanitized).
-- [ ] No new dynamic imports without whitelist/validation.
-- [ ] Robust config handling (fallbacks; no hard crashes on missing config).
-
-### Docs
-
-- [ ] Updated `README` / `AGENTS.md` / `CONTRIBUTING.md` as needed.
-- [ ] Breaking changes and migrations documented.
-- [ ] Examples/usage updated for API/CLI/GUI changes.
-
-______________________________________________________________________
-
-## Reviewer Notes
-
-<!-- Where should reviewers focus? Any open questions or TODOs? -->
-
-## PR Type
-
-- [ ] Bugfix
-- [ ] Feature
-- [ ] Refactoring
-- [ ] Documentation
-- [ ] Build/CI
-- [ ] Other
+- [ ] Documentation updated (README/CONTRIBUTING/DEVELOPMENT/AGENTS if needed)
+- [ ] Exception overview script updated (if new exceptions were added)
+- [ ] CI/pre-commit pass
+- [ ] Coverage thresholds maintained
+- [ ] i18n keys added (no hardcoded UI strings)
+- [ ] Logging via central logger (no `print`)

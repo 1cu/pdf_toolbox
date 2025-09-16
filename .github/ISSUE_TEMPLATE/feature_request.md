@@ -1,35 +1,24 @@
 ______________________________________________________________________
 
-## name: Feature Request about: Propose an enhancement or new capability title: "[Feature] <short description>" labels: enhancement
+## name: Feature request about: Suggest a new feature or improvement labels: enhancement
 
 ## Summary
 
-<!-- What should be added or improved? -->
+Describe the feature or change in one or two sentences.
 
-## Motivation
+## Why
 
-- Who benefits and why?
-- What problem does it solve?
+Explain the motivation. What problem does this solve? What value does it add?
 
-## Proposed Solution
+## Proposal
 
-<!-- API/CLI/GUI sketch; acceptance criteria -->
+- Outline the proposed solution or behavior
+- Describe expected usage (CLI, GUI, API, etc.)
 
-## Alternatives Considered
+## Alternatives
 
-<!-- Other approaches and trade-offs -->
+Have you considered other approaches?
 
-## Impact & Constraints
+## Additional context
 
-- [ ] Might require new dependencies
-- [ ] May affect performance
-- [ ] Could introduce breaking changes (documented in AGENTS/README)
-
-## Linting & Tests (per AGENTS.md)
-
-- [ ] I acknowledge the “Fix, don’t silence” policy (no rule downgrades/noqa without justification).
-- [ ] I can outline tests/negative cases for this change.
-
-## Additional Notes / References
-
-<!-- Related issues/PRs, examples, links -->
+Add any other context, diagrams, or references here.
