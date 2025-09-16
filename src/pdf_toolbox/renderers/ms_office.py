@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import contextlib
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
-from pdf_toolbox.renderers.pptx import BasePptxRenderer, PptxRenderingError
+from pdf_toolbox.renderers.pptx import PptxRenderingError
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.renderers.registry import register
 from pdf_toolbox.utils import logger, parse_page_spec
 
 try:  # pragma: no cover - import guarded for non-Windows platforms  # pdf-toolbox: Windows-only COM modules | issue:-
@@ -30,6 +32,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         'slides.pdf'
     """
 
+    name: ClassVar[str] = "ms_office"
     _PP_SAVE_AS_PDF = 32  # ppSaveAsPDF
 
     def _require_env(self) -> None:
@@ -166,6 +169,9 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         finally:
             self._close_app(app)
         return str(out)
+
+
+register(PptxMsOfficeRenderer)
 
 
 __all__ = ["PptxMsOfficeRenderer"]
