@@ -9,7 +9,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from pdf_toolbox.actions import action
-from pdf_toolbox.actions.images import QualityChoice, resolve_image_settings
+from pdf_toolbox.actions.pdf_images import QualityChoice, resolve_image_settings
 from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import get_pptx_renderer
 from pdf_toolbox.utils import logger

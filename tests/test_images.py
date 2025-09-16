@@ -6,7 +6,7 @@ import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
 
-from pdf_toolbox.actions.images import DPI_PRESETS, pdf_to_images
+from pdf_toolbox.actions.pdf_images import DPI_PRESETS, pdf_to_images
 
 
 def test_pdf_to_images_returns_paths(sample_pdf, tmp_path):

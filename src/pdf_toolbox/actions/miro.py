@@ -8,7 +8,7 @@ from threading import Event
 from typing import Literal
 
 from pdf_toolbox.actions import action
-from pdf_toolbox.actions.images import (
+from pdf_toolbox.actions.pdf_images import (
     DpiChoice,
     QualityChoice,
     pdf_to_images,

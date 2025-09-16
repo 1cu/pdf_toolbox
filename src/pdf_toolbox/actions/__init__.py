@@ -146,7 +146,7 @@ ACTION_MODULES = [
     "docx",
     "pptx",
     "extract",
-    "images",
+    "pdf_images",
     "miro",
     "optimise",
     "repair",

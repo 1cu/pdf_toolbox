@@ -4,9 +4,9 @@ import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
 from pdf_toolbox.actions import docx as docx_mod
-from pdf_toolbox.actions import images as images_mod
+from pdf_toolbox.actions import pdf_images as images_mod
 from pdf_toolbox.actions.docx import pdf_to_docx
-from pdf_toolbox.actions.images import pdf_to_images
+from pdf_toolbox.actions.pdf_images import pdf_to_images
 from pdf_toolbox.actions.repair import repair_pdf
 from pdf_toolbox.actions.unlock import unlock_pdf
 

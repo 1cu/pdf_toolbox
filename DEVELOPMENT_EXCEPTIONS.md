@@ -11,14 +11,14 @@
 | src/pdf_toolbox/actions/__init__.py:87     | type: ignore[attr-defined]               | attach custom attribute for action registration        | -        |
 | src/pdf_toolbox/actions/docx.py:9          | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | src/pdf_toolbox/actions/extract.py:8       | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| src/pdf_toolbox/actions/images.py:11       | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| src/pdf_toolbox/actions/images.py:121      | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches     | -        |
-| src/pdf_toolbox/actions/images.py:305      | PLR0913                                  | conversion helper requires many parameters             | -        |
 | src/pdf_toolbox/actions/miro.py:27         | PLR0913                                  | action signature mirrors GUI form                      | -        |
 | src/pdf_toolbox/actions/optimise.py:20     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | src/pdf_toolbox/actions/optimise.py:65     | type: ignore[assignment]                 | PyMuPDF page typing mismatch                           | -        |
 | src/pdf_toolbox/actions/optimise.py:94     | PLR0913                                  | optimisation API exposes many options                  | -        |
 | src/pdf_toolbox/actions/optimise.py:221    | PLR0913                                  | batch optimisation needs several arguments             | -        |
+| src/pdf_toolbox/actions/pdf_images.py:11   | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| src/pdf_toolbox/actions/pdf_images.py:127  | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches     | -        |
+| src/pdf_toolbox/actions/pdf_images.py:322  | PLR0913                                  | conversion helper requires many parameters             | -        |
 | src/pdf_toolbox/actions/pptx.py:110        | PLR0913                                  | action interface requires many parameters              | -        |
 | src/pdf_toolbox/actions/unlock.py:8        | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | src/pdf_toolbox/gui/__init__.py:44         | pragma: no cover                         | environment dependent                                  | -        |
@@ -62,12 +62,13 @@
 | src/pdf_toolbox/gui/widgets.py:96          | pragma: no cover                         | GUI widget                                             | -        |
 | src/pdf_toolbox/gui/widgets.py:101         | N802                                     | Qt requires camelCase event name                       | -        |
 | src/pdf_toolbox/gui/worker.py:11           | pragma: no cover                         | thread/GUI                                             | -        |
-| src/pdf_toolbox/miro.py:15                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| src/pdf_toolbox/miro.py:291                | pragma: no cover                         | guard against environment-specific WebP encoder issues | -        |
-| src/pdf_toolbox/miro.py:306                | pragma: no cover                         | Pillow sometimes lacks WebP support                    | -        |
-| src/pdf_toolbox/miro.py:326                | pragma: no cover                         | PNG encoder failure varies by platform                 | -        |
-| src/pdf_toolbox/miro.py:346                | pragma: no cover                         | JPEG encoder may be unavailable                        | -        |
-| src/pdf_toolbox/miro.py:739                | pragma: no cover                         | keep GUI responsive despite renderer crashes           | -        |
+| src/pdf_toolbox/image_utils.py:8           | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| src/pdf_toolbox/miro.py:13                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| src/pdf_toolbox/miro.py:245                | pragma: no cover                         | guard against environment-specific WebP encoder issues | -        |
+| src/pdf_toolbox/miro.py:260                | pragma: no cover                         | Pillow sometimes lacks WebP support                    | -        |
+| src/pdf_toolbox/miro.py:280                | pragma: no cover                         | PNG encoder failure varies by platform                 | -        |
+| src/pdf_toolbox/miro.py:300                | pragma: no cover                         | JPEG encoder may be unavailable                        | -        |
+| src/pdf_toolbox/miro.py:693                | pragma: no cover                         | keep GUI responsive despite renderer crashes           | -        |
 | src/pdf_toolbox/renderers/ms_office.py:12  | pragma: no cover                         | Windows-only COM modules                               | -        |
 | src/pdf_toolbox/renderers/ms_office.py:13  | type: ignore                             | pywin32 missing on non-Windows                         | -        |
 | src/pdf_toolbox/renderers/ms_office.py:14  | type: ignore                             | pywin32 missing on non-Windows                         | -        |
@@ -86,7 +87,7 @@
 | tests/test_batch_optimise.py:3             | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_converters.py:3                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_images.py:5                     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| tests/test_miro.py:135                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
+| tests/test_miro.py:136                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
 | tests/test_optimise.py:3                   | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise.py:50                  | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise_extra.py:5             | type: ignore                             | PyMuPDF lacks type hints                               | -        |

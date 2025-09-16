@@ -26,7 +26,7 @@ source .venv/bin/activate
 pip install -e '.[dev]'
 pre-commit install
 python -m pdf_toolbox.gui          # launch the GUI
-python -c "from pdf_toolbox.actions.images import pdf_to_images; pdf_to_images('doc.pdf')"  # run an action from the CLI
+python -c "from pdf_toolbox.actions.pdf_images import pdf_to_images; pdf_to_images('doc.pdf')"  # run an action from the CLI
 pre-commit run tests --all-files   # run tests
 ```
 
