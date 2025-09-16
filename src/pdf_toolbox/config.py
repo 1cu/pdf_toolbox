@@ -41,7 +41,6 @@ DEFAULT_CONFIG = {
 
 def _normalise_pptx_renderer(value: Any) -> PptxRendererChoice:
     """Return a canonical renderer choice for ``value``."""
-
     if value is None:
         return "none"
     if isinstance(value, str):
@@ -61,9 +60,7 @@ def load_config_at(path: Path) -> dict:
     if path.exists():
         with suppress(Exception):
             cfg.update(json.loads(path.read_text()))
-    cfg[_PPTX_RENDERER_KEY] = _normalise_pptx_renderer(
-        cfg.get(_PPTX_RENDERER_KEY)
-    )
+    cfg[_PPTX_RENDERER_KEY] = _normalise_pptx_renderer(cfg.get(_PPTX_RENDERER_KEY))
     return cfg
 
 
@@ -71,9 +68,7 @@ def save_config_at(path: Path, cfg: dict) -> None:
     """Persist configuration to a specific path."""
     data = dict(cfg)
     if _PPTX_RENDERER_KEY in data:
-        data[_PPTX_RENDERER_KEY] = _normalise_pptx_renderer(
-            data[_PPTX_RENDERER_KEY]
-        )
+        data[_PPTX_RENDERER_KEY] = _normalise_pptx_renderer(data[_PPTX_RENDERER_KEY])
     path.write_text(json.dumps(data, indent=2))
 
 
@@ -99,7 +94,6 @@ def get_pptx_renderer_choice(
     Returns:
         The normalised renderer identifier declared in the configuration.
     """
-
     source = cfg if cfg is not None else load_config()
     if _PPTX_RENDERER_KEY not in source:
         return _PPTX_RENDERER_DEFAULT

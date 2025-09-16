@@ -39,7 +39,6 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
     @classmethod
     def probe(cls) -> bool:
         """Return ``True`` when the COM automation environment is available."""
-
         return sys.platform.startswith("win") and win32com is not None
 
     def _require_env(self) -> None:

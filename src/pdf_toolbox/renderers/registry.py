@@ -6,6 +6,7 @@ from collections.abc import Iterable
 
 from pdf_toolbox.config import PptxRendererChoice, get_pptx_renderer_choice
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.utils import logger
 
 _REGISTRY: dict[str, type[BasePptxRenderer]] = {}
 _AUTO_PRIORITY = ("lightweight", "ms_office")
@@ -59,7 +60,6 @@ def available() -> tuple[str, ...]:
 
 def _iter_auto_candidates() -> Iterable[type[BasePptxRenderer]]:
     """Yield renderer classes in the order considered for ``auto`` selection."""
-
     yielded: set[str] = set()
     for preferred in _AUTO_PRIORITY:
         renderer_cls = _REGISTRY.get(preferred)
@@ -74,7 +74,6 @@ def _iter_auto_candidates() -> Iterable[type[BasePptxRenderer]]:
 
 def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
     """Create an informative error for missing renderers."""
-
     available = [name for name in _REGISTRY if name != "null"]
     if choice == "auto":
         detail = "No PPTX renderer satisfied auto-selection."
@@ -109,7 +108,6 @@ def select(
         returned if available. The ``null`` renderer is used as a fallback when
         registered.
     """
-
     cfg: dict[str, object] | None = None
     if name is not None:
         cfg = {"pptx_renderer": name}
@@ -126,12 +124,19 @@ def select(
             probe = getattr(candidate, "probe", None)
             if callable(probe):
                 try:
-                    if not probe():
-                        continue
-                except Exception:
-                    # Providers may raise during probe; skip them when this
-                    # happens so the selection can fall back gracefully.
+                    available = probe()
+                except Exception as exc:
+                    renderer_name = getattr(candidate, "name", candidate.__name__)
+                    logger.warning(
+                        "Probe for PPTX renderer %s failed: %s",
+                        renderer_name,
+                        exc,
+                        exc_info=exc,
+                    )
+                    available = False
+                if not available:
                     continue
+
             return candidate
         renderer_cls = _REGISTRY.get("null")
         if renderer_cls is None and strict:
@@ -146,9 +151,10 @@ def select(
 
 def ensure(name: str | None = None) -> type[BasePptxRenderer]:
     """Return a renderer class or raise if selection fails."""
-
     renderer_cls = select(name, strict=True)
-    if renderer_cls is None:  # pragma: no cover - guarded by ``strict=True``
+    if (
+        renderer_cls is None
+    ):  # pragma: no cover  # pdf-toolbox: unreachable once select(strict=True) succeeds | issue:-
         raise _selection_error(get_pptx_renderer_choice({"pptx_renderer": name}))
     return renderer_cls
 
