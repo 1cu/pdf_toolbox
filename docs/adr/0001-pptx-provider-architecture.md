@@ -47,15 +47,18 @@ Interface:
     - Emits a PDF at `output_path` (or a generated temp path) and raises `PptxRenderingError` on failure.
     - Range selection:
       - `range_spec` grammar (1-based, inclusive): `(<n>|<n>-<m>|<n>-)(, ...)*` e.g., `1-3,5,7-`
+      - Parsing MUST ignore ASCII whitespace around tokens and de-duplicate or merge overlapping ranges.
+      - Indices MUST be ≥ 1; 0 or negative indices are invalid.
       - Invalid specs MUST raise `PptxRenderingError("invalid_range")`
       - Out-of-bounds indices are ignored if intersecting slides remain; otherwise raise `PptxRenderingError("empty_selection")`
+    - `notes` and `handout` are mutually exclusive; if both are True, raise `UnsupportedOptionError` with `error.code == "conflicting_options"`.
     - Implementations MUST document how `notes` and `handout` map to backend output.
   - `to_images(input_pptx: Path, output_dir: Path | None = None, *, format: Literal["png", "jpeg", "tiff"] = "jpeg", dpi: int = 150, slides: Sequence[int] | None = None) -> list[Path]`
     - Produces one image per slide (or selected slide indices) in `output_dir` and returns ordered file paths.
     - Conventions (MUST):
       - Slide indexing is 1-based.
-      - Filenames: `slide-<NNN>.<ext>` zero-padded to 3+ digits (e.g., `slide-001.jpeg`).
-      - Return value is sorted by slide index ascending.
+      - Filenames: `slide-<NNN>.<ext>` where the pad width is `max(3, ceil(log10(total_slides + 1)))` for the input deck (e.g., 42 slides → width 3; 1,234 slides → width 4). Extension MUST match `format` (`jpeg`, not `jpg`).
+      - When `slides` is `None`, return value is sorted by slide index ascending. When `slides` is provided, return paths in the order of `slides` after de-duplicating indices.
       - Unsupported `format`/`dpi` MUST raise `PptxRenderingError("unsupported_option")`.
     - Implementations MUST document DPI bounds and any backend-specific limits.
   - `capabilities() -> Capabilities`
@@ -68,7 +71,7 @@ from typing import Literal, TypedDict
 
 class Capabilities(TypedDict, total=False):
     platforms: list[Literal["windows", "linux", "macos"]]
-    supports: list[Literal["pdf", "png", "jpeg", "tiff"]]
+    outputs: list[Literal["pdf", "png", "jpeg", "tiff"]]  # formerly `supports`
     headless: bool                 # TRUE implies UI not required
     needs_ui: bool                 # TRUE implies headless is FALSE
     vendor: str | None             # e.g., "Microsoft Office", "LibreOffice", "Aspose"
@@ -86,21 +89,26 @@ class Capabilities(TypedDict, total=False):
 
 Invariants:
 
-- If `headless` is True, `needs_ui` MUST be False. If `needs_ui` is True, `headless` MUST be False.
+- If `headless` is True, `needs_ui` MUST be False. If `needs_ui` is True, `headless` MUST be False. If both are omitted, treat the provider as unknown and avoid selecting it in `auto` mode for headless environments.
 
 Capabilities objects MUST remain backwards compatible; new optional keys extend the schema without breaking older providers.
 
 Discovery:
 
 - Python entry points group: `pdf_toolbox.pptx_renderers`
-- Entry point names follow `vendor[_flavor]` (for example, `ms_office`, `libreoffice_uno`, `gotenberg_v7`) and MUST be unique.
+- Entry point names follow `vendor[_flavor]` (for example, `ms_office`, `libreoffice_uno`) and MUST be unique.
 
 Selection:
 
 - Config key: `pptx_renderer`; accepted values match entry point names.
 - Accepted special values:
   - `null` → selects `NullRenderer`, an explicit stub with guidance.
-  - `auto` → probes providers in priority order and selects the first healthy result.
+  - `auto` → selection algorithm:
+    1. Filter providers by platform compatibility.
+    1. If running headless (no DISPLAY/Wayland/GUI), exclude providers where `needs_ui` is True.
+    1. Exclude providers with `needs_network` unless `allow_network_egress` is explicitly enabled.
+    1. Respect configured allow and deny lists.
+    1. Probe remaining providers in priority order and select the first where `probe() == True`.
 - Default configuration: `auto` in production; `null` is available for development scenarios where explicit guidance is preferable.
 - Providers must document fallback order, prerequisites, and user-facing error messaging.
 
@@ -123,7 +131,9 @@ Ship a lightweight stub provider by default and offer an optional Microsoft Offi
 
 Errors:
 
-- All providers MUST raise `PptxRenderingError` (and well-known subclasses like `UnsupportedOptionError`, `BackendCrashedError`, `TimeoutError`) with stable `.code` values for programmatic handling.
+- All providers MUST raise `PptxRenderingError` (and well-known subclasses like `UnsupportedOptionError`, `BackendCrashedError`, `TimeoutError`) and set a stable `error.code` from this canonical set:
+  - `invalid_range`, `empty_selection`, `unsupported_option`, `conflicting_options`, `backend_crashed`, `timeout`, `unavailable`, `permission_denied`, `resource_limits_exceeded`.
+  - Subclass names are advisory; clients MUST rely on `error.code`.
 
 Network posture:
 
@@ -131,13 +141,14 @@ Network posture:
 
 Operational considerations:
 
+- Provider instances MUST either support concurrent use across threads/processes or document that they are single-use and require one instance per render.
 - Enforce per-render timeouts and bounded concurrency to guard against hung conversions.
 - Enforce input limits (file size, slide count) and configurable memory/CPU ceilings per task.
 - Isolate providers with subprocesses or service boundaries when possible and sanitize temporary assets.
 - Implement structured retries with jittered backoff for transient failures and circuit breakers per provider.
 - Account for Windows COM constraints: single-threaded apartments, foreground window quirks, and DCOM hardening requirements.
 - Emit structured logs (provider name, version, duration, page count, result, error.code) and metrics.
-- Do NOT log document contents or slide thumbnails; log only metadata and hashed filenames.
+- Do NOT log document contents or slide thumbnails; log only metadata and SHA-256 hashes of filenames (no paths).
 - Include a request/job correlation ID in logs and metrics.
 - Provide clear UX when no provider is available or misconfigured, including remediation steps.
 - Provide liveness/readiness health checks and periodic `probe()` executions to decay unhealthy providers from rotation.
