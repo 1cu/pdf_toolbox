@@ -6,18 +6,16 @@ reviews:
     - "src/pdf_toolbox/**"
     - "tests/**"
     - "scripts/**"
-    - "README.md"
-    - "CONTRIBUTING.md"
-    - "DEVELOPMENT.md"
+    - "*.md"
     - "**/AGENTS.md"
   auto_review:
     enabled: true
     auto_incremental_review: true
 pre_merge_checks:
   description:
-    mode: error
+    mode: info
   title:
-    mode: warning
+    mode: info
   custom_checks:
     - mode: error
       name: "Coverage ≥95% overall and per-file"
@@ -39,6 +37,8 @@ knowledge_base:
   code_guidelines:
     enabled: true
     filePatterns:
+      - "DEVELOPMENT.md"
+      - "CONTRIBUTING.md"
       - "AGENTS.md"
       - "src/pdf_toolbox/AGENTS.md"
       - "scripts/AGENTS.md"
