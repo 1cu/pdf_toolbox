@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pdf_toolbox.config import PptxRendererChoice, get_pptx_renderer_choice
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 
 _REGISTRY: dict[str, type[BasePptxRenderer]] = {}
+_AUTO_PRIORITY = ("lightweight", "ms_office")
+
+
+class RendererSelectionError(LookupError):
+    """Raised when selecting a PPTX renderer fails."""
 
 
 def register[RendererT: BasePptxRenderer](
@@ -52,32 +58,105 @@ def available() -> tuple[str, ...]:
 
 
 def _iter_auto_candidates() -> Iterable[type[BasePptxRenderer]]:
-    for name, renderer_cls in _REGISTRY.items():
-        if name != "null":
+    """Yield renderer classes in the order considered for ``auto`` selection."""
+
+    yielded: set[str] = set()
+    for preferred in _AUTO_PRIORITY:
+        renderer_cls = _REGISTRY.get(preferred)
+        if renderer_cls is not None:
+            yielded.add(preferred)
             yield renderer_cls
+    for name, renderer_cls in _REGISTRY.items():
+        if name == "null" or name in yielded:
+            continue
+        yield renderer_cls
 
 
-def select(name: str) -> type[BasePptxRenderer] | None:
+def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
+    """Create an informative error for missing renderers."""
+
+    available = [name for name in _REGISTRY if name != "null"]
+    if choice == "auto":
+        detail = "No PPTX renderer satisfied auto-selection."
+    elif choice == "none":
+        detail = "The null PPTX renderer is not registered."
+    else:
+        detail = f"No PPTX renderer named '{choice}'."
+    if available:
+        readable = ", ".join(sorted(available))
+        detail += f" Available providers: {readable}."
+    else:
+        detail += " No providers are registered."
+    return RendererSelectionError(detail)
+
+
+def select(
+    name: str | None = None,
+    *,
+    strict: bool = False,
+) -> type[BasePptxRenderer] | None:
     """Return the renderer class matching ``name`` or ``auto``.
 
     Args:
-        name: Renderer identifier or the special value ``"auto"``.
+        name: Renderer identifier or the special value ``"auto"``. When omitted
+            the persisted configuration is inspected.
+        strict: Whether to raise :class:`RendererSelectionError` when no
+            renderer matches the request.
 
     Returns:
         A renderer class when a match is found, otherwise ``None``. When
-        ``name`` is ``"auto"`` the first non-``null`` renderer is returned if
-        available. The ``null`` renderer is used as a fallback when registered.
+        ``name`` resolves to ``"auto"`` the first non-``null`` renderer is
+        returned if available. The ``null`` renderer is used as a fallback when
+        registered.
     """
-    key = (name or "").strip().lower()
-    if not key:
-        return None
 
-    if key == "auto":
+    cfg: dict[str, object] | None = None
+    if name is not None:
+        cfg = {"pptx_renderer": name}
+    choice = get_pptx_renderer_choice(cfg)
+
+    if choice == "none":
+        renderer_cls = _REGISTRY.get("null")
+        if renderer_cls is None and strict:
+            raise _selection_error(choice)
+        return renderer_cls
+
+    if choice == "auto":
         for candidate in _iter_auto_candidates():
+            probe = getattr(candidate, "probe", None)
+            if callable(probe):
+                try:
+                    if not probe():
+                        continue
+                except Exception:
+                    # Providers may raise during probe; skip them when this
+                    # happens so the selection can fall back gracefully.
+                    continue
             return candidate
-        return _REGISTRY.get("null")
+        renderer_cls = _REGISTRY.get("null")
+        if renderer_cls is None and strict:
+            raise _selection_error(choice)
+        return renderer_cls
 
-    return _REGISTRY.get(key)
+    renderer_cls = _REGISTRY.get(choice)
+    if renderer_cls is None and strict:
+        raise _selection_error(choice)
+    return renderer_cls
 
 
-__all__ = ["available", "register", "select"]
+def ensure(name: str | None = None) -> type[BasePptxRenderer]:
+    """Return a renderer class or raise if selection fails."""
+
+    renderer_cls = select(name, strict=True)
+    if renderer_cls is None:  # pragma: no cover - guarded by ``strict=True``
+        raise _selection_error(get_pptx_renderer_choice({"pptx_renderer": name}))
+    return renderer_cls
+
+
+__all__ = [
+    "RendererSelectionError",
+    "available",
+    "ensure",
+    "register",
+    "select",
+]

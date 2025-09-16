@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import sys
 from pathlib import Path
 from typing import ClassVar, Literal
 
@@ -34,6 +35,12 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
 
     name: ClassVar[str] = "ms_office"
     _PP_SAVE_AS_PDF = 32  # ppSaveAsPDF
+
+    @classmethod
+    def probe(cls) -> bool:
+        """Return ``True`` when the COM automation environment is available."""
+
+        return sys.platform.startswith("win") and win32com is not None
 
     def _require_env(self) -> None:
         if win32com is None:
