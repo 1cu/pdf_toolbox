@@ -1,14 +1,18 @@
-# Agent Guidelines for `scripts`
+# Agent Rules for `scripts`
 
-Follow the repository-wide [AGENTS.md](../AGENTS.md) for general rules and
-linting policy. Document any linter exceptions in
-[DEVELOPMENT.md](../DEVELOPMENT.md#documented-exceptions).
+Follow the repository-wide [AGENTS.md](../AGENTS.md). Scripts should stay thin
+wrappers around reusable library code.
 
-Additional rules:
+## Structure scripts
 
-- Scripts should be runnable with `python scripts/<name>.py`.
-- Place logic in a `main()` function and guard execution with
-  `if __name__ == "__main__": main()`.
-- Use `argparse` for command-line arguments when needed.
-- Prefer adding complex logic to `src/pdf_toolbox` and keep scripts thin.
-- Include type hints and docstrings for any helper functions.
+- Provide a `main()` function and guard it with `if __name__ == "__main__":`.
+- Accept arguments via `argparse` when needed; avoid ad-hoc parsing.
+- Keep heavy logic in `src/pdf_toolbox` modules so it can be tested directly.
+
+## Maintain quality
+
+- Add type hints and concise docstrings to helper functions.
+- Ensure scripts run with `python scripts/<name>.py` from the repository root.
+- Respect the exception policy; run
+  `python scripts/generate_exception_overview.py` to document any unavoidable
+  inline disables.
