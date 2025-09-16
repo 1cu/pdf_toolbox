@@ -91,4 +91,8 @@
 | tests/test_optimise_progress.py:3          | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_pptx.py:99                      | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_pptx.py:141                     | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx_ms_office_renderer.py:22   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
+| tests/test_pptx_ms_office_renderer.py:27   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
+| tests/test_pptx_ms_office_renderer.py:50   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
+| tests/test_pptx_ms_office_renderer.py:68   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                               | -        |
