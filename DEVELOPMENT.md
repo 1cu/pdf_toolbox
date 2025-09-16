@@ -104,8 +104,10 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 - Only single-line scopes are allowed; never use blanket `# noqa` or
   `# type: ignore` comments.
+
 - Run `python scripts/generate_exception_overview.py` (or let pre-commit do it)
   to refresh `DEVELOPMENT_EXCEPTIONS.md`. Never edit that file manually.
+
 - Review new exceptions during PR review and remove them once the underlying
   issue is resolved.
 
@@ -113,6 +115,7 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 - `pre-commit run --all-files` executes the full suite of formatters, linters,
   tests, security checks, and the exception overview generator.
+
 - Shortcuts exist:
 
   ```bash
@@ -123,12 +126,13 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 - CI runs the same hooks on Linux, macOS, and Windows (all on Python 3.13) and
   verifies bytecode compilation with `python -m compileall .`.
+
 - We intentionally skip `pip-audit`; dependency publishing is out of scope for
   this project.
 
 ## Cut a release
 
 1. Update `version` in `pyproject.toml`.
-2. Commit the change and create a tag matching `v*` (for example `v0.6.21`).
-3. Push the tag; the `release` workflow builds wheels and platform executables
+1. Commit the change and create a tag matching `v*` (for example `v0.6.21`).
+1. Push the tag; the `release` workflow builds wheels and platform executables
    and attaches them to the GitHub release while pruning older artifacts.

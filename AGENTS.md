@@ -42,6 +42,7 @@ Read the primary docs before making changes:
 
 - Never add blanket disables such as `# noqa`, `# ruff: noqa`, or `# type: ignore`
   without justification.
+
 - When a single-line exception is unavoidable, add a concise inline comment in
   this format:
 
