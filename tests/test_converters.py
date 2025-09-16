@@ -4,9 +4,9 @@ import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
 from pdf_toolbox.actions import docx as docx_mod
-from pdf_toolbox.actions import images as images_mod
+from pdf_toolbox.actions import pdf_images as images_mod
 from pdf_toolbox.actions.docx import pdf_to_docx
-from pdf_toolbox.actions.images import pdf_to_images
+from pdf_toolbox.actions.pdf_images import pdf_to_images
 from pdf_toolbox.actions.repair import repair_pdf
 from pdf_toolbox.actions.unlock import unlock_pdf
 
@@ -102,8 +102,9 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
             self.samples = b"\x00\x00\x00"
 
     class DummyPage:
-        def get_pixmap(self, matrix):
+        def get_pixmap(self, matrix, alpha: bool = False):
             _ = matrix
+            assert alpha is False
             return DummyPix(4)
 
     def fake_load_page(_doc, _index):
@@ -130,8 +131,9 @@ def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
             self.samples = b"\x00\x00\x00"
 
     class DummyPage:
-        def get_pixmap(self, matrix):
+        def get_pixmap(self, matrix, alpha: bool = False):
             _ = matrix
+            assert alpha is False
             return DummyPix(1)
 
     def fake_load_page(_doc, _index):

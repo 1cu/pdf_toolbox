@@ -15,6 +15,7 @@ PDF pages can be rasterized to images. When a `max_size_mb` limit is used, JPEG 
 - [Configuration](#configuration)
 - [Optimisation](#optimisation)
 - [PPTX Support](#pptx-support)
+- [Miro Export (GUI)](#miro-export-gui)
 - [Development](#development)
 
 ## Quick Start
@@ -25,7 +26,7 @@ source .venv/bin/activate
 pip install -e '.[dev]'
 pre-commit install
 python -m pdf_toolbox.gui          # launch the GUI
-python -c "from pdf_toolbox.actions.images import pdf_to_images; pdf_to_images('doc.pdf')"  # run an action from the CLI
+python -c "from pdf_toolbox.actions.pdf_images import pdf_to_images; pdf_to_images('doc.pdf')"  # run an action from the CLI
 pre-commit run tests --all-files   # run tests
 ```
 
@@ -144,6 +145,24 @@ If the key is absent or empty the renderer remains disabled.
 
 Note: Frozen binaries may lack entry-point metadata. The renderer is then
 loaded via an internal registry without loss of functionality.
+
+## Miro Export (GUI)
+
+The **Miro Export** action in the Qt GUI produces per-page slide images that
+remain crisp when zoomed to 400% inside Miro boards while keeping every file
+within Miro's 30 MB / 32 MP / 8192×4096 limits. The preset automatically
+analyses each page and exports vector slides as SVG (with fonts converted to
+paths and metadata stripped) whenever the size budget allows it. Image-heavy
+slides are rendered using a tuned raster pipeline (lossless WebP by default,
+falling back to high-quality WebP/PNG or JPEG if necessary) that performs a DPI
+search to stay above an effective 200 DPI at the target zoom level and records
+warnings when the board constraints require additional downscaling.
+
+Choose the "Miro (optimised for Miro/Boards)" export profile to hide advanced
+parameters and rely on the automatic strategy. The manifest `miro_export.json`
+records the DPI, format, file size, and any warnings for each page. The
+standard profile remains available for manual control when the same action is
+used for traditional exports.
 
 ## Development
 

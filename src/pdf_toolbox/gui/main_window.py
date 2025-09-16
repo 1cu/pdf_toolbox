@@ -10,7 +10,7 @@ from importlib import metadata
 from typing import Any, Literal, Union, get_args, get_origin
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -62,6 +62,10 @@ class MainWindow(QMainWindow):
         set_language(None if lang == "system" else lang)
         self.current_action: Action | None = None
         self.current_widgets: dict[str, Any] = {}
+        self.field_rows: dict[str, QWidget] = {}
+        self.profile_help_label: QLabel | None = None
+        self.profile_combo: QComboBox | None = None
+        self.profile_sensitive_fields = {"image_format", "dpi", "quality"}
         self.worker: Worker | None = None
         self.resize(900, 480)
         self.base_height = self.height()
@@ -191,6 +195,10 @@ class MainWindow(QMainWindow):
         while self.form_layout.rowCount():
             self.form_layout.removeRow(0)
         self.current_widgets.clear()
+        self.field_rows = {}
+        self.profile_help_label = None
+        self.profile_combo = None
+        profile_initial_value: str | None = None
 
         for param in action.params:
             if param.name in {"cancel", "progress_callback"}:
@@ -204,6 +212,40 @@ class MainWindow(QMainWindow):
             )
             ann = param.annotation
             lower = param.name.lower()
+
+            if param.name == "export_profile":
+                combo_box = QComboBox()
+                combo_box.addItem(
+                    tr("gui_export_profile_standard"),
+                    userData="standard",
+                )
+                combo_box.addItem(
+                    tr("gui_export_profile_miro"),
+                    userData="miro",
+                )
+                saved = self.cfg.get("last_export_profile", "standard")
+                if saved not in {"standard", "miro"}:
+                    saved = "standard"
+                index = combo_box.findData(saved)
+                combo_box.setCurrentIndex(max(index, 0))
+                combo_box.currentIndexChanged.connect(
+                    lambda _idx, combo=combo_box: self._apply_profile_ui(
+                        combo.currentData() or combo.currentText()
+                    )
+                )
+                help_label = QLabel(tr("gui_export_profile_miro_help"))
+                help_label.setWordWrap(True)
+                help_label.setVisible(False)
+                self.form_layout.addRow(tr("gui_export_profile_label"), combo_box)
+                self.form_layout.addRow("", help_label)
+                self.current_widgets[param.name] = combo_box
+                self.profile_help_label = help_label
+                self.profile_combo = combo_box
+                self._remember_field(param.name, combo_box)
+                profile_initial_value = (
+                    combo_box.currentData() or combo_box.currentText()
+                )
+                continue
 
             if get_origin(ann) in (types.UnionType, Union) and int in get_args(ann):  # type: ignore[attr-defined]  # pdf-toolbox: `types.UnionType` absent from stubs | issue:-
                 literal = next(
@@ -281,6 +323,7 @@ class MainWindow(QMainWindow):
                 widget = QLineEdit()
 
             # Wrap composite/file widgets in a container with a button/row
+            field_widget: QWidget
             if isinstance(widget, tuple):
                 combo_box, spin_box = widget
                 container = QWidget()
@@ -290,6 +333,7 @@ class MainWindow(QMainWindow):
                 layout.addWidget(spin_box)
                 layout.setStretch(0, 1)
                 self.form_layout.addRow(self._pretty_label(param.name), container)
+                field_widget = container
             elif isinstance(widget, FileEdit):
                 container = QWidget()
                 layout = QHBoxLayout(container)
@@ -301,9 +345,15 @@ class MainWindow(QMainWindow):
                 layout.addWidget(btn)
                 layout.setStretch(0, 1)
                 self.form_layout.addRow(self._pretty_label(param.name), container)
+                field_widget = container
             else:
                 self.form_layout.addRow(self._pretty_label(param.name), widget)  # type: ignore[arg-type]  # pdf-toolbox: PySide6 stubs reject tuple variant | issue:-
+                field_widget = widget  # type: ignore[assignment]  # pdf-toolbox: tuple already handled | issue:-
             self.current_widgets[param.name] = widget
+            self._remember_field(param.name, field_widget)
+
+        if profile_initial_value:
+            self._apply_profile_ui(profile_initial_value, persist=False)
 
     def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912  # pdf-toolbox: argument collection involves many branches | issue:-
         """Gather user input from the form into keyword arguments."""
@@ -348,7 +398,8 @@ class MainWindow(QMainWindow):
                     raise ValueError(tr("field_cannot_be_empty", name=tr_label(name)))
                 kwargs[name] = val or None
             elif isinstance(widget, QComboBox):
-                kwargs[name] = widget.currentText()
+                data = widget.currentData()
+                kwargs[name] = data if data is not None else widget.currentText()
             elif isinstance(widget, QCheckBox):
                 kwargs[name] = widget.isChecked()
             elif isinstance(widget, QSpinBox):
@@ -373,6 +424,38 @@ class MainWindow(QMainWindow):
                 )
             label = " ".join(words)
         return tr(label)
+
+    def _remember_field(self, name: str, widget: QWidget) -> None:
+        """Store the widget representing *name* for later visibility tweaks."""
+        self.field_rows[name] = widget
+
+    def _set_row_visible(self, name: str, visible: bool) -> None:
+        """Show or hide the form row for parameter *name*."""
+        widget = self.field_rows.get(name)
+        if widget is None:
+            return
+        widget.setVisible(visible)
+        label_widget = self.form_layout.labelForField(widget)
+        if label_widget:
+            label_widget.setVisible(visible)
+
+    def _apply_profile_ui(self, profile_value: str, persist: bool = True) -> None:
+        """Adjust form elements based on the selected export profile."""
+        is_miro = profile_value == "miro"
+        for field_name in self.profile_sensitive_fields:
+            self._set_row_visible(field_name, not is_miro)
+            widget = self.current_widgets.get(field_name)
+            if isinstance(widget, tuple):
+                for sub_widget in widget:
+                    if isinstance(sub_widget, QWidget):
+                        sub_widget.setEnabled(not is_miro)
+            elif isinstance(widget, QWidget):
+                widget.setEnabled(not is_miro)
+        if self.profile_help_label:
+            self.profile_help_label.setVisible(is_miro)
+        if persist:
+            self.cfg["last_export_profile"] = profile_value
+            save_config(self.cfg)
 
     def on_info(self) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Display help text for the currently selected action."""
@@ -479,6 +562,15 @@ class MainWindow(QMainWindow):
         self.update_status(tr("error"), "error")
         self.resize(self.width(), self.base_height + self.log.height())
         self.worker = None
+
+    def closeEvent(  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
+        self, event: QCloseEvent
+    ) -> None:
+        """Cancel running workers before closing the window."""  # pragma: no cover  # pdf-toolbox: ensure worker shutdown on close | issue:-
+        if self.worker and self.worker.isRunning():
+            self.worker.cancel()
+            self.worker.wait(1000)
+        super().closeEvent(event)
 
     def toggle_log(
         self,

@@ -28,7 +28,7 @@ def test_action_name_formatting():
     image_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.actions.images.pdf_to_images"
+        if action_obj.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
     )
     assert image_action.name == "PDF to Images"
 
@@ -38,7 +38,7 @@ def test_literal_parameters_resolved():
     pdf_action = next(
         action_obj
         for action_obj in actions_list
-        if action_obj.fqname == "pdf_toolbox.actions.images.pdf_to_images"
+        if action_obj.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
     )
 
     pdf_format_ann = next(
@@ -50,7 +50,7 @@ def test_literal_parameters_resolved():
 
     from typing import Literal, get_args, get_origin
 
-    from pdf_toolbox.actions.images import DPI_PRESETS
+    from pdf_toolbox.actions.pdf_images import DPI_PRESETS
 
     assert get_origin(pdf_format_ann) is Literal
     assert set(get_args(pdf_format_ann)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
@@ -79,7 +79,7 @@ def test_auto_discover_populates_registry():
     actions._auto_discover.cache_clear()
     actions_list = list_actions()
     assert any(
-        action_obj.fqname == "pdf_toolbox.actions.images.pdf_to_images"
+        action_obj.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
         for action_obj in actions_list
     )
 
@@ -93,7 +93,7 @@ def test_actions_import_registers_actions():
     importlib.reload(actions)
     actions.list_actions()
     assert any(
-        act.fqname == "pdf_toolbox.actions.images.pdf_to_images"
+        act.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
         for act in actions._registry.values()
     )
     actions._registry.clear()

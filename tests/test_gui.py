@@ -146,3 +146,40 @@ def test_build_form_hides_cancel(app, monkeypatch):
         assert "cancel" not in win.current_widgets
     finally:
         win.close()
+
+
+def test_miro_profile_toggles_fields(app, monkeypatch):
+    _ = app
+    import pdf_toolbox.gui.main_window as mw
+    from pdf_toolbox.actions.miro import miro_export
+
+    act = actions.build_action(miro_export, name="miro_export")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    monkeypatch.setattr(mw, "load_config", lambda: {"last_export_profile": "standard"})
+    saved: dict[str, object] = {}
+    monkeypatch.setattr(mw, "save_config", lambda cfg: saved.update(cfg))
+
+    win = gui.MainWindow()
+    try:
+        item = win.tree.topLevelItem(0).child(0)
+        win.on_item_clicked(item)
+        combo = win.profile_combo
+        assert combo is not None
+        assert combo.currentData() == "standard"
+        for name in ("image_format", "dpi", "quality"):
+            widget = win.field_rows.get(name)
+            assert widget is not None
+            assert widget.isVisible()
+        combo.setCurrentIndex(combo.findData("miro"))
+        QApplication.processEvents()
+        assert combo.currentData() == "miro"
+        for name in ("image_format", "dpi", "quality"):
+            widget = win.field_rows.get(name)
+            assert widget is not None
+            assert not widget.isVisible()
+        assert win.profile_help_label is not None
+        assert win.profile_help_label.isVisible()
+        assert win.cfg["last_export_profile"] == "miro"
+        assert saved.get("last_export_profile") == "miro"
+    finally:
+        win.close()

@@ -95,6 +95,8 @@ def test_rendering_actions_raise(simple_pptx):
 
 
 def test_renderer_config(monkeypatch, tmp_path):
+    captured_pdf: dict[str, str | None] = {}
+
     class DummyRenderer(BasePptxRenderer):
         def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
             self,
@@ -105,8 +107,9 @@ def test_renderer_config(monkeypatch, tmp_path):
             quality: int | None = None,
             width: int | None = None,
             height: int | None = None,
+            range_spec: str | None = None,
         ) -> str:
-            del out_dir, max_size_mb, image_format, quality, width, height
+            del out_dir, max_size_mb, image_format, quality, width, height, range_spec
             return "ok"
 
         def to_pdf(
@@ -117,7 +120,8 @@ def test_renderer_config(monkeypatch, tmp_path):
             handout: bool = False,
             range_spec: str | None = None,
         ) -> str:
-            del output_path, notes, handout, range_spec
+            del output_path, notes, handout
+            captured_pdf["range_spec"] = range_spec
             return "ok.pdf"
 
     monkeypatch.setattr(
@@ -131,7 +135,8 @@ def test_renderer_config(monkeypatch, tmp_path):
     renderer = get_pptx_renderer()
     assert isinstance(renderer, DummyRenderer)
     assert pptx_to_images(simple_pptx) == "ok"
-    assert pptx_to_pdf(simple_pptx) == "ok.pdf"
+    assert pptx_to_pdf(simple_pptx, pages="2-3") == "ok.pdf"
+    assert captured_pdf["range_spec"] == "2-3"
 
 
 def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
@@ -147,10 +152,12 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
             quality: int | None = None,
             width: int | None = None,
             height: int | None = None,
+            range_spec: str | None = None,
         ) -> str:
             del out_dir, max_size_mb, width, height
             captured["format"] = image_format
             captured["quality"] = quality
+            captured["range_spec"] = range_spec
             return "ok"
 
         def to_pdf(
@@ -173,7 +180,13 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
     cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
 
-    out = pptx_to_images(simple_pptx, image_format="png", quality="Low (70)")
+    out = pptx_to_images(
+        simple_pptx,
+        image_format="png",
+        quality="Low (70)",
+        pages="1-2",
+    )
     assert out == "ok"
     assert captured["format"] == "PNG"
     assert captured["quality"] == 70
+    assert captured["range_spec"] == "1-2"

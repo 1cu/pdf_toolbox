@@ -16,8 +16,13 @@
     "extract_range": "Bereich extrahieren",
     "field_cannot_be_empty": "Feld '{name}' darf nicht leer sein.",
     "german": "Deutsch",
+    "gui_export_profile_label": "Exportprofil",
+    "gui_export_profile_miro": "Miro (optimiert für Boards)",
+    "gui_export_profile_miro_help": "Max. 30 MB pro Seite, begrenzt auf 8192x4096 (32 MP), bei 400 % Zoom dank SVG möglichst scharf.",
+    "gui_export_profile_standard": "Standard",
     "language": "Sprache",
     "log_level": "Log Level",
+    "miro_export": "Miro-Export",
     "open_folder": "Ordner öffnen",
     "optimise_pdf": "PDF optimieren",
     "optimised_increased": "Nicht optimiert: Größe um {pct}% erhöht",
@@ -44,12 +49,14 @@
     "warning": "Hinweis"
   },
   "labels": {
+    "input_path": "Eingabedatei",
     "input_pdf": "Eingabe PDF",
     "input_pptx": "Eingabe-PPTX",
     "max_size_mb": "Maximale Größe (MB)",
     "out_dir": "Ausgabeverzeichnis",
     "output_dir": "Ausgabeverzeichnis",
     "output_path": "Ausgabepfad",
+    "pages": "Seiten",
     "range_spec": "Bereichsspezifikation"
   }
 }

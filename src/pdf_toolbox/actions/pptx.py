@@ -9,7 +9,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from pdf_toolbox.actions import action
-from pdf_toolbox.actions.images import QualityChoice, resolve_image_settings
+from pdf_toolbox.actions.pdf_images import QualityChoice, resolve_image_settings
 from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import get_pptx_renderer
 from pdf_toolbox.utils import logger
@@ -115,6 +115,7 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
     quality: int | QualityChoice = "High (95)",
     width: int | None = None,
     height: int | None = None,
+    pages: str | None = None,
 ) -> str:
     """Render a PPTX file to images using the configured provider.
 
@@ -126,6 +127,7 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
         quality: JPEG/WebP quality (ignored for other formats).
         width: Optional pixel width; requires ``height``.
         height: Optional pixel height; requires ``width``.
+        pages: Optional slide selection using the same syntax as PDF exports.
 
     Returns:
         Path to the directory containing the images.
@@ -145,14 +147,17 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
         quality=quality_val,
         width=width,
         height=height,
+        range_spec=pages,
     )
 
 
 @action(category="PPTX")
-def pptx_to_pdf(input_pptx: str, output_path: str | None = None) -> str:
+def pptx_to_pdf(
+    input_pptx: str, output_path: str | None = None, pages: str | None = None
+) -> str:
     """Render a PPTX file to PDF using the configured provider."""
     renderer = get_pptx_renderer()
-    return renderer.to_pdf(input_pptx, output_path=output_path)
+    return renderer.to_pdf(input_pptx, output_path=output_path, range_spec=pages)
 
 
 __all__ = [
