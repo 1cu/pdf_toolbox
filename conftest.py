@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Real
 from time import perf_counter
 
 import pytest
@@ -51,16 +52,16 @@ def pytest_runtest_call(item: pytest.Item):
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
-    error: BaseException | None = None
+    error: Exception | None = None
     try:
         outcome.get_result()
-    except BaseException as exc:  # pragma: no cover - handled by re-raise
+    except Exception as exc:  # pragma: no cover  # pdf-toolbox: preserve test failures while recording duration | issue:-
         error = exc
     finally:
         item.user_properties.append((_PROP_DURATION, duration))
         threshold = getattr(item.config, "_slow_threshold", 0.75)
         if duration >= threshold:
-            is_marked = any(marker.name == "slow" for marker in item.iter_markers())
+            is_marked = any(True for _ in item.iter_markers(name="slow"))
             item.user_properties.append((_PROP_MARKED, is_marked))
     if error is not None:
         raise error
@@ -78,7 +79,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     is_marked = False
     for key, value in report.user_properties:
         if key == _PROP_DURATION:
-            if isinstance(value, int | float):
+            if isinstance(value, Real):
                 duration = float(value)
             elif isinstance(value, str):
                 try:

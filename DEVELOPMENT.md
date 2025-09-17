@@ -106,6 +106,14 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   `fail_on_unmarked_slow` toggle lives in `pyproject.toml` and defaults to
   enforcing the policy.
 
+Example `pyproject.toml` configuration:
+
+```toml
+[tool.pytest.ini_options]
+slow_threshold = "0.75"
+fail_on_unmarked_slow = "true"
+```
+
 - The fast iteration loop (local commits, the pre-commit test hook, and the
   `tests-fast` CI job) runs the quick suite. Use the lightweight command below
   while iterating; coverage is still enforced by `pre-commit run tests --all-files`
@@ -166,8 +174,9 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   pre-commit run tests --all-files
   ```
 
-- CI runs the same hooks on Linux, macOS, and Windows (all on Python 3.13) and
-  verifies bytecode compilation with `python -m compileall .`.
+- CI runs the fast suite on Linux, macOS, and Windows (all on Python 3.13) and
+  executes the slow suite after the Linux fast phase succeeds. Each job verifies
+  bytecode compilation with `python -m compileall .`.
 
 - We intentionally skip `pip-audit`; dependency publishing is out of scope for
   this project.

@@ -85,7 +85,7 @@ def test_auto_discover_populates_registry():
 
 
 def test_actions_import_registers_actions(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Importing pdf_toolbox.actions loads actions without discovery."""
+    """_register_module() registers decorated actions from stubbed modules."""
     import importlib
     import types
 

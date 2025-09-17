@@ -98,7 +98,7 @@ def test_runtest_call_records_user_properties(monkeypatch: pytest.MonkeyPatch) -
     item = SimpleNamespace(
         config=config,
         user_properties=[],
-        iter_markers=lambda: [],
+        iter_markers=lambda *_, **__: [],
     )
 
     class FakePerfCounter:
@@ -145,7 +145,8 @@ def test_sessionfinish_clears_controller() -> None:
 
 
 def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
-    pytester.makeconftest(_PLUGIN_PATH.read_text(encoding="utf8"))
+    plugin_src = _PLUGIN_PATH.read_text(encoding="utf8").replace("\r\n", "\n")
+    pytester.makeconftest(plugin_src)
     pytester.makeini("[pytest]\n" + ini)
 
 
