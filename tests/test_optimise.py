@@ -61,18 +61,22 @@ def test_optimise_pdf_internal_path(tmp_path):
     assert reduction <= 1
 
 
-def test_logs_and_discards_size_increase(sample_pdf, tmp_path, monkeypatch):
+def test_logs_and_discards_size_increase(tmp_path, monkeypatch):
     import logging
 
     from pdf_toolbox.utils import logger
-    from pdf_toolbox.utils import save_pdf as original_save_pdf
 
-    def bigger_save(doc, out_path, *, note=None, **kwargs):
-        original_save_pdf(doc, out_path, note=note, **kwargs)
-        with Path(out_path).open("ab") as fh:
-            fh.write(b"extra")
+    input_pdf = tmp_path / "input.pdf"
+    with fitz.open() as doc:
+        doc.new_page()
+        doc.save(input_pdf)
+    original_size = input_pdf.stat().st_size
 
-    monkeypatch.setattr("pdf_toolbox.actions.optimise.save_pdf", bigger_save)
+    def fake_save(_doc, out_path, *, note=None, **kwargs):
+        del note, kwargs
+        Path(out_path).write_bytes(b"x" * (original_size + 1024))
+
+    monkeypatch.setattr("pdf_toolbox.actions.optimise.save_pdf", fake_save)
 
     class ListHandler(logging.Handler):
         def __init__(self) -> None:
@@ -85,10 +89,10 @@ def test_logs_and_discards_size_increase(sample_pdf, tmp_path, monkeypatch):
     list_handler = ListHandler()
     logger.addHandler(list_handler)
     try:
-        out, _ = optimise_pdf(sample_pdf, out_dir=str(tmp_path))
+        out, _ = optimise_pdf(str(input_pdf), out_dir=str(tmp_path))
     finally:
         logger.removeHandler(list_handler)
-    out_path = Path(tmp_path) / "sample_optimised_default.pdf"
+    out_path = Path(tmp_path) / "input_optimised_default.pdf"
     assert out is None
     assert not out_path.exists()
     assert any("size increased by" in msg for msg in list_handler.messages)

@@ -87,7 +87,10 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 - Run `pre-commit run tests --all-files` to execute `pytest` with coverage
   reporting. Hooks also run ruff, mypy, bandit, locale validation, and the
-  coverage checker.
+  coverage checker. CI mirrors the lint/format/security hooks via
+  `pre-commit run --all-files --hook-stage manual`; keep the fast pytest hook
+  green locally and trigger the manual `pytest-slow` stage when you change code
+  covered by slow tests.
 - Maintain ≥95% coverage overall **and per file**. The helper script
   `scripts/check_coverage.py` enforces per-file thresholds after pytest.
 - Keep GUI-only components thin. Factor logic into pure helpers so you can cover
@@ -95,6 +98,50 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   are the only accepted exclusions.
 - Use fixtures such as `tmp_path` for filesystem interactions and prefer
   deterministic tests.
+
+### Slow tests & policy
+
+- Tests that take **0.75 seconds or longer** (`tool.pytest.ini_options.slow_threshold`)
+  must be optimised before being marked with `@pytest.mark.slow`. The
+  `fail_on_unmarked_slow` toggle lives in `pyproject.toml` and defaults to
+  enforcing the policy.
+
+Example `pyproject.toml` configuration:
+
+```toml
+[tool.pytest.ini_options]
+slow_threshold = "0.75"
+fail_on_unmarked_slow = "true"
+```
+
+- The fast iteration loop (local commits, the pre-commit test hook, and the
+  `tests-fast` CI job) runs the quick suite. Use the lightweight command below
+  while iterating; coverage is still enforced by `pre-commit run tests --all-files`
+  and the CI job, which append `--cov` flags and execute
+  `python scripts/check_coverage.py`.
+
+  ```bash
+  pytest -n auto -m "not slow" --timeout=60 --maxfail=1 \
+         --durations=0 --durations-min=0.75
+  ```
+
+- Execute the slow-only suite whenever you touch code that might regress
+  performance:
+
+  ```bash
+  pytest -n auto -m "slow" -q --timeout=120 \
+         --durations=0 --durations-min=0.75
+  ```
+
+- When you want the slow suite under pre-commit, run the manual stage hook:
+
+  ```bash
+  pre-commit run pytest-slow --hook-stage manual
+  ```
+
+- The fast suite fails automatically whenever an unmarked test exceeds the
+  threshold. Optimise the test or mark it `@pytest.mark.slow` before merging.
+  CI only starts the `tests-slow` phase once the fast phase succeeds.
 
 ## Manage exceptions deliberately
 
@@ -127,8 +174,9 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   pre-commit run tests --all-files
   ```
 
-- CI runs the same hooks on Linux, macOS, and Windows (all on Python 3.13) and
-  verifies bytecode compilation with `python -m compileall .`.
+- CI runs the fast suite on Ubuntu (Python 3.13) before triggering the slow-only
+  phase on the same platform. Both jobs install the dev extras and reuse the
+  shared slow-policy hook so unmarked long-running tests fail quickly.
 
 - We intentionally skip `pip-audit`; dependency publishing is out of scope for
   this project.

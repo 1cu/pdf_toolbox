@@ -85,10 +85,13 @@
 | src/pdf_toolbox/renderers/registry.py:157  | pragma: no cover                         | unreachable once select(strict=True) succeeds          | -        |
 | src/pdf_toolbox/utils.py:13                | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/conftest.py:3                        | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| tests/test_actions.py:99                   | pragma: no cover                         | stub action body unused during registry import         | -        |
+| tests/test_actions.py:101                  | type: ignore[attr-defined]               | mark stub action for registry import                   | -        |
+| tests/test_actions.py:103                  | type: ignore[attr-defined]               | register stub action on module for import test         | -        |
 | tests/test_batch_optimise.py:3             | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_converters.py:3                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| tests/test_images.py:5                     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| tests/test_miro.py:136                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
+| tests/test_images.py:6                     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| tests/test_miro.py:211                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
 | tests/test_optimise.py:3                   | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise.py:50                  | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise_extra.py:5             | type: ignore                             | PyMuPDF lacks type hints                               | -        |

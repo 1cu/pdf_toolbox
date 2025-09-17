@@ -12,9 +12,12 @@ from pdf_toolbox import actions, gui
 @pytest.fixture(scope="module")
 def app():
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    patcher = pytest.MonkeyPatch()
+    patcher.setattr(gui.MainWindow, "check_author", lambda _: None)
     app = QApplication.instance() or QApplication([])
     yield app
     app.quit()
+    patcher.undo()
 
 
 def test_load_config_default(tmp_path, monkeypatch):
@@ -34,8 +37,14 @@ def test_save_config_roundtrip(tmp_path, monkeypatch):
     assert loaded == data
 
 
-def test_mainwindow_populates_actions(app):
+def test_mainwindow_populates_actions(app, monkeypatch):
     _ = app
+
+    def _sample() -> None:
+        pass
+
+    act = actions.build_action(_sample, name="Sample", category="demo")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
     win = gui.MainWindow()
     try:
         assert win.tree.topLevelItemCount() > 0
@@ -53,8 +62,8 @@ def test_mainwindow_collect_args(app, monkeypatch):
     monkeypatch.setattr(gui, "list_actions", lambda: [act])
     win = gui.MainWindow()
     try:
-        item = win.tree.topLevelItem(0).child(0)
-        win.on_item_clicked(item)
+        win.current_action = act
+        win.build_form(act)
         win.current_widgets["name"].setText("foo")
         win.current_widgets["flag"].setChecked(True)
         kwargs = win.collect_args()

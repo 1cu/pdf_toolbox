@@ -25,6 +25,9 @@ Read the primary docs before making changes:
 - Run `pre-commit run --all-files` before committing. Hooks format code, lint,
   type-check, run tests, enforce coverage, scan with bandit, and refresh the
   exception overview.
+- CI executes `pre-commit run --all-files --hook-stage manual` so only the lint,
+  format, security, and metadata hooks run remotely. Keep the fast pytest hook
+  green locally; the slow suite lives in the manual `pytest-slow` hook.
 - Use the shorter aliases when iterating (`pre-commit run format|lint|tests`).
 - Keep commits focused and use short imperative subject lines (≤72 characters).
 
@@ -32,6 +35,13 @@ Read the primary docs before making changes:
 
 - Maintain ≥95% coverage overall **and per file**. GUI-only modules listed in
   `pyproject.toml` are the only allowed omissions.
+- Tests that run longer than 0.75 seconds must be optimised first; only then may
+  they keep `@pytest.mark.slow`. The fast suite and CI will fail any unmarked
+  test that crosses the threshold.
+- PRs may not introduce unmarked slow tests. Optimise them or mark them with
+  `@pytest.mark.slow` before requesting review.
+- Run `pre-commit run pytest-slow --hook-stage manual` before pushing when you
+  touch code covered by slow tests.
 - Prefer clear naming and small, testable units. Factor logic out of GUI modules
   when possible.
 - Use the shared logging utilities; do not introduce `print` statements for
