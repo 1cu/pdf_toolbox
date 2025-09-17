@@ -106,7 +106,7 @@ def reorder_pptx(
     return str(out)
 
 
-@action(category="PPTX")
+@action(category="PPTX", requires_pptx_renderer=True)
 def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires many parameters | issue:-
     input_pptx: str,
     out_dir: str | None = None,
@@ -151,7 +151,7 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
     )
 
 
-@action(category="PPTX")
+@action(category="PPTX", requires_pptx_renderer=True)
 def pptx_to_pdf(
     input_pptx: str, output_path: str | None = None, pages: str | None = None
 ) -> str:

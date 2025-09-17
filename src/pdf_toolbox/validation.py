@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 
-ERR_PDF_NOT_FOUND = "PDF file not found: {path}"
+ERR_FILE_NOT_FOUND = "File not found: {path}"
 ERR_EXPECTED_FILE = "Expected a file, got directory: {path}"
 ERR_UNSUPPORTED_TYPE = "File must be one of {types}: {path}"
 ERR_MISSING_CONFIG = "Missing required config field: {key}"
@@ -28,19 +28,24 @@ def validate_pdf_path(
         ``Path``: Absolute path when validation succeeds.
     """
 
+    def _normalise(ext: str) -> str:
+        ext = ext.strip().lower()
+        return ext if ext.startswith(".") else f".{ext}"
+
     suffixes = {".pdf"}
     if allowed_suffixes is not None:
-        suffixes = {suffix.lower() for suffix in allowed_suffixes}
+        suffixes = {_normalise(suffix) for suffix in allowed_suffixes}
 
     p = Path(path)
     if not p.exists():
-        raise FileNotFoundError(ERR_PDF_NOT_FOUND.format(path=path))
+        raise FileNotFoundError(ERR_FILE_NOT_FOUND.format(path=path))
     if p.is_dir():
         raise IsADirectoryError(ERR_EXPECTED_FILE.format(path=path))
-    if suffixes and p.suffix.lower() not in suffixes:
+    resolved = p.resolve()
+    if suffixes and resolved.suffix.lower() not in suffixes:
         kinds = ", ".join(sorted(ext.lstrip(".").upper() for ext in suffixes))
         raise ValueError(ERR_UNSUPPORTED_TYPE.format(types=kinds, path=path))
-    return p
+    return resolved
 
 
 def validate_config(config: dict) -> dict:

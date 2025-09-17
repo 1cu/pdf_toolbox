@@ -131,11 +131,11 @@ def require_pptx_renderer() -> BasePptxRenderer:
 
 
 __all__ = [
+    "PPTX_PROVIDER_DOCS_URL",
     "BasePptxRenderer",
     "NullRenderer",
-    "PPTX_PROVIDER_DOCS_URL",
-    "PptxRenderingError",
     "PptxProviderUnavailableError",
+    "PptxRenderingError",
     "get_pptx_renderer",
     "require_pptx_renderer",
 ]

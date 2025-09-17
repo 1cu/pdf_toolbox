@@ -45,17 +45,12 @@ from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.renderers.pptx import (
     PPTX_PROVIDER_DOCS_URL,
-    NullRenderer,
-    get_pptx_renderer,
+    PptxProviderUnavailableError,
+    require_pptx_renderer,
 )
 from pdf_toolbox.utils import _load_author_info, configure_logging
 
 RESULT_PAIR_LEN = 2
-
-_RENDERER_REQUIRED_ACTIONS = {
-    "pdf_toolbox.actions.pptx.pptx_to_images",
-    "pdf_toolbox.actions.pptx.pptx_to_pdf",
-}
 
 
 class MainWindow(QMainWindow):
@@ -87,6 +82,9 @@ class MainWindow(QMainWindow):
         self.banner.setWordWrap(True)
         self.banner.setTextFormat(Qt.TextFormat.RichText)
         self.banner.setOpenExternalLinks(True)
+        self.banner.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction
+        )
         self.banner.setStyleSheet(
             "color: #664400; background-color: #fff4ce; border: 1px solid #e0c97f;"
             " border-radius: 4px; padding: 6px;"
@@ -453,15 +451,13 @@ class MainWindow(QMainWindow):
 
     def _update_pptx_banner(self, action: Action | None) -> None:
         """Show or hide the PPTX provider warning banner."""
-
-        if not action:
+        if not action or not action.requires_pptx_renderer:
             self.banner.setVisible(False)
             return
-        needs_provider = action.fqname in _RENDERER_REQUIRED_ACTIONS
-        if needs_provider and isinstance(get_pptx_renderer(), NullRenderer):
-            self.banner.setText(
-                tr("pptx_renderer_banner", docs=PPTX_PROVIDER_DOCS_URL)
-            )
+        try:
+            require_pptx_renderer()
+        except PptxProviderUnavailableError:
+            self.banner.setText(tr("pptx_renderer_banner", docs=PPTX_PROVIDER_DOCS_URL))
             self.banner.setVisible(True)
         else:
             self.banner.setVisible(False)
@@ -717,7 +713,12 @@ class MainWindow(QMainWindow):
         index = combo.findData(current)
         combo.setCurrentIndex(max(index, 0))
         form.addRow("PPTX Renderer", combo)
-        eff = QLabel(type(get_pptx_renderer()).__name__)
+        try:
+            renderer = require_pptx_renderer()
+        except PptxProviderUnavailableError:
+            eff = QLabel(tr("no_pptx_provider"))
+        else:
+            eff = QLabel(type(renderer).__name__)
         form.addRow("Effective renderer", eff)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
         form.addWidget(buttons)

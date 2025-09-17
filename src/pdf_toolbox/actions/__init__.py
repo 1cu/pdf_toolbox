@@ -32,6 +32,7 @@ class Action:
     params: list[Param]
     help: str
     category: str | None = None
+    requires_pptx_renderer: bool = False
 
     @property
     def name(self) -> str:
@@ -74,6 +75,7 @@ def action(
     *,
     category: str | None = None,
     visible: bool = True,
+    requires_pptx_renderer: bool = False,
 ):
     """Register *fn* as an action.
 
@@ -83,7 +85,13 @@ def action(
     """
 
     def deco(fn):
-        act = build_action(fn, name=name, category=category)
+        fn.__pptx_renderer_required__ = requires_pptx_renderer  # type: ignore[attr-defined]  # pdf-toolbox: attach renderer flag for GUI | issue:-
+        act = build_action(
+            fn,
+            name=name,
+            category=category,
+            requires_pptx_renderer=requires_pptx_renderer,
+        )
         fn.__pdf_toolbox_action__ = visible  # type: ignore[attr-defined]  # pdf-toolbox: attach custom attribute for action registration | issue:-
         _registry[act.fqname] = act
         return fn
@@ -91,7 +99,13 @@ def action(
     return deco
 
 
-def build_action(fn, name: str | None = None, category: str | None = None) -> Action:
+def build_action(
+    fn,
+    name: str | None = None,
+    category: str | None = None,
+    *,
+    requires_pptx_renderer: bool | None = None,
+) -> Action:
     sig = inspect.signature(fn)
     hints = t.get_type_hints(fn, include_extras=True)
     params: list[Param] = []
@@ -113,6 +127,11 @@ def build_action(fn, name: str | None = None, category: str | None = None) -> Ac
         params=params,
         help=(fn.__doc__ or "").strip(),
         category=category,
+        requires_pptx_renderer=(
+            requires_pptx_renderer
+            if requires_pptx_renderer is not None
+            else getattr(fn, "__pptx_renderer_required__", False)
+        ),
     )
 
 

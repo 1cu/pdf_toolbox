@@ -23,6 +23,7 @@
     "language": "Sprache",
     "log_level": "Log Level",
     "miro_export": "Miro-Export",
+    "no_pptx_provider": "Kein PPTX-Provider konfiguriert",
     "open_folder": "Ordner öffnen",
     "optimise_pdf": "PDF optimieren",
     "optimised_increased": "Nicht optimiert: Größe um {pct}% erhöht",

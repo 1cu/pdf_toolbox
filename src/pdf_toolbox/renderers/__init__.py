@@ -13,8 +13,8 @@ from pdf_toolbox.renderers.pptx import (
 )
 
 __all__ = [
-    "BasePptxRenderer",
     "PPTX_PROVIDER_DOCS_URL",
+    "BasePptxRenderer",
     "PptxProviderUnavailableError",
     "get_pptx_renderer",
     "require_pptx_renderer",

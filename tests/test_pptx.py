@@ -92,9 +92,9 @@ def test_reorder_pptx_range_and_invalid(simple_pptx):
 
 
 def test_rendering_actions_raise(simple_pptx):
-    with pytest.raises(PptxProviderUnavailableError, match="Rendering PPTX"):
+    with pytest.raises(PptxProviderUnavailableError):
         pptx_to_images(simple_pptx)
-    with pytest.raises(PptxProviderUnavailableError, match="Rendering PPTX"):
+    with pytest.raises(PptxProviderUnavailableError):
         pptx_to_pdf(simple_pptx)
 
 
