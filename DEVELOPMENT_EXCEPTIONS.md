@@ -4,7 +4,7 @@
 | ------------------------------------------ | ---------------------------------------- | ------------------------------------------------------ | -------- |
 | scripts/check_coverage.py:8                | B405                                     | stdlib XML parser on trusted coverage file             | -        |
 | scripts/check_coverage.py:38               | B314                                     | parsing trusted coverage report                        | -        |
-| scripts/generate_exception_overview.py:23  | PLR0912                                  | parsing requires several branches                      | -        |
+| scripts/generate_exception_overview.py:51  | PLR0912                                  | parsing requires several branches                      | -        |
 | scripts/prune_releases.py:28               | S310                                     | urllib Request for GitHub API                          | -        |
 | scripts/prune_releases.py:33               | S310, B310                               | urllib urlopen for GitHub API                          | -        |
 | scripts/prune_releases.py:60               | type: ignore[arg-type]                   | GitHub API returns untyped data                        | -        |
@@ -106,3 +106,9 @@
 | tests/test_pptx_renderer.py:19             | PLR0913                                  | renderer stub matches renderer API signature           | -        |
 | tests/test_renderer_registry.py:12         | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+
+## Runtime Exceptions
+
+| Exception                                               | Message key           | Locales                                                                      | Docs                                                                                                               |
+| ------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| pdf_toolbox.renderers.pptx.PptxProviderUnavailableError | pptx_renderer_missing | [en](src/pdf_toolbox/locales/en.json), [de](src/pdf_toolbox/locales/de.json) | [PPTX_PROVIDER_DOCS_URL](https://github.com/1cu/pdf_toolbox/blob/main/docs/adr/0001-pptx-provider-architecture.md) |
