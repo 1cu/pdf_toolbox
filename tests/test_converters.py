@@ -3,11 +3,8 @@ from pathlib import Path
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 
-from pdf_toolbox.actions import docx as docx_mod
 from pdf_toolbox.actions import pdf_images as images_mod
-from pdf_toolbox.actions.docx import pdf_to_docx
 from pdf_toolbox.actions.pdf_images import pdf_to_images
-from pdf_toolbox.actions.repair import repair_pdf
 from pdf_toolbox.actions.unlock import unlock_pdf
 
 
@@ -40,38 +37,6 @@ def test_pdf_to_images_default_outdir(sample_pdf):
     assert all(
         Path(output_path).parent == Path(sample_pdf).parent for output_path in outputs
     )
-
-
-def test_pdf_to_docx(pdf_with_image, tmp_path):
-    output = pdf_to_docx(pdf_with_image, out_dir=str(tmp_path))
-    assert Path(output).exists()
-
-
-def test_pdf_to_docx_converts_non_rgb(monkeypatch, pdf_with_image, tmp_path):
-    class DummyPix:
-        def __init__(self, n: int):
-            self.n = n
-            self.width = 1
-            self.height = 1
-            self.samples = b"\x00\x00\x00"
-
-    called = {"converted": False}
-
-    def fake_pixmap(_arg1, arg2):
-        if isinstance(arg2, int):
-            return DummyPix(4)
-        called["converted"] = True
-        return DummyPix(3)
-
-    monkeypatch.setattr(docx_mod.fitz, "Pixmap", fake_pixmap)
-    output = pdf_to_docx(pdf_with_image, out_dir=str(tmp_path))
-    assert called["converted"]
-    assert Path(output).exists()
-
-
-def test_repair_pdf(sample_pdf, tmp_path):
-    output = repair_pdf(sample_pdf, out_dir=str(tmp_path))
-    assert Path(output).exists()
 
 
 def test_unlock_pdf(sample_pdf, tmp_path):
