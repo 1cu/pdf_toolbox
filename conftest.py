@@ -8,7 +8,7 @@ from typing import Any, cast
 
 import pytest
 
-_CONTROLLER_CONFIG: pytest.Config | None = None
+_STATE: dict[str, pytest.Config | None] = {"controller_config": None}
 
 
 def _as_bool(value: str) -> bool:
@@ -27,6 +27,7 @@ def _get_property(
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
+    """Register slow-policy configuration options from ``pyproject.toml``."""
     parser.addini(
         "slow_threshold",
         "Seconds from which a test is considered slow (float as string).",
@@ -40,6 +41,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
+    """Initialise slow-policy state on the active pytest configuration."""
     try:
         threshold = float(config.getini("slow_threshold"))
     except (TypeError, ValueError):
@@ -52,12 +54,12 @@ def pytest_configure(config: pytest.Config) -> None:
     config_state._fail_on_unmarked_slow = fail_policy
 
     if not hasattr(config, "workerinput"):
-        global _CONTROLLER_CONFIG
-        _CONTROLLER_CONFIG = config
+        _STATE["controller_config"] = config
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item: pytest.Item):
+    """Measure call duration and record whether the test was marked slow."""
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
@@ -69,10 +71,11 @@ def pytest_runtest_call(item: pytest.Item):
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Collect slow-call metadata emitted during ``pytest_runtest_call``."""
     if report.when != "call":
         return
 
-    config: pytest.Config | None = _CONTROLLER_CONFIG
+    config: pytest.Config | None = _STATE.get("controller_config")
     if config is None:
         session = getattr(report, "session", None)
         config = getattr(session, "config", None)
@@ -101,6 +104,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
 def pytest_terminal_summary(
     terminalreporter: pytest.TerminalReporter, exitstatus: int
 ) -> None:
+    """Render the slow-test summary and enforce the unmarked-slow policy."""
     del exitstatus
     slow_items = getattr(terminalreporter.config, "_slow_items", [])
     if not slow_items:
@@ -126,8 +130,8 @@ def pytest_terminal_summary(
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """Reset controller state after the main session completes."""
     del exitstatus
     if hasattr(session.config, "workerinput"):
         return
-    global _CONTROLLER_CONFIG
-    _CONTROLLER_CONFIG = None
+    _STATE["controller_config"] = None

@@ -17,7 +17,7 @@ def _load_plugin():
     module_name = f"_slow_policy_{uuid.uuid4().hex}"
     spec = importlib.util.spec_from_file_location(module_name, _PLUGIN_PATH)
     if spec is None or spec.loader is None:
-        raise AssertionError("Could not load slow policy plugin")
+        pytest.fail("Could not load slow policy plugin")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -94,7 +94,7 @@ def test_get_property_returns_default() -> None:
 
 def test_logreport_ignores_missing_duration() -> None:
     plugin = _load_plugin()
-    plugin._CONTROLLER_CONFIG = SimpleNamespace(
+    plugin._STATE["controller_config"] = SimpleNamespace(
         _slow_items=[],
         _slow_threshold=0.75,
     )
@@ -107,12 +107,13 @@ def test_logreport_ignores_missing_duration() -> None:
     )
 
     plugin.pytest_runtest_logreport(cast(pytest.TestReport, report))
-    assert plugin._CONTROLLER_CONFIG._slow_items == []
+    controller = cast(SimpleNamespace, plugin._STATE["controller_config"])
+    assert controller._slow_items == []
 
 
 def test_logreport_skips_non_numeric_duration() -> None:
     plugin = _load_plugin()
-    plugin._CONTROLLER_CONFIG = SimpleNamespace(
+    plugin._STATE["controller_config"] = SimpleNamespace(
         _slow_items=[],
         _slow_threshold=0.1,
     )
@@ -125,4 +126,5 @@ def test_logreport_skips_non_numeric_duration() -> None:
     )
 
     plugin.pytest_runtest_logreport(cast(pytest.TestReport, report))
-    assert plugin._CONTROLLER_CONFIG._slow_items == []
+    controller = cast(SimpleNamespace, plugin._STATE["controller_config"])
+    assert controller._slow_items == []

@@ -1,5 +1,5 @@
+import hashlib
 import math
-import random
 import warnings
 from pathlib import Path
 
@@ -19,8 +19,17 @@ def noise_pdf(tmp_path_factory: pytest.TempPathFactory) -> str:
 
     width = height = 32
     img_path = base_dir / "noise.png"
-    rng = random.Random(42)
-    pixels = bytes(rng.randrange(0, 256) for _ in range(width * height * 3))
+    seed = b"pdf-toolbox-noise"
+    needed = width * height * 3
+    buffer = bytearray()
+    counter = 0
+    while len(buffer) < needed:
+        block = hashlib.blake2b(
+            seed + counter.to_bytes(4, "little"), digest_size=64
+        ).digest()
+        buffer.extend(block)
+        counter += 1
+    pixels = bytes(buffer[:needed])
     Image.frombytes("RGB", (width, height), pixels).save(img_path)
     doc = fitz.open()
     page = doc.new_page(width=width, height=height)
