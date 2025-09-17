@@ -1,4 +1,4 @@
-"""Pytest slow-test policy hooks configured via ``pyproject.toml``."""
+"""Pytest slow-test policy configured via ``pyproject.toml`` only."""
 
 from __future__ import annotations
 
@@ -8,18 +8,20 @@ from typing import Any
 
 import pytest
 
+_PROP_DURATION = "slow_policy_duration"
+_PROP_MARKED = "slow_policy_is_marked"
 _STATE: dict[str, pytest.Config | None] = {"controller": None}
 
 
 def _as_bool(s: str) -> bool:
-    """Return ``True`` for common truthy strings."""
+    """Return ``True`` when *s* is any common truthy string."""
     return str(s).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _get_user_property(
     properties: Iterable[tuple[str, object]], key: str, default: Any | None = None
 ) -> Any | None:
-    """Retrieve *key* from pytest ``user_properties`` tuples."""
+    """Return the value stored under ``key`` in ``user_properties``."""
     for name, value in properties:
         if name == key:
             return value
@@ -27,7 +29,7 @@ def _get_user_property(
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Register slow-policy configuration options."""
+    """Register slow-policy ini options."""
     parser.addini(
         "slow_threshold",
         "Seconds from which a test is considered slow (float as string).",
@@ -41,7 +43,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Initialise slow-policy attributes on the active config."""
+    """Initialise session-level slow-policy tracking on *config*."""
     config._slow_items = []  # type: ignore[attr-defined]
     try:
         config._slow_threshold = float(config.getini("slow_threshold"))  # type: ignore[attr-defined]
@@ -50,35 +52,33 @@ def pytest_configure(config: pytest.Config) -> None:
     config._fail_on_unmarked_slow = _as_bool(  # type: ignore[attr-defined]
         config.getini("fail_on_unmarked_slow")
     )
-
     if not hasattr(config, "workerinput"):
         _STATE["controller"] = config
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item: pytest.Item):
-    """Record call duration and mark state on the test item."""
+    """Measure call duration and flag slow markers on *item*."""
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
     outcome.get_result()
 
     is_marked = any(marker.name == "slow" for marker in item.iter_markers())
-    item.user_properties.append(("duration", duration))
-    item.user_properties.append(("is_marked_slow", is_marked))
+    item.user_properties.append((_PROP_DURATION, duration))
+    item.user_properties.append((_PROP_MARKED, is_marked))
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
-    """Collect slow-call metadata from worker reports."""
+    """Collect slow items from worker reports and aggregate them on the controller."""
     if report.when != "call":
         return
-
     config = _STATE["controller"]
     if config is None:
         return
 
     threshold = getattr(config, "_slow_threshold", 0.75)
-    duration = _get_user_property(report.user_properties, "duration")
+    duration = _get_user_property(report.user_properties, _PROP_DURATION)
     try:
         recorded = float(duration)  # type: ignore[arg-type]
     except (TypeError, ValueError):
@@ -86,16 +86,14 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     if recorded < threshold:
         return
 
-    is_marked = bool(
-        _get_user_property(report.user_properties, "is_marked_slow", False)
-    )
+    is_marked = bool(_get_user_property(report.user_properties, _PROP_MARKED, False))
     config._slow_items.append((report.nodeid, recorded, is_marked))  # type: ignore[attr-defined]
 
 
 def pytest_terminal_summary(
     terminalreporter: pytest.TerminalReporter, exitstatus: int
 ) -> None:
-    """Render the slow-test summary and fail on unmarked slow tests."""
+    """Render the slow-test summary and enforce the unmarked-slow policy."""
     del exitstatus
     slow_items = getattr(terminalreporter.config, "_slow_items", [])
     if not slow_items:
@@ -121,7 +119,7 @@ def pytest_terminal_summary(
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Reset controller state after the session completes."""
+    """Clear controller references once the session has ended."""
     del exitstatus
     if hasattr(session.config, "workerinput"):
         return
