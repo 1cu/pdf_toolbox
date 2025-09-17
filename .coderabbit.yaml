@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 language: en-US
 enable_free_tier: true
 tone_instructions: "Be concise and focus on critical issues only"

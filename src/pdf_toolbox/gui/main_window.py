@@ -546,15 +546,16 @@ class MainWindow(QMainWindow):
         self.progress.setValue(1)
         self.run_btn.setText(tr("start"))
 
+        status_key = "done"
         status = tr("done")
         text: str | None = None
-        if result:
+        if result is not None:
             if isinstance(result, (list, tuple)):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
 
-        self.update_status(status, status)
+        self.update_status(status, status_key)
         if text:
             self.log.setVisible(True)
             if self.log.toPlainText():
