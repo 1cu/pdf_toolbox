@@ -85,6 +85,9 @@
 | src/pdf_toolbox/renderers/registry.py:157  | pragma: no cover                         | unreachable once select(strict=True) succeeds          | -        |
 | src/pdf_toolbox/utils.py:13                | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/conftest.py:3                        | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| tests/test_actions.py:99                   | pragma: no cover                         | stub action body unused during registry import         | -        |
+| tests/test_actions.py:101                  | type: ignore[attr-defined]               | mark stub action for registry import                   | -        |
+| tests/test_actions.py:103                  | type: ignore[attr-defined]               | register stub action on module for import test         | -        |
 | tests/test_batch_optimise.py:3             | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_converters.py:3                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_images.py:6                     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
@@ -100,8 +103,5 @@
 | tests/test_pptx_ms_office_renderer.py:50   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_pptx_ms_office_renderer.py:68   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_pptx_renderer.py:19             | PLR0913                                  | renderer stub matches renderer API signature           | -        |
-| tests/test_pytest_slow_policy.py:48        | type: ignore[attr-defined]               | provide legacy attribute for compatibility tests       | -        |
-| tests/test_pytest_slow_policy.py:49        | type: ignore[attr-defined]               | expose threshold attribute for compatibility tests     | -        |
-| tests/test_pytest_slow_policy.py:50        | type: ignore[attr-defined]               | expose strict flag for compatibility tests             | -        |
 | tests/test_renderer_registry.py:12         | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                               | -        |

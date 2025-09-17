@@ -67,13 +67,14 @@ def test_logs_and_discards_size_increase(tmp_path, monkeypatch):
     from pdf_toolbox.utils import logger
 
     input_pdf = tmp_path / "input.pdf"
-    input_pdf.write_bytes(b"PDF")
-
-    monkeypatch.setattr("pdf_toolbox.actions.optimise.open_pdf", lambda _path: object())
+    with fitz.open() as doc:
+        doc.new_page()
+        doc.save(input_pdf)
+    original_size = input_pdf.stat().st_size
 
     def fake_save(_doc, out_path, *, note=None, **kwargs):
         del note, kwargs
-        Path(out_path).write_bytes(b"bigger payload")
+        Path(out_path).write_bytes(b"x" * (original_size + 1024))
 
     monkeypatch.setattr("pdf_toolbox.actions.optimise.save_pdf", fake_save)
 

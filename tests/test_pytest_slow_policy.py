@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from typing import cast
 
 import pytest
-from _pytest.stash import Stash
 
 import conftest as slow_policy
 
@@ -39,16 +38,11 @@ def _make_config(
     strict: bool = True,
     items: list[tuple[str, float, bool]] | None = None,
 ) -> SimpleNamespace:
-    stash = Stash()
-    slow_items = list(items or [])
-    stash[slow_policy._SLOW_ITEMS_KEY] = slow_items
-    stash[slow_policy._THRESHOLD_KEY] = threshold
-    stash[slow_policy._STRICT_KEY] = strict
-    config = SimpleNamespace(stash=stash)
-    config._slow_items = slow_items  # type: ignore[attr-defined]  # pdf-toolbox: provide legacy attribute for compatibility tests | issue:-
-    config._slow_threshold = threshold  # type: ignore[attr-defined]  # pdf-toolbox: expose threshold attribute for compatibility tests | issue:-
-    config._fail_on_unmarked_slow = strict  # type: ignore[attr-defined]  # pdf-toolbox: expose strict flag for compatibility tests | issue:-
-    return config
+    return SimpleNamespace(
+        _slow_items=list(items or []),
+        _slow_threshold=threshold,
+        _fail_on_unmarked_slow=strict,
+    )
 
 
 def test_terminal_summary_sets_exit_status_for_unmarked() -> None:
@@ -96,7 +90,7 @@ def test_logreport_collects_slow_items() -> None:
     finally:
         slow_policy._CONTROLLER[0] = None
 
-    assert config.stash[slow_policy._SLOW_ITEMS_KEY] == [("pkg::test", 1.1, True)]
+    assert config._slow_items == [("pkg::test", 1.1, True)]
 
 
 def test_runtest_call_records_user_properties(monkeypatch: pytest.MonkeyPatch) -> None:

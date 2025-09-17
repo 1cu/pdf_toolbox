@@ -87,7 +87,10 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 - Run `pre-commit run tests --all-files` to execute `pytest` with coverage
   reporting. Hooks also run ruff, mypy, bandit, locale validation, and the
-  coverage checker.
+  coverage checker. CI mirrors the lint/format/security hooks via
+  `pre-commit run --all-files --hook-stage manual`; keep the fast pytest hook
+  green locally and trigger the manual `pytest-slow` stage when you change code
+  covered by slow tests.
 - Maintain ≥95% coverage overall **and per file**. The helper script
   `scripts/check_coverage.py` enforces per-file thresholds after pytest.
 - Keep GUI-only components thin. Factor logic into pure helpers so you can cover

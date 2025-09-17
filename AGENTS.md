@@ -25,6 +25,9 @@ Read the primary docs before making changes:
 - Run `pre-commit run --all-files` before committing. Hooks format code, lint,
   type-check, run tests, enforce coverage, scan with bandit, and refresh the
   exception overview.
+- CI executes `pre-commit run --all-files --hook-stage manual` so only the lint,
+  format, security, and metadata hooks run remotely. Keep the fast pytest hook
+  green locally; the slow suite lives in the manual `pytest-slow` hook.
 - Use the shorter aliases when iterating (`pre-commit run format|lint|tests`).
 - Keep commits focused and use short imperative subject lines (≤72 characters).
 

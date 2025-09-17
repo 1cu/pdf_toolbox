@@ -1,38 +1,23 @@
-"""Pytest slow-test policy configured via ``pyproject.toml`` only."""
+"""Minimal pytest slow-test policy configured via ``pyproject.toml``."""
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from time import perf_counter
-from typing import Any
 
 import pytest
 
-_PROP_DURATION = "slow_policy_duration"
-_PROP_MARKED = "slow_policy_is_marked"
-_SLOW_ITEMS_KEY: pytest.StashKey[list[tuple[str, float, bool]]] = pytest.StashKey()
-_THRESHOLD_KEY: pytest.StashKey[float] = pytest.StashKey()
-_STRICT_KEY: pytest.StashKey[bool] = pytest.StashKey()
+_PROP_DURATION = "duration"
+_PROP_MARKED = "is_marked_slow"
 _CONTROLLER: list[pytest.Config | None] = [None]
 
 
-def _as_bool(s: str) -> bool:
-    """Return ``True`` when *s* is any common truthy string."""
-    return str(s).strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _get_user_property(
-    properties: Iterable[tuple[str, object]], key: str, default: Any | None = None
-) -> Any | None:
-    """Return the value stored under ``key`` in ``user_properties``."""
-    for name, value in properties:
-        if name == key:
-            return value
-    return default
+def _as_bool(value: str) -> bool:
+    """Interpret ``value`` using common truthy tokens."""
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Register slow-policy ini options."""
+    """Expose slow-policy ini options for configuration."""
     parser.addini(
         "slow_threshold",
         "Seconds from which a test is considered slow (float as string).",
@@ -46,26 +31,23 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Initialise session-level slow-policy tracking on *config*."""
-    slow_items: list[tuple[str, float, bool]] = []
-    config.stash[_SLOW_ITEMS_KEY] = slow_items
-    config._slow_items = slow_items  # type: ignore[attr-defined]  # pdf-toolbox: expose legacy attribute for pytest <8 plugins | issue:-
+    """Initialise slow-test tracking on *config*."""
+    config._slow_items = []  # type: ignore[attr-defined]
     try:
         threshold = float(config.getini("slow_threshold"))
     except Exception:
         threshold = 0.75
-    config.stash[_THRESHOLD_KEY] = threshold
-    config._slow_threshold = threshold  # type: ignore[attr-defined]  # pdf-toolbox: mirror legacy attribute for reporting hooks | issue:-
-    strict = _as_bool(config.getini("fail_on_unmarked_slow"))
-    config.stash[_STRICT_KEY] = strict
-    config._fail_on_unmarked_slow = strict  # type: ignore[attr-defined]  # pdf-toolbox: maintain compatibility with existing tooling | issue:-
+    config._slow_threshold = threshold  # type: ignore[attr-defined]
+    config._fail_on_unmarked_slow = _as_bool(  # type: ignore[attr-defined]
+        config.getini("fail_on_unmarked_slow")
+    )
     if not hasattr(config, "workerinput"):
         _CONTROLLER[0] = config
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item: pytest.Item):
-    """Measure call duration and flag slow markers on *item*."""
+    """Record call duration and marker metadata for *item*."""
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
@@ -75,48 +57,58 @@ def pytest_runtest_call(item: pytest.Item):
     except BaseException as exc:  # pragma: no cover - handled by re-raise
         error = exc
     finally:
-        threshold = item.config.stash.get(_THRESHOLD_KEY, 0.75)
+        item.user_properties.append((_PROP_DURATION, duration))
+        threshold = getattr(item.config, "_slow_threshold", 0.75)
         if duration >= threshold:
             is_marked = any(marker.name == "slow" for marker in item.iter_markers())
-            item.user_properties.append((_PROP_DURATION, duration))
             item.user_properties.append((_PROP_MARKED, is_marked))
     if error is not None:
         raise error
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
-    """Collect slow items from worker reports and aggregate them on the controller."""
+    """Aggregate slow items on the controller config."""
     if report.when != "call":
         return
-    config = _CONTROLLER[0]
-    if config is None:
+    controller = _CONTROLLER[0]
+    if controller is None:
         return
 
-    duration = _get_user_property(report.user_properties, _PROP_DURATION)
-    try:
-        recorded = float(duration)  # type: ignore[arg-type]
-    except (TypeError, ValueError):
+    duration: float | None = None
+    is_marked = False
+    for key, value in report.user_properties:
+        if key == _PROP_DURATION:
+            if isinstance(value, int | float):
+                duration = float(value)
+            elif isinstance(value, str):
+                try:
+                    duration = float(value)
+                except ValueError:
+                    duration = None
+            else:
+                duration = None
+        elif key == _PROP_MARKED:
+            is_marked = bool(value)
+
+    threshold = getattr(controller, "_slow_threshold", 0.75)
+    if duration is None or duration < threshold:
         return
 
-    threshold = config.stash.get(_THRESHOLD_KEY, 0.75)
-    if recorded < threshold:
-        return
-
-    is_marked = bool(_get_user_property(report.user_properties, _PROP_MARKED, False))
-    config.stash[_SLOW_ITEMS_KEY].append((report.nodeid, recorded, is_marked))
+    slow_items = getattr(controller, "_slow_items", [])
+    slow_items.append((report.nodeid, duration, is_marked))
 
 
 def pytest_terminal_summary(
     terminalreporter: pytest.TerminalReporter, exitstatus: int
 ) -> None:
-    """Render the slow-test summary and enforce the unmarked-slow policy."""
+    """Render the slow-test summary and enforce the policy."""
     del exitstatus
     config = terminalreporter.config
-    slow_items = config.stash.get(_SLOW_ITEMS_KEY, [])
+    slow_items = getattr(config, "_slow_items", [])
     if not slow_items:
         return
 
-    threshold = config.stash.get(_THRESHOLD_KEY, 0.75)
+    threshold = getattr(config, "_slow_threshold", 0.75)
     terminalreporter.section(f"Slow tests (>= {threshold:.2f}s)")
     for nodeid, duration, is_marked in sorted(
         slow_items, key=lambda entry: entry[1], reverse=True
@@ -124,8 +116,9 @@ def pytest_terminal_summary(
         tag = "slow" if is_marked else "UNMARKED"
         terminalreporter.write_line(f"{duration:6.2f}s  {tag:9}  {nodeid}")
 
-    strict = config.stash.get(_STRICT_KEY, True)
-    if strict and any(not marked for _, _, marked in slow_items):
+    if getattr(config, "_fail_on_unmarked_slow", True) and any(
+        not marked for _, _, marked in slow_items
+    ):
         terminalreporter.write_line(
             f"\nUnmarked slow tests detected (>= {threshold:.2f}s). "
             "Mark with @pytest.mark.slow or speed them up."
@@ -136,7 +129,7 @@ def pytest_terminal_summary(
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Clear controller references once the session has ended."""
+    """Clear controller reference after the session ends."""
     del exitstatus
     if hasattr(session.config, "workerinput"):
         return
