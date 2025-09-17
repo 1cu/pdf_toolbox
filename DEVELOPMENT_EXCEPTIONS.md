@@ -87,8 +87,8 @@
 | tests/conftest.py:3                        | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_batch_optimise.py:3             | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_converters.py:3                 | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| tests/test_images.py:5                     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
-| tests/test_miro.py:136                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
+| tests/test_images.py:6                     | type: ignore                             | PyMuPDF lacks type hints                               | -        |
+| tests/test_miro.py:211                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
 | tests/test_optimise.py:3                   | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise.py:50                  | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_optimise_extra.py:5             | type: ignore                             | PyMuPDF lacks type hints                               | -        |

@@ -32,6 +32,11 @@ Read the primary docs before making changes:
 
 - Maintain ≥95% coverage overall **and per file**. GUI-only modules listed in
   `pyproject.toml` are the only allowed omissions.
+- Tests that run longer than 0.75 seconds must be optimised first; only then may
+  they keep `@pytest.mark.slow`. The fast suite and CI will fail any unmarked
+  test that crosses the threshold.
+- Run `pre-commit run pytest-slow --hook-stage manual` before pushing when you
+  touch code covered by slow tests.
 - Prefer clear naming and small, testable units. Factor logic out of GUI modules
   when possible.
 - Use the shared logging utilities; do not introduce `print` statements for

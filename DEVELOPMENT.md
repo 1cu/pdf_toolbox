@@ -96,6 +96,41 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 - Use fixtures such as `tmp_path` for filesystem interactions and prefer
   deterministic tests.
 
+### Slow tests & policy
+
+- Tests that take **0.75 seconds or longer** (`tool.pytest.ini_options.slow_threshold`)
+  must be optimised before being marked with `@pytest.mark.slow`. The
+  `fail_on_unmarked_slow` toggle lives in `pyproject.toml` and defaults to
+  enforcing the policy.
+
+- The fast iteration loop (local commits, the pre-commit test hook, and the
+  `tests-fast` CI job) runs the quick suite and enforces coverage in one go:
+
+  ```bash
+  pytest -n auto -m "not slow" -q --timeout=60 \
+         --durations=0 --durations-min=0.75 \
+         --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+  python scripts/check_coverage.py
+  ```
+
+- Execute the slow-only suite whenever you touch code that might regress
+  performance:
+
+  ```bash
+  pytest -n auto -m "slow" -q --timeout=120 \
+         --durations=0 --durations-min=0.75
+  ```
+
+- When you want the slow suite under pre-commit, run the manual stage hook:
+
+  ```bash
+  pre-commit run pytest-slow --hook-stage manual
+  ```
+
+- The fast suite fails automatically whenever an unmarked test exceeds the
+  threshold. Optimise the test or mark it `@pytest.mark.slow` before merging.
+  CI only starts the `tests-slow` phase once the fast phase succeeds.
+
 ## Manage exceptions deliberately
 
 - When a linter, type-checker, bandit, or coverage rule truly cannot be fixed,

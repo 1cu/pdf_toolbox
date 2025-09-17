@@ -7,28 +7,34 @@ from PIL import Image
 from pdf_toolbox import utils
 
 
-@pytest.fixture
-def sample_pdf(tmp_path):
-    document = fitz.open()
-    for page_index in range(3):
-        page = document.new_page(width=200, height=200)
-        page.insert_text((72, 72), f"Page {page_index + 1}")
-    pdf_path = tmp_path / "sample.pdf"
-    document.save(pdf_path)
-    document.close()
+@pytest.fixture(scope="session")
+def sample_pdf(tmp_path_factory: pytest.TempPathFactory) -> str:
+    base_dir = tmp_path_factory.mktemp("sample-pdf")
+    pdf_path = base_dir / "sample.pdf"
+    if not pdf_path.exists():
+        document = fitz.open()
+        for page_index in range(3):
+            page = document.new_page(width=200, height=200)
+            page.insert_text((72, 72), f"Page {page_index + 1}")
+        document.save(pdf_path)
+        document.close()
     return str(pdf_path)
 
 
-@pytest.fixture
-def pdf_with_image(tmp_path):
-    img_path = tmp_path / "img.png"
+@pytest.fixture(scope="session")
+def pdf_with_image(tmp_path_factory: pytest.TempPathFactory) -> str:
+    base_dir = tmp_path_factory.mktemp("pdf-with-image")
+    pdf_path = base_dir / "with_image.pdf"
+    if pdf_path.exists():
+        return str(pdf_path)
+
+    img_path = base_dir / "img.png"
     Image.new("RGB", (10, 10), color=(255, 0, 0)).save(img_path)
     doc = fitz.open()
     page = doc.new_page(width=200, height=200)
     rect = fitz.Rect(0, 0, 10, 10)
     page.insert_text((72, 72), "Hi")
     page.insert_image(rect, filename=str(img_path))
-    pdf_path = tmp_path / "with_image.pdf"
     doc.save(pdf_path)
     doc.close()
     with pdf_path.open("ab") as fh:
