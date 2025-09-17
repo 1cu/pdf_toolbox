@@ -1,32 +1,49 @@
 language: en-US
+enable_free_tier: true
+tone_instructions: "Be concise and focus on critical issues only"
 reviews:
+  poem: false
   profile: chill
+  review_status: false
+  changed_files_summary: false
+  estimate_code_review_effort: false
   request_changes_workflow: true
+  high_level_summary: false
   auto_review:
     enabled: true
     auto_incremental_review: true
-pre_merge_checks:
-  description:
-    mode: info
-  title:
-    mode: info
-  custom_checks:
-    - mode: error
-      name: "Coverage ≥95% overall and per-file"
-      instructions: >
-        Fail if the latest coverage status context does not indicate ≥95% overall
-        AND for each modified file. If a coverage check exists, require it to be green.
-    - mode: error
-      name: "Tests accompany code changes"
-      instructions: >
-        If files under src/pdf_toolbox/** change, require at least one test file under tests/**
-        to change in the same PR.
-    - mode: error
-      name: "Inline exceptions documented"
-      instructions: >
-        Flag any use of '# noqa', 'ruff: noqa', or '# type: ignore' that lacks the suffix
-        '# pdf-toolbox: <reason> | issue:<id or ->'. Require re-running scripts/generate_exception_overview.py
-        so DEVELOPMENT_EXCEPTIONS.md is updated.
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+  sequence_diagrams: false
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+    custom_checks:
+      - mode: error
+        name: "Coverage ≥95% overall and per-file"
+        instructions: >
+          Fail if the latest coverage status context does not indicate ≥95% overall
+          AND for each modified file. If a coverage check exists, require it to be green.
+      - mode: error
+        name: "Tests accompany code changes"
+        instructions: >
+          If files under src/pdf_toolbox/** change, require at least one test file under tests/**
+          to change in the same PR.
+      - mode: error
+        name: "Inline exceptions documented"
+        instructions: >
+          Flag any use of '# noqa', 'ruff: noqa', or '# type: ignore' that lacks the suffix
+          '# pdf-toolbox: <reason> | issue:<id or ->'. Require re-running scripts/generate_exception_overview.py
+          so DEVELOPMENT_EXCEPTIONS.md is updated.
 knowledge_base:
   code_guidelines:
     enabled: true
@@ -37,8 +54,3 @@ knowledge_base:
       - "src/pdf_toolbox/AGENTS.md"
       - "scripts/AGENTS.md"
       - "tests/AGENTS.md"
-tools:
-  ruff: {enabled: true}
-  markdownlint: {enabled: true}
-  github-checks: {enabled: true, timeout_ms: 180000}
-  languagetool: {enabled: true, level: default}
