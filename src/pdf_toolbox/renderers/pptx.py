@@ -97,6 +97,7 @@ class NullRenderer(BasePptxRenderer):
 register_renderer(NullRenderer)
 
 _BUILTIN_MODULES = {
+    "lightweight": "pdf_toolbox.renderers.lightweight_stub",
     "ms_office": "pdf_toolbox.renderers.ms_office",
 }
 

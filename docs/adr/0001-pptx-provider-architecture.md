@@ -41,9 +41,13 @@ Introduce a provider pattern for PPTX→PDF conversion.
 Interface:
 
 - Module: `pdf_toolbox.renderers.pptx`
+- Lightweight placeholder: `PptxLightweightStub` keeps the registry stable while
+  the portable backend is implemented. The stub never handles requests and
+  raises `PptxProviderUnavailableError` so the UI continues to display
+  configuration guidance.
 - Base class: `BasePptxRenderer`
 - Required methods:
-  - `to_pdf(input_pptx: Path, output_path: Path | None = None, *, notes: bool = False, handout: bool = False, range_spec: str | None = None) -> Path`
+  - `to_pdf(input_pptx: str, output_path: str | None = None, *, notes: bool = False, handout: bool = False, range_spec: str | None = None) -> str`
     - Emits a PDF at `output_path` (or a generated temp path) and raises `PptxRenderingError` on failure.
     - Range selection:
       - `range_spec` grammar (1-based, inclusive): `(<n>|<n>-<m>|<n>-)(, ...)*` e.g., `1-3,5,7-`
@@ -53,15 +57,13 @@ Interface:
       - Out-of-bounds indices are ignored if intersecting slides remain; otherwise raise `PptxRenderingError("empty_selection")`
     - `notes` and `handout` are mutually exclusive; if both are True, raise `UnsupportedOptionError` with `error.code == "conflicting_options"`.
     - Implementations MUST document how `notes` and `handout` map to backend output.
-  - `to_images(input_pptx: Path, output_dir: Path | None = None, *, format: Literal["png", "jpeg", "tiff"] = "jpeg", dpi: int = 150, slides: Sequence[int] | None = None) -> list[Path]`
-    - Produces one image per slide (or selected slide indices) in `output_dir` and returns ordered file paths.
+  - `to_images(input_pptx: str, out_dir: str | None = None, *, max_size_mb: float | None = None, image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG", quality: int | None = None, width: int | None = None, height: int | None = None, range_spec: str | None = None) -> str`
+    - Produces one image per slide (or selection) inside `out_dir` (creating a directory when omitted) and returns that directory path.
     - Conventions (MUST):
-      - Slide indexing is 1-based.
-      - Filenames: `slide-<NNN>.<ext>` where the pad width is `max(3, ceil(log10(total_slides + 1)))` for the input deck (e.g., 42 slides → width 3; 1,234 slides → width 4). Extension MUST match `format` (`jpeg`, not `jpg`).
-      - When `slides` is `None`, return value is sorted by slide index ascending. When `slides` is provided, return paths in the order of `slides` after de-duplicating indices.
-      - Slide index validation: indices MUST be ≥ 1; 0 or negatives are invalid and MUST raise `PptxRenderingError("invalid_range")`. Out-of-bounds indices MAY be ignored if any valid indices remain; otherwise raise `PptxRenderingError("empty_selection")`.
-      - Unsupported `format`/`dpi` MUST raise `PptxRenderingError("unsupported_option")`.
-    - Implementations MUST document DPI bounds and any backend-specific limits.
+      - Slide selection uses the same `range_spec` grammar and validation rules as `to_pdf`.
+      - Output filenames follow `slide-<NNN>.<ext>` where `<ext>` matches the lowercase variant of `image_format`.
+      - Implementations MUST document how `max_size_mb`, `quality`, `width`, and `height` map to backend controls, or raise `UnsupportedOptionError` with `error.code == "unsupported_option"`.
+      - Unsupported `image_format` values MUST raise `PptxRenderingError("unsupported_option")`.
   - `capabilities() -> Capabilities`
   - `probe() -> bool`
   - `probe()` MUST be side‑effect free, complete under a bounded timeout (e.g., \<500 ms), and avoid network/disk I/O beyond lightweight existence checks.
