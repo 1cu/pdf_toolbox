@@ -1,5 +1,5 @@
 import math
-import os
+import random
 import warnings
 from pathlib import Path
 
@@ -19,9 +19,9 @@ def noise_pdf(tmp_path_factory: pytest.TempPathFactory) -> str:
 
     width = height = 32
     img_path = base_dir / "noise.png"
-    Image.frombytes("RGB", (width, height), os.urandom(width * height * 3)).save(
-        img_path
-    )
+    rng = random.Random(42)
+    pixels = bytes(rng.randrange(0, 256) for _ in range(width * height * 3))
+    Image.frombytes("RGB", (width, height), pixels).save(img_path)
     doc = fitz.open()
     page = doc.new_page(width=width, height=height)
     rect = fitz.Rect(0, 0, width, height)
@@ -134,16 +134,17 @@ def test_pdf_to_images_dpi_resolution(sample_pdf, tmp_path, dpi_label):
     low_dir = tmp_path / "low"
     high_dir = tmp_path / "high"
     base_path = pdf_to_images(sample_pdf, dpi="Low (72 dpi)", out_dir=str(low_dir))[0]
-    base_size = Image.open(base_path).size
+    with Image.open(base_path) as base_img:
+        base_size = base_img.size
     outputs = pdf_to_images(sample_pdf, dpi=dpi_label, out_dir=str(high_dir))
     assert len(outputs) == 3
-    img = Image.open(outputs[0])
-    dpi = DPI_PRESETS[dpi_label]
-    expected = (
-        math.ceil(base_size[0] * dpi / 72),
-        math.ceil(base_size[1] * dpi / 72),
-    )
-    assert img.size == expected
+    with Image.open(outputs[0]) as img:
+        dpi = DPI_PRESETS[dpi_label]
+        expected = (
+            math.ceil(base_size[0] * dpi / 72),
+            math.ceil(base_size[1] * dpi / 72),
+        )
+        assert img.size == expected
 
 
 @pytest.mark.slow
@@ -151,16 +152,17 @@ def test_pdf_to_images_dpi_resolution(sample_pdf, tmp_path, dpi_label):
 def test_pdf_to_images_dpi_resolution_full_matrix(sample_pdf, tmp_path, dpi_label):
     base_dir = tmp_path / "base"
     base_path = pdf_to_images(sample_pdf, dpi="Low (72 dpi)", out_dir=str(base_dir))[0]
-    base_size = Image.open(base_path).size
+    with Image.open(base_path) as base_img:
+        base_size = base_img.size
     dpi_dir = tmp_path / "dpi" / Path(dpi_label.replace(" ", "_").lower())
     outputs = pdf_to_images(sample_pdf, dpi=dpi_label, out_dir=str(dpi_dir))[0]
-    img = Image.open(outputs)
-    dpi = DPI_PRESETS[dpi_label]
-    expected = (
-        math.ceil(base_size[0] * dpi / 72),
-        math.ceil(base_size[1] * dpi / 72),
-    )
-    assert img.size == expected
+    with Image.open(outputs) as img:
+        dpi = DPI_PRESETS[dpi_label]
+        expected = (
+            math.ceil(base_size[0] * dpi / 72),
+            math.ceil(base_size[1] * dpi / 72),
+        )
+        assert img.size == expected
 
 
 @pytest.mark.parametrize(
@@ -169,8 +171,6 @@ def test_pdf_to_images_dpi_resolution_full_matrix(sample_pdf, tmp_path, dpi_labe
 )
 def test_pdf_to_images_high_dpi(tmp_path, dpi_label):
     # create a tiny PDF to keep memory usage low even at very high DPI
-    import fitz
-
     doc = fitz.open()
     doc.new_page(width=10, height=10)
     pdf_path = tmp_path / "tiny.pdf"
@@ -181,8 +181,8 @@ def test_pdf_to_images_high_dpi(tmp_path, dpi_label):
     outputs = pdf_to_images(str(pdf_path), dpi=dpi_label, out_dir=str(out_dir))
     dpi = DPI_PRESETS[dpi_label]
     expected = (math.ceil(10 * dpi / 72), math.ceil(10 * dpi / 72))
-    img = Image.open(outputs[0])
-    assert img.size == expected
+    with Image.open(outputs[0]) as img:
+        assert img.size == expected
 
 
 def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
@@ -194,7 +194,8 @@ def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
         out_dir=str(tmp_path),
     )
     assert len(outputs) == 3
-    img = Image.open(outputs[0])
+    with Image.open(outputs[0]) as img:
+        img_size = img.size
     doc = fitz.open(sample_pdf)
     try:
         page = doc.load_page(0)
@@ -204,21 +205,22 @@ def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
         doc.close()
     dpi_val = round(max(413 / w_in, 585 / h_in))
     expected = (math.ceil(w_in * dpi_val), math.ceil(h_in * dpi_val))
-    assert img.size == expected
+    assert img_size == expected
 
 
 def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):
     low_dir = tmp_path / "low"
     high_dir = tmp_path / "high"
     base_path = pdf_to_images(sample_pdf, dpi=72, out_dir=str(low_dir))[0]
-    base_size = Image.open(base_path).size
+    with Image.open(base_path) as base_img:
+        base_size = base_img.size
     outputs = pdf_to_images(sample_pdf, dpi=200, out_dir=str(high_dir))
-    img = Image.open(outputs[0])
-    expected = (
-        math.ceil(base_size[0] * 200 / 72),
-        math.ceil(base_size[1] * 200 / 72),
-    )
-    assert img.size == expected
+    with Image.open(outputs[0]) as img:
+        expected = (
+            math.ceil(base_size[0] * 200 / 72),
+            math.ceil(base_size[1] * 200 / 72),
+        )
+        assert img.size == expected
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])

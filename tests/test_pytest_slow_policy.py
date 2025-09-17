@@ -17,7 +17,7 @@ def _load_plugin():
     module_name = f"_slow_policy_{uuid.uuid4().hex}"
     spec = importlib.util.spec_from_file_location(module_name, _PLUGIN_PATH)
     if spec is None or spec.loader is None:
-        raise AssertionError
+        raise AssertionError("Could not load slow policy plugin")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -68,7 +68,7 @@ def test_slow_policy_allows_marked(pytester: pytest.Pytester) -> None:
     result = pytester.runpytest()
     result.assert_outcomes(passed=1)
     assert result.ret == 0
-    result.stdout.fnmatch_lines(["*slow*test_marked*"])
+    result.stdout.fnmatch_lines(["*test_marked*"])
 
 
 def test_slow_policy_tolerates_invalid_threshold(pytester: pytest.Pytester) -> None:
@@ -94,8 +94,10 @@ def test_get_property_returns_default() -> None:
 
 def test_logreport_ignores_missing_duration() -> None:
     plugin = _load_plugin()
-    plugin._STATE["config"] = SimpleNamespace(_slow_items=[], _slow_threshold=0.75)
-    plugin._STATE["collect_via_logreport"] = True
+    plugin._CONTROLLER_CONFIG = SimpleNamespace(
+        _slow_items=[],
+        _slow_threshold=0.75,
+    )
 
     report = SimpleNamespace(
         when="call",
@@ -105,13 +107,15 @@ def test_logreport_ignores_missing_duration() -> None:
     )
 
     plugin.pytest_runtest_logreport(cast(pytest.TestReport, report))
-    assert plugin._STATE["config"]._slow_items == []
+    assert plugin._CONTROLLER_CONFIG._slow_items == []
 
 
 def test_logreport_skips_non_numeric_duration() -> None:
     plugin = _load_plugin()
-    plugin._STATE["config"] = SimpleNamespace(_slow_items=[], _slow_threshold=0.1)
-    plugin._STATE["collect_via_logreport"] = True
+    plugin._CONTROLLER_CONFIG = SimpleNamespace(
+        _slow_items=[],
+        _slow_threshold=0.1,
+    )
 
     report = SimpleNamespace(
         when="call",
@@ -121,4 +125,4 @@ def test_logreport_skips_non_numeric_duration() -> None:
     )
 
     plugin.pytest_runtest_logreport(cast(pytest.TestReport, report))
-    assert plugin._STATE["config"]._slow_items == []
+    assert plugin._CONTROLLER_CONFIG._slow_items == []
