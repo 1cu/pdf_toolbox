@@ -95,10 +95,10 @@
 | tests/test_images.py:6                           | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_miro.py:215                           | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
 | tests/test_pptx.py:96                            | PLR0913                                  | renderer API requires many parameters                  | -        |
-| tests/test_pptx.py:186                           | PLR0913                                  | renderer API requires many parameters                  | -        |
-| tests/test_pptx.py:274                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:184                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:272                           | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_pptx.py:345                           | PLR0913                                  | renderer API requires many parameters                  | -        |
-| tests/test_pptx.py:410                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:416                           | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_pptx_ms_office_renderer.py:21         | N802                                     | mirror COM method name                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:25         | N802                                     | mirror COM method name                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:46         | N802                                     | COM style method name                                  | -        |

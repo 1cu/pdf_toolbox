@@ -258,7 +258,7 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
     assert captured["format"] == "PNG"
     assert captured["quality"] == 70
     assert captured["range_spec"] == "1-2"
-    assert captured["out_dir"] is None
+    assert captured["out_dir"] == str(Path(simple_pptx).resolve().parent)
     assert captured["width"] is None
     assert captured["height"] is None
 
@@ -394,15 +394,19 @@ def test_pptx_to_images_returns_temp_dir_when_empty(monkeypatch, simple_pptx, tm
     cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
 
-    def fake_pdf_to_images(pdf_path: str, **_kwargs: object) -> list[str]:
+    def fake_pdf_to_images(pdf_path: str, **kwargs: object) -> list[str]:
         captured["pdf_path"] = pdf_path
+        captured["out_dir"] = kwargs.get("out_dir")
         return []
 
     monkeypatch.setattr(pptx_actions, "pdf_to_images", fake_pdf_to_images)
 
     result = pptx_to_images(simple_pptx)
 
-    assert Path(result) == Path(captured["pdf_path"]).parent
+    expected_dir = Path(simple_pptx).resolve().parent
+    assert Path(result) == expected_dir
+    assert Path(str(captured["out_dir"])) == expected_dir
+    assert Path(captured["pdf_path"]).parent != expected_dir
 
 
 def test_convert_pptx_to_pdf_cleans_up(monkeypatch, simple_pptx, tmp_path):
