@@ -11,9 +11,8 @@ those same actions from the command line or import them in scripts.
 
 ## Learn what it does
 
-- Manage PDFs: merge, split, rasterise, optimise, and export assets.
-- Operate on PPTX files: extract assets, reorder slides, or render with an
-  optional provider.
+- Manage PDFs: merge, split, rasterise, and export assets.
+- Operate on PPTX files: render with an optional provider.
 - Use the Miro export profile to create slide images that respect Miro’s size
   limits while keeping vector pages crisp.
 - Extend the GUI by adding new `@action`-decorated callables in

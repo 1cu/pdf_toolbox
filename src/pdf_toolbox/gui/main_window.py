@@ -50,8 +50,6 @@ from pdf_toolbox.renderers.pptx import (
 )
 from pdf_toolbox.utils import _load_author_info, configure_logging
 
-RESULT_PAIR_LEN = 2
-
 
 class MainWindow(QMainWindow):
     """Main application window."""
@@ -435,7 +433,7 @@ class MainWindow(QMainWindow):
         label = tr_label(name)
         if label == name:  # fallback prettification
             parts = name.replace("_", " ").split()
-            up = {"pdf", "png", "jpeg", "tiff", "webp", "docx"}
+            up = {"pdf", "png", "jpeg", "tiff", "webp"}
             words: list[str] = []
             for part in parts:
                 low = part.lower()
@@ -551,22 +549,7 @@ class MainWindow(QMainWindow):
         status = tr("done")
         text: str | None = None
         if result:
-            if (
-                isinstance(result, tuple)
-                and len(result) == RESULT_PAIR_LEN
-                and isinstance(result[1], float)
-            ):
-                out_path, reduction = result
-                pct = abs(reduction) * 100
-                if reduction > 0:
-                    status = tr("optimised_reduced", pct=f"{pct:.2f}")
-                elif reduction < 0:
-                    status = tr("optimised_increased", pct=f"{pct:.2f}")
-                else:
-                    status = tr("optimised_unchanged")
-                if out_path:
-                    text = str(out_path)
-            elif isinstance(result, list | tuple):
+            if isinstance(result, list | tuple):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)

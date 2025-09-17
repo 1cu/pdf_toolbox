@@ -47,7 +47,6 @@ _registry: dict[str, Action] = {}
 def _format_name(func_name: str) -> str:
     acronyms = {
         "pdf": "PDF",
-        "docx": "DOCX",
         "png": "PNG",
         "jpeg": "JPEG",
         "jpg": "JPG",
@@ -162,13 +161,10 @@ def _register_module(mod_name: str) -> None:
 
 
 ACTION_MODULES = [
-    "docx",
     "pptx",
     "extract",
     "pdf_images",
     "miro",
-    "optimise",
-    "repair",
     "unlock",
 ]
 
@@ -198,13 +194,10 @@ __all__ = [
     "Action",
     "Param",
     "action",
-    "docx",
     "extract",
     "images",
     "list_actions",
     "miro",
-    "optimise",
     "pptx",
-    "repair",
     "unlock",
 ]
