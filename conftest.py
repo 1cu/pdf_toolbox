@@ -10,7 +10,10 @@ import pytest
 
 _PROP_DURATION = "slow_policy_duration"
 _PROP_MARKED = "slow_policy_is_marked"
-_STATE: dict[str, pytest.Config | None] = {"controller": None}
+_SLOW_ITEMS_KEY: pytest.StashKey[list[tuple[str, float, bool]]] = pytest.StashKey()
+_THRESHOLD_KEY: pytest.StashKey[float] = pytest.StashKey()
+_STRICT_KEY: pytest.StashKey[bool] = pytest.StashKey()
+_CONTROLLER: list[pytest.Config | None] = [None]
 
 
 def _as_bool(s: str) -> bool:
@@ -44,16 +47,20 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 def pytest_configure(config: pytest.Config) -> None:
     """Initialise session-level slow-policy tracking on *config*."""
-    config._slow_items = []  # type: ignore[attr-defined]
+    slow_items: list[tuple[str, float, bool]] = []
+    config.stash[_SLOW_ITEMS_KEY] = slow_items
+    config._slow_items = slow_items  # type: ignore[attr-defined]  # pdf-toolbox: expose legacy attribute for pytest <8 plugins | issue:-
     try:
-        config._slow_threshold = float(config.getini("slow_threshold"))  # type: ignore[attr-defined]
+        threshold = float(config.getini("slow_threshold"))
     except Exception:
-        config._slow_threshold = 0.75  # type: ignore[attr-defined]
-    config._fail_on_unmarked_slow = _as_bool(  # type: ignore[attr-defined]
-        config.getini("fail_on_unmarked_slow")
-    )
+        threshold = 0.75
+    config.stash[_THRESHOLD_KEY] = threshold
+    config._slow_threshold = threshold  # type: ignore[attr-defined]  # pdf-toolbox: mirror legacy attribute for reporting hooks | issue:-
+    strict = _as_bool(config.getini("fail_on_unmarked_slow"))
+    config.stash[_STRICT_KEY] = strict
+    config._fail_on_unmarked_slow = strict  # type: ignore[attr-defined]  # pdf-toolbox: maintain compatibility with existing tooling | issue:-
     if not hasattr(config, "workerinput"):
-        _STATE["controller"] = config
+        _CONTROLLER[0] = config
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -68,9 +75,11 @@ def pytest_runtest_call(item: pytest.Item):
     except BaseException as exc:  # pragma: no cover - handled by re-raise
         error = exc
     finally:
-        is_marked = any(marker.name == "slow" for marker in item.iter_markers())
-        item.user_properties.append((_PROP_DURATION, duration))
-        item.user_properties.append((_PROP_MARKED, is_marked))
+        threshold = item.config.stash.get(_THRESHOLD_KEY, 0.75)
+        if duration >= threshold:
+            is_marked = any(marker.name == "slow" for marker in item.iter_markers())
+            item.user_properties.append((_PROP_DURATION, duration))
+            item.user_properties.append((_PROP_MARKED, is_marked))
     if error is not None:
         raise error
 
@@ -79,21 +88,22 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     """Collect slow items from worker reports and aggregate them on the controller."""
     if report.when != "call":
         return
-    config = _STATE["controller"]
+    config = _CONTROLLER[0]
     if config is None:
         return
 
-    threshold = getattr(config, "_slow_threshold", 0.75)
     duration = _get_user_property(report.user_properties, _PROP_DURATION)
     try:
         recorded = float(duration)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return
+
+    threshold = config.stash.get(_THRESHOLD_KEY, 0.75)
     if recorded < threshold:
         return
 
     is_marked = bool(_get_user_property(report.user_properties, _PROP_MARKED, False))
-    config._slow_items.append((report.nodeid, recorded, is_marked))  # type: ignore[attr-defined]
+    config.stash[_SLOW_ITEMS_KEY].append((report.nodeid, recorded, is_marked))
 
 
 def pytest_terminal_summary(
@@ -101,11 +111,12 @@ def pytest_terminal_summary(
 ) -> None:
     """Render the slow-test summary and enforce the unmarked-slow policy."""
     del exitstatus
-    slow_items = getattr(terminalreporter.config, "_slow_items", [])
+    config = terminalreporter.config
+    slow_items = config.stash.get(_SLOW_ITEMS_KEY, [])
     if not slow_items:
         return
 
-    threshold = getattr(terminalreporter.config, "_slow_threshold", 0.75)
+    threshold = config.stash.get(_THRESHOLD_KEY, 0.75)
     terminalreporter.section(f"Slow tests (>= {threshold:.2f}s)")
     for nodeid, duration, is_marked in sorted(
         slow_items, key=lambda entry: entry[1], reverse=True
@@ -113,7 +124,7 @@ def pytest_terminal_summary(
         tag = "slow" if is_marked else "UNMARKED"
         terminalreporter.write_line(f"{duration:6.2f}s  {tag:9}  {nodeid}")
 
-    strict = getattr(terminalreporter.config, "_fail_on_unmarked_slow", True)
+    strict = config.stash.get(_STRICT_KEY, True)
     if strict and any(not marked for _, _, marked in slow_items):
         terminalreporter.write_line(
             f"\nUnmarked slow tests detected (>= {threshold:.2f}s). "
@@ -129,4 +140,4 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     del exitstatus
     if hasattr(session.config, "workerinput"):
         return
-    _STATE["controller"] = None
+    _CONTROLLER[0] = None

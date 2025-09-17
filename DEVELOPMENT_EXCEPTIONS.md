@@ -100,5 +100,8 @@
 | tests/test_pptx_ms_office_renderer.py:50   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_pptx_ms_office_renderer.py:68   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
 | tests/test_pptx_renderer.py:19             | PLR0913                                  | renderer stub matches renderer API signature           | -        |
+| tests/test_pytest_slow_policy.py:48        | type: ignore[attr-defined]               | provide legacy attribute for compatibility tests       | -        |
+| tests/test_pytest_slow_policy.py:49        | type: ignore[attr-defined]               | expose threshold attribute for compatibility tests     | -        |
+| tests/test_pytest_slow_policy.py:50        | type: ignore[attr-defined]               | expose strict flag for compatibility tests             | -        |
 | tests/test_renderer_registry.py:12         | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                               | -        |

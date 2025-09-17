@@ -1,12 +1,153 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
+from _pytest.stash import Stash
+
+import conftest as slow_policy
 
 pytest_plugins = ("pytester",)
 
 _PLUGIN_PATH = Path(__file__).resolve().parents[1] / "conftest.py"
+
+
+class DummyReporter:
+    """Minimal terminal reporter stub for exercising slow-policy summaries."""
+
+    def __init__(self, config: SimpleNamespace, session: SimpleNamespace) -> None:
+        """Store the provided config/session and capture emitted lines."""
+        self.config = config
+        self._session = session
+        self.lines: list[str] = []
+
+    def section(self, title: str) -> None:
+        """Record the rendered section title."""
+        self.lines.append(title)
+
+    def write_line(self, text: str) -> None:
+        """Record a summary line."""
+        self.lines.append(text)
+
+
+def _make_config(
+    *,
+    threshold: float = 0.75,
+    strict: bool = True,
+    items: list[tuple[str, float, bool]] | None = None,
+) -> SimpleNamespace:
+    stash = Stash()
+    slow_items = list(items or [])
+    stash[slow_policy._SLOW_ITEMS_KEY] = slow_items
+    stash[slow_policy._THRESHOLD_KEY] = threshold
+    stash[slow_policy._STRICT_KEY] = strict
+    config = SimpleNamespace(stash=stash)
+    config._slow_items = slow_items  # type: ignore[attr-defined]  # pdf-toolbox: provide legacy attribute for compatibility tests | issue:-
+    config._slow_threshold = threshold  # type: ignore[attr-defined]  # pdf-toolbox: expose threshold attribute for compatibility tests | issue:-
+    config._fail_on_unmarked_slow = strict  # type: ignore[attr-defined]  # pdf-toolbox: expose strict flag for compatibility tests | issue:-
+    return config
+
+
+def test_terminal_summary_sets_exit_status_for_unmarked() -> None:
+    config = _make_config(items=[("pkg::test", 1.2, False)])
+    session = SimpleNamespace(exitstatus=0)
+    reporter = DummyReporter(config, session)
+
+    slow_policy.pytest_terminal_summary(
+        cast(pytest.TerminalReporter, reporter),
+        0,
+    )
+
+    assert session.exitstatus == 1
+    assert any("UNMARKED" in line for line in reporter.lines)
+    assert any(line.startswith("Slow tests") for line in reporter.lines)
+
+
+def test_terminal_summary_respects_non_strict_policy() -> None:
+    config = _make_config(strict=False, items=[("pkg::test", 1.2, False)])
+    session = SimpleNamespace(exitstatus=0)
+    reporter = DummyReporter(config, session)
+
+    slow_policy.pytest_terminal_summary(
+        cast(pytest.TerminalReporter, reporter),
+        0,
+    )
+
+    assert session.exitstatus == 0
+    assert any(line.startswith("Slow tests") for line in reporter.lines)
+
+
+def test_logreport_collects_slow_items() -> None:
+    config = _make_config()
+    try:
+        slow_policy._CONTROLLER[0] = cast(pytest.Config, config)
+        report = SimpleNamespace(
+            when="call",
+            nodeid="pkg::test",
+            user_properties=[
+                (slow_policy._PROP_DURATION, 1.1),
+                (slow_policy._PROP_MARKED, True),
+            ],
+        )
+        slow_policy.pytest_runtest_logreport(cast(pytest.TestReport, report))
+    finally:
+        slow_policy._CONTROLLER[0] = None
+
+    assert config.stash[slow_policy._SLOW_ITEMS_KEY] == [("pkg::test", 1.1, True)]
+
+
+def test_runtest_call_records_user_properties(monkeypatch: pytest.MonkeyPatch) -> None:
+    config = _make_config(threshold=0.5)
+    item = SimpleNamespace(
+        config=config,
+        user_properties=[],
+        iter_markers=lambda: [],
+    )
+
+    class FakePerfCounter:
+        def __init__(self) -> None:
+            self.values = [0.0, 1.0]
+            self.index = 0
+            self.last = 1.0
+
+        def __call__(self) -> float:
+            if self.index < len(self.values):
+                self.last = self.values[self.index]
+                self.index += 1
+            return self.last
+
+    monkeypatch.setattr(slow_policy, "perf_counter", FakePerfCounter())
+
+    generator = slow_policy.pytest_runtest_call(cast(pytest.Item, item))
+    next(generator)
+
+    class Outcome:
+        def get_result(self) -> None:
+            return None
+
+    with suppress(StopIteration):
+        generator.send(Outcome())
+
+    assert item.user_properties == [
+        (slow_policy._PROP_DURATION, 1.0),
+        (slow_policy._PROP_MARKED, False),
+    ]
+
+
+def test_sessionfinish_clears_controller() -> None:
+    config = _make_config()
+    slow_policy._CONTROLLER[0] = cast(pytest.Config, config)
+    session = SimpleNamespace(config=SimpleNamespace())
+
+    slow_policy.pytest_sessionfinish(
+        cast(pytest.Session, session),
+        0,
+    )
+
+    assert slow_policy._CONTROLLER[0] is None
 
 
 def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
@@ -18,6 +159,7 @@ def _run(pytester: pytest.Pytester, *args: str):
     return pytester.runpytest_inprocess("-p", "no:cov", *args)
 
 
+@pytest.mark.slow
 def test_slow_policy_flags_unmarked(pytester: pytest.Pytester) -> None:
     _activate_plugin(
         pytester,
@@ -41,6 +183,7 @@ def test_slow_policy_flags_unmarked(pytester: pytest.Pytester) -> None:
     )
 
 
+@pytest.mark.slow
 def test_slow_policy_allows_marked(pytester: pytest.Pytester) -> None:
     _activate_plugin(
         pytester,
@@ -61,6 +204,7 @@ def test_slow_policy_allows_marked(pytester: pytest.Pytester) -> None:
     result.stdout.no_fnmatch_line("*UNMARKED*")
 
 
+@pytest.mark.slow
 def test_slow_policy_tolerates_invalid_threshold(pytester: pytest.Pytester) -> None:
     _activate_plugin(
         pytester,
@@ -77,6 +221,7 @@ def test_slow_policy_tolerates_invalid_threshold(pytester: pytest.Pytester) -> N
     assert result.ret == 0
 
 
+@pytest.mark.slow
 def test_slow_policy_reports_without_failing_when_disabled(
     pytester: pytest.Pytester,
 ) -> None:
