@@ -549,7 +549,7 @@ class MainWindow(QMainWindow):
         status = tr("done")
         text: str | None = None
         if result:
-            if isinstance(result, list | tuple):
+            if isinstance(result, (list, tuple)):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
