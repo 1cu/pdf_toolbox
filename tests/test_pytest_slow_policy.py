@@ -15,7 +15,7 @@ def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
 
 
 def _run(pytester: pytest.Pytester, *args: str):
-    return pytester.runpytest("-p", "no:cov", *args)
+    return pytester.runpytest_inprocess("-p", "no:cov", *args)
 
 
 def test_slow_policy_flags_unmarked(pytester: pytest.Pytester) -> None:
