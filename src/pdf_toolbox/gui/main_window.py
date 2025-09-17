@@ -550,7 +550,7 @@ class MainWindow(QMainWindow):
         status = tr("done")
         text: str | None = None
         if result is not None:
-            if isinstance(result, (list, tuple)):
+            if isinstance(result, list | tuple):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
@@ -691,9 +691,19 @@ class MainWindow(QMainWindow):
         dlg.setWindowTitle("PPTX Renderer")
         form = QFormLayout(dlg)
         combo = QComboBox()
-        combo.addItem("System default (no Office)", "")
-        combo.addItem("MS Office (PowerPoint)", "ms_office")
-        current = cfg.get("pptx_renderer", "")
+        options = [
+            ("Automatic (detect installed providers)", "auto"),
+            ("Disabled (show provider banner)", "none"),
+            ("Microsoft PowerPoint (COM automation)", "ms_office"),
+            (
+                "Microsoft Office Online (HTTP service, e.g. Stirling or Gotenberg)",
+                "http_office",
+            ),
+            ("Lightweight sample renderer", "lightweight"),
+        ]
+        for label_text, value in options:
+            combo.addItem(label_text, value)
+        current = (cfg.get("pptx_renderer") or "auto").strip() or "auto"
         index = combo.findData(current)
         combo.setCurrentIndex(max(index, 0))
         form.addRow("PPTX Renderer", combo)
@@ -709,11 +719,8 @@ class MainWindow(QMainWindow):
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
         if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
-            value = combo.currentData() or ""
-            if value:
-                cfg["pptx_renderer"] = value
-            else:
-                cfg.pop("pptx_renderer", None)
+            value = combo.currentData()
+            cfg["pptx_renderer"] = str(value) if value else "auto"
             save_config(cfg)
 
     def on_about(

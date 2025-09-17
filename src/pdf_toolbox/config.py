@@ -13,7 +13,13 @@ from pdf_toolbox import utils
 CONFIG_PATH = utils.CONFIG_FILE
 CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-KnownPptxRenderer = Literal["auto", "none", "ms_office", "lightweight"]
+KnownPptxRenderer = Literal[
+    "auto",
+    "none",
+    "ms_office",
+    "http_office",
+    "lightweight",
+]
 PptxRendererChoice = str
 
 _PPTX_RENDERER_KEY = "pptx_renderer"
@@ -23,6 +29,7 @@ _PPTX_RENDERER_ALIASES: dict[str, KnownPptxRenderer] = {
     "none": "none",
     "null": "none",
     "ms_office": "ms_office",
+    "http_office": "http_office",
     "lightweight": "lightweight",
 }
 
