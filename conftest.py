@@ -62,11 +62,17 @@ def pytest_runtest_call(item: pytest.Item):
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
-    outcome.get_result()
-
-    is_marked = any(marker.name == "slow" for marker in item.iter_markers())
-    item.user_properties.append((_PROP_DURATION, duration))
-    item.user_properties.append((_PROP_MARKED, is_marked))
+    error: BaseException | None = None
+    try:
+        outcome.get_result()
+    except BaseException as exc:  # pragma: no cover - handled by re-raise
+        error = exc
+    finally:
+        is_marked = any(marker.name == "slow" for marker in item.iter_markers())
+        item.user_properties.append((_PROP_DURATION, duration))
+        item.user_properties.append((_PROP_MARKED, is_marked))
+    if error is not None:
+        raise error
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
