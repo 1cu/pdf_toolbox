@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
+from pdf_toolbox.renderers.pptx import PptxProviderUnavailableError
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.renderers.registry import register
 
@@ -16,13 +17,11 @@ class PptxLightweightStub(BasePptxRenderer):
     @classmethod
     def probe(cls) -> bool:
         """Return ``False`` until the lightweight backend lands."""
-
         return False
 
     @classmethod
     def can_handle(cls) -> bool:
         """Backward compatible alias for :meth:`probe`."""
-
         return cls.probe()
 
     def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
@@ -37,7 +36,6 @@ class PptxLightweightStub(BasePptxRenderer):
         range_spec: str | None = None,
     ) -> str:
         """Raise because the lightweight renderer has not been implemented yet."""
-
         del (
             input_pptx,
             out_dir,
@@ -48,7 +46,7 @@ class PptxLightweightStub(BasePptxRenderer):
             height,
             range_spec,
         )
-        raise NotImplementedError
+        raise PptxProviderUnavailableError()
 
     def to_pdf(
         self,
@@ -59,9 +57,8 @@ class PptxLightweightStub(BasePptxRenderer):
         range_spec: str | None = None,
     ) -> str:
         """Raise because the lightweight renderer has not been implemented yet."""
-
         del input_pptx, output_path, notes, handout, range_spec
-        raise NotImplementedError
+        raise PptxProviderUnavailableError()
 
 
 register(PptxLightweightStub)

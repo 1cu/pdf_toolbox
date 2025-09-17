@@ -65,7 +65,7 @@
 | src/pdf_toolbox/miro.py:280                      | pragma: no cover                         | PNG encoder failure varies by platform                 | -        |
 | src/pdf_toolbox/miro.py:300                      | pragma: no cover                         | JPEG encoder may be unavailable                        | -        |
 | src/pdf_toolbox/miro.py:693                      | pragma: no cover                         | keep GUI responsive despite renderer crashes           | -        |
-| src/pdf_toolbox/renderers/lightweight_stub.py:28 | PLR0913                                  | renderer API requires many parameters                  | -        |
+| src/pdf_toolbox/renderers/lightweight_stub.py:27 | PLR0913                                  | renderer API requires many parameters                  | -        |
 | src/pdf_toolbox/renderers/ms_office.py:19        | pragma: no cover                         | PowerPoint automation relies on pywin32                | -        |
 | src/pdf_toolbox/renderers/ms_office.py:20        | type: ignore                             | pywin32 is optional and lacks type hints               | -        |
 | src/pdf_toolbox/renderers/ms_office.py:22        | type: ignore                             | pywin32 is optional and lacks type hints               | -        |
