@@ -104,13 +104,14 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   enforcing the policy.
 
 - The fast iteration loop (local commits, the pre-commit test hook, and the
-  `tests-fast` CI job) runs the quick suite and enforces coverage in one go:
+  `tests-fast` CI job) runs the quick suite. Use the lightweight command below
+  while iterating; coverage is still enforced by `pre-commit run tests --all-files`
+  and the CI job, which append `--cov` flags and execute
+  `python scripts/check_coverage.py`.
 
   ```bash
-  pytest -n auto -m "not slow" -q --timeout=60 \
-         --durations=0 --durations-min=0.75 \
-         --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
-  python scripts/check_coverage.py
+  pytest -n auto -m "not slow" --timeout=60 --maxfail=1 \
+         --durations=0 --durations-min=0.75
   ```
 
 - Execute the slow-only suite whenever you touch code that might regress

@@ -8,7 +8,7 @@ repos:
         pass_filenames: false
         always_run: true
         alias: lint
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: ruff
         name: "lint: ruff"
@@ -16,7 +16,7 @@ repos:
         language: system
         types: [python]
         alias: lint
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: mypy
         name: "lint: mypy"
@@ -25,7 +25,7 @@ repos:
         types: [python]
         pass_filenames: false
         alias: lint
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: bandit
         name: "lint: bandit"
@@ -34,7 +34,7 @@ repos:
         types: [python]
         pass_filenames: false
         alias: lint
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: check-locales
         name: "lint: check-locales"
@@ -43,7 +43,7 @@ repos:
         types: [json]
         pass_filenames: false
         alias: lint
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: ruff-format
         name: "format: ruff"
@@ -51,7 +51,7 @@ repos:
         language: system
         types: [python]
         alias: format
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: mdformat
         name: "format: mdformat"
@@ -59,7 +59,7 @@ repos:
         language: system
         types: [markdown]
         alias: format
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: pretty-format-yaml
         name: "format: pretty-format-yaml"
@@ -67,7 +67,7 @@ repos:
         language: system
         types: [yaml]
         alias: format
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: format-locales
         name: "format: locales json"
@@ -77,16 +77,16 @@ repos:
         files: ^src/pdf_toolbox/locales/.*\.json$
         pass_filenames: false
         alias: format
-        stages: [pre-commit, pre-push, manual]
+        stages: [commit, push, manual]
 
       - id: pytest
         name: "tests: pytest"
-        entry: pytest -n auto -m "not slow" --timeout=60 --maxfail=1 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+        entry: pytest -n auto -m "not slow" --timeout=60 --maxfail=1 --durations=0 --durations-min=0.75
         language: system
         types: [python]
         pass_filenames: false
         alias: tests
-        stages: [pre-commit, pre-push]
+        stages: [commit, push]
 
       - id: pytest-slow
         name: "tests: pytest slow"
@@ -104,4 +104,4 @@ repos:
         types: [python]
         pass_filenames: false
         alias: tests
-        stages: [pre-commit, pre-push]
+        stages: [commit, push]

@@ -35,6 +35,8 @@ Read the primary docs before making changes:
 - Tests that run longer than 0.75 seconds must be optimised first; only then may
   they keep `@pytest.mark.slow`. The fast suite and CI will fail any unmarked
   test that crosses the threshold.
+- PRs may not introduce unmarked slow tests. Optimise them or mark them with
+  `@pytest.mark.slow` before requesting review.
 - Run `pre-commit run pytest-slow --hook-stage manual` before pushing when you
   touch code covered by slow tests.
 - Prefer clear naming and small, testable units. Factor logic out of GUI modules

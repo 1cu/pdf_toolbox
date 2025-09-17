@@ -4,30 +4,30 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from time import perf_counter
-from typing import Any, cast
+from typing import Any
 
 import pytest
 
-_STATE: dict[str, pytest.Config | None] = {"controller_config": None}
+_STATE: dict[str, pytest.Config | None] = {"controller": None}
 
 
-def _as_bool(value: str) -> bool:
-    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+def _as_bool(s: str) -> bool:
+    """Return ``True`` for common truthy strings."""
+    return str(s).strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _get_property(
-    properties: Iterable[tuple[str, object]],
-    key: str,
-    default: Any | None = None,
+def _get_user_property(
+    properties: Iterable[tuple[str, object]], key: str, default: Any | None = None
 ) -> Any | None:
-    for name, val in properties:
+    """Retrieve *key* from pytest ``user_properties`` tuples."""
+    for name, value in properties:
         if name == key:
-            return val
+            return value
     return default
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Register slow-policy configuration options from ``pyproject.toml``."""
+    """Register slow-policy configuration options."""
     parser.addini(
         "slow_threshold",
         "Seconds from which a test is considered slow (float as string).",
@@ -41,25 +41,23 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Initialise slow-policy state on the active pytest configuration."""
+    """Initialise slow-policy attributes on the active config."""
+    config._slow_items = []  # type: ignore[attr-defined]
     try:
-        threshold = float(config.getini("slow_threshold"))
-    except (TypeError, ValueError):
-        threshold = 0.75
-    fail_policy = _as_bool(config.getini("fail_on_unmarked_slow"))
-
-    config_state = cast(Any, config)
-    config_state._slow_items = []
-    config_state._slow_threshold = threshold
-    config_state._fail_on_unmarked_slow = fail_policy
+        config._slow_threshold = float(config.getini("slow_threshold"))  # type: ignore[attr-defined]
+    except Exception:
+        config._slow_threshold = 0.75  # type: ignore[attr-defined]
+    config._fail_on_unmarked_slow = _as_bool(  # type: ignore[attr-defined]
+        config.getini("fail_on_unmarked_slow")
+    )
 
     if not hasattr(config, "workerinput"):
-        _STATE["controller_config"] = config
+        _STATE["controller"] = config
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item: pytest.Item):
-    """Measure call duration and record whether the test was marked slow."""
+    """Record call duration and mark state on the test item."""
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
@@ -71,40 +69,33 @@ def pytest_runtest_call(item: pytest.Item):
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:
-    """Collect slow-call metadata emitted during ``pytest_runtest_call``."""
+    """Collect slow-call metadata from worker reports."""
     if report.when != "call":
         return
 
-    config: pytest.Config | None = _STATE.get("controller_config")
-    if config is None:
-        session = getattr(report, "session", None)
-        config = getattr(session, "config", None)
+    config = _STATE["controller"]
     if config is None:
         return
 
-    config_state = cast(Any, config)
-    threshold = getattr(config_state, "_slow_threshold", 0.75)
-    duration = _get_property(
-        report.user_properties, "duration", getattr(report, "duration", None)
-    )
+    threshold = getattr(config, "_slow_threshold", 0.75)
+    duration = _get_user_property(report.user_properties, "duration")
     try:
         recorded = float(duration)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return
-
     if recorded < threshold:
         return
 
-    is_marked = bool(_get_property(report.user_properties, "is_marked_slow", False))
-    slow_items = getattr(config_state, "_slow_items", None)
-    if slow_items is not None:
-        slow_items.append((report.nodeid, recorded, is_marked))
+    is_marked = bool(
+        _get_user_property(report.user_properties, "is_marked_slow", False)
+    )
+    config._slow_items.append((report.nodeid, recorded, is_marked))  # type: ignore[attr-defined]
 
 
 def pytest_terminal_summary(
     terminalreporter: pytest.TerminalReporter, exitstatus: int
 ) -> None:
-    """Render the slow-test summary and enforce the unmarked-slow policy."""
+    """Render the slow-test summary and fail on unmarked slow tests."""
     del exitstatus
     slow_items = getattr(terminalreporter.config, "_slow_items", [])
     if not slow_items:
@@ -130,8 +121,8 @@ def pytest_terminal_summary(
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Reset controller state after the main session completes."""
+    """Reset controller state after the session completes."""
     del exitstatus
     if hasattr(session.config, "workerinput"):
         return
-    _STATE["controller_config"] = None
+    _STATE["controller"] = None

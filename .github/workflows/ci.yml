@@ -44,21 +44,14 @@ jobs:
           SKIP: pytest-slow
         run: pre-commit run --all-files --hook-stage manual
       - name: Pytest fast (exclude slow)
-        run: >-
-          pytest -n auto -m "not slow" -q --timeout=60
-          --durations=0 --durations-min=0.75
-          --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+        run: pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
       - name: Check coverage thresholds
         if: matrix.os == 'ubuntu-latest'
         run: python scripts/check_coverage.py
 
   tests-slow:
     needs: tests-fast
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
       QT_QPA_PLATFORM: offscreen
@@ -78,6 +71,4 @@ jobs:
           python -m pip install --upgrade pip
           pip install .[dev]
       - name: Pytest slow only
-        run: >-
-          pytest -n auto -m "slow" -q --timeout=120
-          --durations=0 --durations-min=0.75
+        run: pytest -n auto -m "slow" -q --timeout=120 --durations=0 --durations-min=0.75

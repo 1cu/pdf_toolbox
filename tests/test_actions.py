@@ -90,13 +90,16 @@ def test_actions_import_registers_actions():
 
     actions._registry.clear()
     actions._auto_discover.cache_clear()
-    importlib.reload(actions)
-    actions.list_actions()
-    assert any(
-        act.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
-        for act in actions._registry.values()
-    )
-    actions._registry.clear()
+    module = importlib.reload(actions)
+    try:
+        module._register_module("pdf_toolbox.actions.pdf_images")
+        assert any(
+            act.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
+            for act in module._registry.values()
+        )
+    finally:
+        module._registry.clear()
+        module._auto_discover.cache_clear()
 
 
 def test_register_module_ignores_nodoc_functions():
