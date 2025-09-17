@@ -550,7 +550,7 @@ class MainWindow(QMainWindow):
         status = tr("done")
         text: str | None = None
         if result is not None:
-            if isinstance(result, (list, tuple)):
+            if isinstance(result, list | tuple):
                 text = "\n".join(map(str, result))
             else:
                 text = str(result)
@@ -695,7 +695,10 @@ class MainWindow(QMainWindow):
             ("Automatic (detect installed providers)", "auto"),
             ("Disabled (show provider banner)", "none"),
             ("Microsoft PowerPoint (COM automation)", "ms_office"),
-            ("Microsoft Office Online (HTTP)", "http_office"),
+            (
+                "Microsoft Office Online (HTTP service, e.g. Stirling or Gotenberg)",
+                "http_office",
+            ),
             ("Lightweight sample renderer", "lightweight"),
         ]
         for label_text, value in options:

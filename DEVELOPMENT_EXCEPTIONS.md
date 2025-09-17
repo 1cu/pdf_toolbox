@@ -47,9 +47,9 @@
 | src/pdf_toolbox/gui/main_window.py:662     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
 | src/pdf_toolbox/gui/main_window.py:666     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
 | src/pdf_toolbox/gui/main_window.py:687     | pragma: no cover                         | GUI handler                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:714     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
-| src/pdf_toolbox/gui/main_window.py:718     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
-| src/pdf_toolbox/gui/main_window.py:725     | pragma: no cover                         | GUI handler                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:717     | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                  | -        |
+| src/pdf_toolbox/gui/main_window.py:721     | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                    | -        |
+| src/pdf_toolbox/gui/main_window.py:728     | pragma: no cover                         | GUI handler                                            | -        |
 | src/pdf_toolbox/gui/widgets.py:17          | pragma: no cover                         | GUI helper                                             | -        |
 | src/pdf_toolbox/gui/widgets.py:38          | type: ignore[override], pragma: no cover | override signal emitter with broader type; GUI-only    | -        |
 | src/pdf_toolbox/gui/widgets.py:43          | pragma: no cover                         | GUI widget                                             | -        |

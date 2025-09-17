@@ -57,7 +57,8 @@ Set `pptx_renderer` to control how PPTX files render:
 - `auto` (default): prefer local providers, fall back to registered plugins.
 - `none`: disable rendering and surface the helper banner in the GUI.
 - `ms_office`: automate Microsoft PowerPoint via COM on Windows.
-- `http_office`: delegate rendering to an HTTP-capable Office deployment.
+- `http_office`: delegate rendering to an HTTP-capable Office deployment such as
+  Stirling or Gotenberg.
 - `lightweight`: use the built-in stub provider for smoke tests.
 
 The Qt GUI surfaces missing metadata at startup and lets you update the config.
