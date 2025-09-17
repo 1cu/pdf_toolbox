@@ -37,8 +37,14 @@ def test_save_config_roundtrip(tmp_path, monkeypatch):
     assert loaded == data
 
 
-def test_mainwindow_populates_actions(app):
+def test_mainwindow_populates_actions(app, monkeypatch):
     _ = app
+
+    def _sample() -> None:
+        pass
+
+    act = actions.build_action(_sample, name="Sample", category="demo")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
     win = gui.MainWindow()
     try:
         assert win.tree.topLevelItemCount() > 0

@@ -174,9 +174,9 @@ fail_on_unmarked_slow = "true"
   pre-commit run tests --all-files
   ```
 
-- CI runs the fast suite on Linux, macOS, and Windows (all on Python 3.13) and
-  executes the slow suite after the Linux fast phase succeeds. Each job verifies
-  bytecode compilation with `python -m compileall .`.
+- CI runs the fast suite on Ubuntu (Python 3.13) before triggering the slow-only
+  phase on the same platform. Both jobs install the dev extras and reuse the
+  shared slow-policy hook so unmarked long-running tests fail quickly.
 
 - We intentionally skip `pip-audit`; dependency publishing is out of scope for
   this project.

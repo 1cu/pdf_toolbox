@@ -4,12 +4,23 @@ from __future__ import annotations
 
 from numbers import Real
 from time import perf_counter
+from typing import NamedTuple
 
 import pytest
 
 _PROP_DURATION = "duration"
 _PROP_MARKED = "is_marked_slow"
+
+SLOW_ITEMS_KEY: pytest.StashKey[list[_SlowRecord]] = pytest.StashKey()
+THRESHOLD_KEY: pytest.StashKey[float] = pytest.StashKey()
+STRICT_KEY: pytest.StashKey[bool] = pytest.StashKey()
 _CONTROLLER: list[pytest.Config | None] = [None]
+
+
+class _SlowRecord(NamedTuple):
+    nodeid: str
+    duration: float
+    is_marked: bool
 
 
 def _as_bool(value: str) -> bool:
@@ -33,15 +44,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 def pytest_configure(config: pytest.Config) -> None:
     """Initialise slow-test tracking on *config*."""
-    config._slow_items = []  # type: ignore[attr-defined]
+    config.stash[SLOW_ITEMS_KEY] = []
     try:
         threshold = float(config.getini("slow_threshold"))
     except Exception:
         threshold = 0.75
-    config._slow_threshold = threshold  # type: ignore[attr-defined]
-    config._fail_on_unmarked_slow = _as_bool(  # type: ignore[attr-defined]
-        config.getini("fail_on_unmarked_slow")
-    )
+    config.stash[THRESHOLD_KEY] = threshold
+    config.stash[STRICT_KEY] = _as_bool(config.getini("fail_on_unmarked_slow"))
     if not hasattr(config, "workerinput"):
         _CONTROLLER[0] = config
 
@@ -59,7 +68,7 @@ def pytest_runtest_call(item: pytest.Item):
         error = exc
     finally:
         item.user_properties.append((_PROP_DURATION, duration))
-        threshold = getattr(item.config, "_slow_threshold", 0.75)
+        threshold = item.config.stash.get(THRESHOLD_KEY, 0.75)
         if duration >= threshold:
             is_marked = any(True for _ in item.iter_markers(name="slow"))
             item.user_properties.append((_PROP_MARKED, is_marked))
@@ -91,12 +100,15 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
         elif key == _PROP_MARKED:
             is_marked = bool(value)
 
-    threshold = getattr(controller, "_slow_threshold", 0.75)
+    threshold = controller.stash.get(THRESHOLD_KEY, 0.75)
     if duration is None or duration < threshold:
         return
 
-    slow_items = getattr(controller, "_slow_items", [])
-    slow_items.append((report.nodeid, duration, is_marked))
+    records = controller.stash.get(SLOW_ITEMS_KEY, None)
+    if records is None:
+        records = []
+        controller.stash[SLOW_ITEMS_KEY] = records
+    records.append(_SlowRecord(report.nodeid, duration, is_marked))
 
 
 def pytest_terminal_summary(
@@ -105,20 +117,20 @@ def pytest_terminal_summary(
     """Render the slow-test summary and enforce the policy."""
     del exitstatus
     config = terminalreporter.config
-    slow_items = getattr(config, "_slow_items", [])
+    slow_items = config.stash.get(SLOW_ITEMS_KEY, [])
     if not slow_items:
         return
 
-    threshold = getattr(config, "_slow_threshold", 0.75)
+    threshold = config.stash.get(THRESHOLD_KEY, 0.75)
     terminalreporter.section(f"Slow tests (>= {threshold:.2f}s)")
-    for nodeid, duration, is_marked in sorted(
-        slow_items, key=lambda entry: entry[1], reverse=True
-    ):
-        tag = "slow" if is_marked else "UNMARKED"
-        terminalreporter.write_line(f"{duration:6.2f}s  {tag:9}  {nodeid}")
+    for record in sorted(slow_items, key=lambda entry: entry.duration, reverse=True):
+        tag = "slow" if record.is_marked else "UNMARKED"
+        terminalreporter.write_line(
+            f"{record.duration:6.2f}s  {tag:9}  {record.nodeid}"
+        )
 
-    if getattr(config, "_fail_on_unmarked_slow", True) and any(
-        not marked for _, _, marked in slow_items
+    if config.stash.get(STRICT_KEY, True) and any(
+        not record.is_marked for record in slow_items
     ):
         terminalreporter.write_line(
             f"\nUnmarked slow tests detected (>= {threshold:.2f}s). "
@@ -126,7 +138,7 @@ def pytest_terminal_summary(
         )
         session = getattr(terminalreporter, "_session", None)
         if session is not None:
-            session.exitstatus = 1
+            session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

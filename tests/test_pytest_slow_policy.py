@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -14,10 +14,34 @@ pytest_plugins = ("pytester",)
 _PLUGIN_PATH = Path(__file__).resolve().parents[1] / "conftest.py"
 
 
+class _DummyStash(dict[pytest.StashKey[Any], Any]):
+    """Lightweight stand-in for pytest's stash container."""
+
+
+class DummyConfig(SimpleNamespace):
+    """Simple config stub that mimics the stash interface."""
+
+    def __init__(
+        self,
+        *,
+        threshold: float = 0.75,
+        strict: bool = True,
+        items: list[tuple[str, float, bool]] | None = None,
+    ) -> None:
+        """Populate the stash-backed config stub with slow-policy settings."""
+        stash = _DummyStash()
+        stash[slow_policy.THRESHOLD_KEY] = threshold
+        stash[slow_policy.STRICT_KEY] = strict
+        stash[slow_policy.SLOW_ITEMS_KEY] = [
+            slow_policy._SlowRecord(*entry) for entry in (items or [])
+        ]
+        super().__init__(stash=stash)
+
+
 class DummyReporter:
     """Minimal terminal reporter stub for exercising slow-policy summaries."""
 
-    def __init__(self, config: SimpleNamespace, session: SimpleNamespace) -> None:
+    def __init__(self, config: DummyConfig, session: SimpleNamespace) -> None:
         """Store the provided config/session and capture emitted lines."""
         self.config = config
         self._session = session
@@ -32,21 +56,8 @@ class DummyReporter:
         self.lines.append(text)
 
 
-def _make_config(
-    *,
-    threshold: float = 0.75,
-    strict: bool = True,
-    items: list[tuple[str, float, bool]] | None = None,
-) -> SimpleNamespace:
-    return SimpleNamespace(
-        _slow_items=list(items or []),
-        _slow_threshold=threshold,
-        _fail_on_unmarked_slow=strict,
-    )
-
-
 def test_terminal_summary_sets_exit_status_for_unmarked() -> None:
-    config = _make_config(items=[("pkg::test", 1.2, False)])
+    config = DummyConfig(items=[("pkg::test", 1.2, False)])
     session = SimpleNamespace(exitstatus=0)
     reporter = DummyReporter(config, session)
 
@@ -61,7 +72,7 @@ def test_terminal_summary_sets_exit_status_for_unmarked() -> None:
 
 
 def test_terminal_summary_respects_non_strict_policy() -> None:
-    config = _make_config(strict=False, items=[("pkg::test", 1.2, False)])
+    config = DummyConfig(strict=False, items=[("pkg::test", 1.2, False)])
     session = SimpleNamespace(exitstatus=0)
     reporter = DummyReporter(config, session)
 
@@ -75,7 +86,7 @@ def test_terminal_summary_respects_non_strict_policy() -> None:
 
 
 def test_logreport_collects_slow_items() -> None:
-    config = _make_config()
+    config = DummyConfig()
     try:
         slow_policy._CONTROLLER[0] = cast(pytest.Config, config)
         report = SimpleNamespace(
@@ -90,11 +101,13 @@ def test_logreport_collects_slow_items() -> None:
     finally:
         slow_policy._CONTROLLER[0] = None
 
-    assert config._slow_items == [("pkg::test", 1.1, True)]
+    assert config.stash[slow_policy.SLOW_ITEMS_KEY] == [
+        slow_policy._SlowRecord("pkg::test", 1.1, True)
+    ]
 
 
 def test_runtest_call_records_user_properties(monkeypatch: pytest.MonkeyPatch) -> None:
-    config = _make_config(threshold=0.5)
+    config = DummyConfig(threshold=0.5)
     item = SimpleNamespace(
         config=config,
         user_properties=[],
@@ -132,7 +145,7 @@ def test_runtest_call_records_user_properties(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_sessionfinish_clears_controller() -> None:
-    config = _make_config()
+    config = DummyConfig()
     slow_policy._CONTROLLER[0] = cast(pytest.Config, config)
     session = SimpleNamespace(config=SimpleNamespace())
 
