@@ -1,118 +1,256 @@
-"""Microsoft PowerPoint based PPTX renderer."""
+"""Optional Microsoft PowerPoint renderer backed by COM automation."""
 
 from __future__ import annotations
 
 import contextlib
 import sys
+from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import ClassVar, Literal
+from typing import Any, ClassVar, Literal
 
-from pdf_toolbox.renderers.pptx import PptxRenderingError
+from pdf_toolbox.renderers.pptx import PptxRenderingError, UnsupportedOptionError
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.renderers.registry import register
 from pdf_toolbox.utils import logger, parse_page_spec
 
-try:  # pragma: no cover - import guarded for non-Windows platforms  # pdf-toolbox: Windows-only COM modules | issue:-
-    import pythoncom  # type: ignore  # pdf-toolbox: pywin32 missing on non-Windows | issue:-
-    import win32com.client  # type: ignore  # pdf-toolbox: pywin32 missing on non-Windows | issue:-
-except Exception:  # pragma: no cover - handled in _require_env  # pdf-toolbox: gracefully handle missing COM | issue:-
-    win32com = None  # type: ignore  # pdf-toolbox: indicate COM unavailability | issue:-
+IS_WINDOWS = sys.platform.startswith("win")
+
+if IS_WINDOWS:
+    try:  # pragma: no cover - optional dependency import guarded for Windows only  # pdf-toolbox: PowerPoint automation relies on pywin32 | issue:-
+        import pythoncom  # type: ignore  # pdf-toolbox: pywin32 is optional and lacks type hints | issue:-
+        from win32com import (
+            client as win32_client,  # type: ignore  # pdf-toolbox: pywin32 is optional and lacks type hints | issue:-
+        )
+    except Exception:  # pragma: no cover - handled in runtime checks  # pdf-toolbox: gracefully degrade without pywin32 | issue:-
+        pythoncom = None  # type: ignore[assignment]  # pdf-toolbox: treat missing pywin32 as absent backend | issue:-
+        win32_client = None  # type: ignore[assignment]  # pdf-toolbox: treat missing pywin32 as absent backend | issue:-
+else:  # pragma: no cover - import guard for non-Windows platforms  # pdf-toolbox: PowerPoint COM only available on Windows | issue:-
+    pythoncom = None  # type: ignore[assignment]  # pdf-toolbox: COM unsupported on non-Windows platforms | issue:-
+    win32_client = None  # type: ignore[assignment]  # pdf-toolbox: COM unsupported on non-Windows platforms | issue:-
+
+_POWERPOINT_PROG_ID = "PowerPoint.Application"
+_PP_SAVE_AS_PDF = 32  # ppSaveAsPDF
+
+_ERR_AUTOMATION_FAILED = "PowerPoint automation failed"
+_ERR_COM_INIT_FAILED = "COM initialisation failed"
+_ERR_OPEN_PRESENTATION_FAILED = "Failed to open presentation"
+_ERR_EXPORT_PDF_FAILED = "Export to PDF failed"
+_ERR_EXPORT_IMAGES_FAILED = "Export to images failed"
+
+
+def _log_probe_result(name: str, available: bool, detail: str) -> bool:
+    """Log the probe outcome and return ``available`` for convenience."""
+    status = "available" if available else "unavailable"
+    logger.info("pptx renderer '%s' probe %s: %s", name, status, detail)
+    return available
+
+
+def _ensure_com_environment() -> tuple[Any, Any]:
+    """Return COM modules when Microsoft PowerPoint automation is available."""
+    if not IS_WINDOWS:
+        msg = "Microsoft PowerPoint automation requires Windows."
+        raise PptxRenderingError(msg, code="unavailable")
+    if pythoncom is None or win32_client is None:
+        msg = "pywin32/PowerPoint not available. Install Microsoft Office."
+        raise PptxRenderingError(msg, code="unavailable")
+    return pythoncom, win32_client
+
+
+def _get_dispatch(client_mod: Any) -> Callable[[str], Any]:
+    """Return the PowerPoint ``Dispatch`` callable from ``client_mod``."""
+    dispatch = getattr(client_mod, "DispatchEx", None) or getattr(
+        client_mod, "Dispatch", None
+    )
+    if dispatch is None:
+        msg = "PowerPoint COM dispatch is unavailable."
+        raise PptxRenderingError(msg, code="backend_crashed")
+    return dispatch
+
+
+def _dispatch_powerpoint(client_mod: Any) -> Any:
+    """Return the PowerPoint application COM object."""
+    dispatch = _get_dispatch(client_mod)
+    try:
+        return dispatch(_POWERPOINT_PROG_ID)
+    except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: surface COM automation failure | issue:-
+        raise PptxRenderingError(
+            _ERR_AUTOMATION_FAILED,
+            code="backend_crashed",
+            detail=str(exc),
+        ) from exc
+
+
+def _resolve_slide_numbers(range_spec: str | None, total: int) -> list[int]:
+    """Return 1-based slide numbers respecting ``range_spec``."""
+    if total == 0:
+        return []
+    if range_spec is None:
+        return list(range(1, total + 1))
+    try:
+        numbers = parse_page_spec(range_spec, total)
+    except ValueError as exc:
+        raise PptxRenderingError("invalid_range", code="invalid_range") from exc
+    if not numbers:
+        raise PptxRenderingError("empty_selection", code="empty_selection")
+    return numbers
+
+
+@contextlib.contextmanager
+def _powerpoint_session() -> Iterator[Any]:
+    """Yield a PowerPoint COM application instance and handle lifecycle."""
+    pythoncom_mod, client_mod = _ensure_com_environment()
+    try:
+        pythoncom_mod.CoInitialize()
+    except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM initialisation failure | issue:-
+        raise PptxRenderingError(
+            _ERR_COM_INIT_FAILED,
+            code="backend_crashed",
+            detail=str(exc),
+        ) from exc
+
+    app: Any | None = None
+    try:
+        app = _dispatch_powerpoint(client_mod)
+        with contextlib.suppress(Exception):
+            app.Visible = False
+        with contextlib.suppress(Exception):
+            app.DisplayAlerts = 1  # ppAlertsNone
+        yield app
+    finally:
+        if app is not None:
+            with contextlib.suppress(Exception):
+                app.Quit()
+        pythoncom_mod.CoUninitialize()
+
+
+def _open_presentation(app: Any, path: Path) -> Any:
+    """Return a COM presentation object for ``path``."""
+    presentations = getattr(app, "Presentations", None)
+    if presentations is None:
+        msg = "PowerPoint did not expose a presentations collection."
+        raise PptxRenderingError(msg, code="backend_crashed")
+    try:
+        return presentations.Open(str(path), True, False, False)
+    except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate PowerPoint open failure | issue:-
+        raise PptxRenderingError(
+            _ERR_OPEN_PRESENTATION_FAILED,
+            code="backend_crashed",
+            detail=str(exc),
+        ) from exc
 
 
 class PptxMsOfficeRenderer(BasePptxRenderer):
-    """Render PPTX files using Microsoft PowerPoint.
-
-    The renderer relies on COM automation and therefore only works on Windows
-    systems with an installed version of Microsoft PowerPoint. Enable it via
-    the configuration file (``pptx_renderer = "ms_office"``) and the optional
-    ``pptx-render`` extras.
-
-    Example:
-        >>> from pdf_toolbox.renderers.ms_office import PptxMsOfficeRenderer
-        >>> PptxMsOfficeRenderer().to_pdf("slides.pptx")
-        'slides.pdf'
-    """
+    """Render PPTX files using Microsoft PowerPoint."""
 
     name: ClassVar[str] = "ms_office"
-    _PP_SAVE_AS_PDF = 32  # ppSaveAsPDF
+    _PP_SAVE_AS_PDF: ClassVar[int] = _PP_SAVE_AS_PDF
 
     @classmethod
     def probe(cls) -> bool:
-        """Return ``True`` when the COM automation environment is available."""
-        return sys.platform.startswith("win") and win32com is not None
+        """Return ``True`` when PowerPoint automation is reachable."""
+        renderer_name = cls.name or "ms_office"
+        if not IS_WINDOWS:
+            return _log_probe_result(renderer_name, False, "unsupported platform")
+        if pythoncom is None or win32_client is None:
+            return _log_probe_result(renderer_name, False, "pywin32 libraries missing")
 
-    def _require_env(self) -> None:
-        if win32com is None:
-            msg = "MS-Office Renderer nicht verfügbar: Windows/PowerPoint/pywin32 erforderlich."
-            raise PptxRenderingError(msg)
-
-    def _open_app(
-        self,
-    ):  # pragma: no cover - Windows only  # pdf-toolbox: relies on PowerPoint COM | issue:-
-        """Start a hidden PowerPoint instance."""
-        pythoncom.CoInitialize()
-        app = win32com.client.DispatchEx("PowerPoint.Application")
-        with contextlib.suppress(Exception):
-            app.DisplayAlerts = 1  # ppAlertsNone
-        app.Visible = False
-        return app
-
-    def _close_app(
-        self, app
-    ) -> None:  # pragma: no cover - Windows only  # pdf-toolbox: PowerPoint COM cleanup | issue:-
+        pythoncom_mod = pythoncom
+        client_mod = win32_client
         try:
-            app.Quit()
+            pythoncom_mod.CoInitialize()
+        except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM initialisation failure | issue:-
+            return _log_probe_result(
+                renderer_name,
+                False,
+                f"COM initialisation failed: {exc}",
+            )
+
+        app: Any | None = None
+        available = False
+        detail = "PowerPoint automation unreachable"
+        try:
+            app = _dispatch_powerpoint(client_mod)
+        except PptxRenderingError as exc:
+            detail = str(exc)
+        except Exception as exc:  # pragma: no cover - defensive fallback  # pdf-toolbox: guard unexpected COM errors | issue:-
+            detail = f"unexpected error: {exc}"
+        else:
+            available = True
+            detail = "PowerPoint automation reachable"
         finally:
-            pythoncom.CoUninitialize()
+            if app is not None:
+                with contextlib.suppress(Exception):
+                    app.Quit()
+            pythoncom_mod.CoUninitialize()
 
-    def _open_presentation(
-        self, app, path: Path
-    ):  # pragma: no cover - Windows only  # pdf-toolbox: PowerPoint COM | issue:-
-        """Open ``path`` as read-only presentation."""
-        return app.Presentations.Open(str(path), True, False, False)
+        return _log_probe_result(renderer_name, available, detail)
 
-    @staticmethod
-    def _parse_range(spec: str | None, max_index: int) -> set[int]:
-        return set(parse_page_spec(spec, max_index))
+    @classmethod
+    def can_handle(cls) -> bool:
+        """Backward compatible alias for :meth:`probe`."""
+        return cls.probe()
 
-    # ------------------------------------------------------------------
-    # BasePptxRenderer API
-    # ------------------------------------------------------------------
     def to_pdf(
         self,
         input_pptx: str,
         output_path: str | None = None,
-        _notes: bool = False,
-        _handout: bool = False,
+        notes: bool = False,
+        handout: bool = False,
         range_spec: str | None = None,
     ) -> str:
-        """Render ``input_pptx`` to a PDF file."""
-        self._require_env()
+        """Render ``input_pptx`` to a PDF file via Microsoft PowerPoint."""
+        if notes and handout:
+            msg = "Notes and handout export cannot be combined."
+            raise UnsupportedOptionError(msg, code="conflicting_options")
+        if notes or handout:
+            msg = (
+                "Notes export is not supported."
+                if notes
+                else "Handout export is not supported."
+            )
+            raise UnsupportedOptionError(msg)
+
         inp = Path(input_pptx).resolve()
         if not inp.exists():
-            msg = f"Eingabe nicht gefunden: {inp}"
-            raise PptxRenderingError(msg)
+            msg = f"Input file not found: {inp}"
+            raise PptxRenderingError(msg, code="unavailable")
 
         out = Path(output_path) if output_path else inp.with_suffix(".pdf")
         out.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.info("Rendering %s to PDF", inp)
-        app = self._open_app()
-        try:
-            prs = self._open_presentation(app, inp)
+        logger.info("Rendering %s to PDF via Microsoft PowerPoint", inp)
+
+        exported: list[int] = []
+        with _powerpoint_session() as app:
+            presentation = None
             try:
-                wanted = self._parse_range(range_spec, len(prs.Slides))
-                for i, slide in enumerate(list(prs.Slides), start=1):
-                    slide.SlideShowTransition.Hidden = i not in wanted
-                prs.SaveAs(str(out), self._PP_SAVE_AS_PDF)
-                logger.info("Rendered %d slide(s) to %s", len(wanted), out)
+                presentation = _open_presentation(app, inp)
+                slides = list(presentation.Slides)
+                total = len(slides)
+                exported = _resolve_slide_numbers(range_spec, total)
+                selected = set(exported)
+                if total and len(selected) != total:
+                    for index, slide in enumerate(slides, start=1):
+                        transition = getattr(slide, "SlideShowTransition", None)
+                        if transition is None:
+                            continue
+                        with contextlib.suppress(Exception):
+                            transition.Hidden = index not in selected
+                presentation.SaveAs(str(out), self._PP_SAVE_AS_PDF)
+            except PptxRenderingError:
+                raise
+            except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM export failure | issue:-
+                raise PptxRenderingError(
+                    _ERR_EXPORT_PDF_FAILED,
+                    code="backend_crashed",
+                    detail=str(exc),
+                ) from exc
             finally:
-                prs.Close()
-        except Exception as exc:  # pragma: no cover - Windows only  # pdf-toolbox: COM export failures | issue:-
-            msg = f"Export nach PDF fehlgeschlagen: {exc}"
-            raise PptxRenderingError(msg) from exc
-        finally:
-            self._close_app(app)
+                if presentation is not None:
+                    with contextlib.suppress(Exception):
+                        presentation.Close()
+
+        logger.info("Rendered %d slide(s) to %s", len(exported), out)
         return str(out)
 
     def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
@@ -127,53 +265,60 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         range_spec: str | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to images."""
-        self._require_env()
         del quality, max_size_mb
+
         inp = Path(input_pptx).resolve()
         if not inp.exists():
-            msg = f"Eingabe nicht gefunden: {inp}"
-            raise PptxRenderingError(msg)
+            msg = f"Input file not found: {inp}"
+            raise PptxRenderingError(msg, code="unavailable")
 
         out = Path(out_dir) if out_dir else inp.with_suffix("")
         out.mkdir(parents=True, exist_ok=True)
 
-        ext_map = {"JPEG": "JPG", "PNG": "PNG", "TIFF": "TIFF"}
+        ext_map = {"JPEG": "JPEG", "PNG": "PNG", "TIFF": "TIFF"}
         fmt = image_format.upper()
         try:
             ext = ext_map[fmt]
         except KeyError as exc:
             msg = f"Unsupported image format: {image_format}"
-            raise PptxRenderingError(msg) from exc
+            raise PptxRenderingError(msg, code="unsupported_option") from exc
 
         logger.info("Rendering %s to images (%s)", inp, fmt)
-        app = self._open_app()
-        try:
-            prs = self._open_presentation(app, inp)
+
+        with _powerpoint_session() as app:
+            presentation = None
             try:
-                slides = list(prs.Slides)
-                numbers = parse_page_spec(range_spec, len(slides))
-                if not numbers:
-                    numbers = list(range(1, len(slides) + 1))
-                for existing in out.glob(f"Slide*.{fmt.lower()}"):
+                presentation = _open_presentation(app, inp)
+                slides = list(presentation.Slides)
+                total = len(slides)
+                numbers = _resolve_slide_numbers(range_spec, total)
+                padding = max(3, len(str(total or 1)))
+                pattern = f"slide-*.{fmt.lower()}"
+                for existing in out.glob(pattern):
                     with contextlib.suppress(Exception):
                         existing.unlink()
                 count = 0
                 for number in numbers:
                     slide = slides[number - 1]
-                    filename = out / f"Slide{number}.{fmt.lower()}"
+                    filename = out / f"slide-{number:0{padding}d}.{fmt.lower()}"
                     if width is not None and height is not None:
                         slide.Export(str(filename), ext, int(width), int(height))
                     else:
                         slide.Export(str(filename), ext)
                     count += 1
                 logger.info("Exported %d image(s) to %s", count, out)
+            except PptxRenderingError:
+                raise
+            except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM export failure | issue:-
+                raise PptxRenderingError(
+                    _ERR_EXPORT_IMAGES_FAILED,
+                    code="backend_crashed",
+                    detail=str(exc),
+                ) from exc
             finally:
-                prs.Close()
-        except Exception as exc:  # pragma: no cover - Windows only  # pdf-toolbox: COM export failures | issue:-
-            msg = f"Export nach Bildern fehlgeschlagen: {exc}"
-            raise PptxRenderingError(msg) from exc
-        finally:
-            self._close_app(app)
+                if presentation is not None:
+                    with contextlib.suppress(Exception):
+                        presentation.Close()
         return str(out)
 
 

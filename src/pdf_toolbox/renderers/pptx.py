@@ -21,13 +21,34 @@ PPTX_PROVIDER_DOCS_URL = (
 class PptxRenderingError(RuntimeError):
     """Error raised when a PPTX renderer fails."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str | None = None,
+        detail: str | None = None,
+    ) -> None:
+        """Initialise the error with optional machine readable metadata."""
+        full_message = f"{message}: {detail}" if detail else message
+        super().__init__(full_message)
+        self.code = code
+        self.detail = detail
+
+
+class UnsupportedOptionError(PptxRenderingError):
+    """Raised when a renderer option is not supported."""
+
+    def __init__(self, message: str, *, code: str = "unsupported_option") -> None:
+        """Initialise the error with an optional override for ``code``."""
+        super().__init__(message, code=code)
+
 
 class PptxProviderUnavailableError(PptxRenderingError):
     """Raised when no PPTX renderer is configured."""
 
     def __init__(self) -> None:
         """Initialise the error with a translated message."""
-        super().__init__(tr("pptx_renderer_missing"))
+        super().__init__(tr("pptx_renderer_missing"), code="unavailable")
         self.docs_url = PPTX_PROVIDER_DOCS_URL
 
 
@@ -136,6 +157,7 @@ __all__ = [
     "NullRenderer",
     "PptxProviderUnavailableError",
     "PptxRenderingError",
+    "UnsupportedOptionError",
     "get_pptx_renderer",
     "require_pptx_renderer",
 ]
