@@ -65,18 +65,24 @@
 | src/pdf_toolbox/miro.py:280                | pragma: no cover                         | PNG encoder failure varies by platform                 | -        |
 | src/pdf_toolbox/miro.py:300                | pragma: no cover                         | JPEG encoder may be unavailable                        | -        |
 | src/pdf_toolbox/miro.py:693                | pragma: no cover                         | keep GUI responsive despite renderer crashes           | -        |
-| src/pdf_toolbox/renderers/ms_office.py:15  | pragma: no cover                         | Windows-only COM modules                               | -        |
-| src/pdf_toolbox/renderers/ms_office.py:16  | type: ignore                             | pywin32 missing on non-Windows                         | -        |
-| src/pdf_toolbox/renderers/ms_office.py:17  | type: ignore                             | pywin32 missing on non-Windows                         | -        |
-| src/pdf_toolbox/renderers/ms_office.py:18  | pragma: no cover                         | gracefully handle missing COM                          | -        |
-| src/pdf_toolbox/renderers/ms_office.py:19  | type: ignore                             | indicate COM unavailability                            | -        |
-| src/pdf_toolbox/renderers/ms_office.py:51  | pragma: no cover                         | relies on PowerPoint COM                               | -        |
-| src/pdf_toolbox/renderers/ms_office.py:62  | pragma: no cover                         | PowerPoint COM cleanup                                 | -        |
-| src/pdf_toolbox/renderers/ms_office.py:70  | pragma: no cover                         | PowerPoint COM                                         | -        |
-| src/pdf_toolbox/renderers/ms_office.py:111 | pragma: no cover                         | COM export failures                                    | -        |
-| src/pdf_toolbox/renderers/ms_office.py:118 | PLR0913                                  | renderer API requires many parameters                  | -        |
-| src/pdf_toolbox/renderers/ms_office.py:172 | pragma: no cover                         | COM export failures                                    | -        |
-| src/pdf_toolbox/renderers/pptx.py:39       | PLR0913                                  | renderer API requires many parameters                  | -        |
+| src/pdf_toolbox/renderers/ms_office.py:19  | pragma: no cover                         | PowerPoint automation relies on pywin32                | -        |
+| src/pdf_toolbox/renderers/ms_office.py:20  | type: ignore                             | pywin32 is optional and lacks type hints               | -        |
+| src/pdf_toolbox/renderers/ms_office.py:22  | type: ignore                             | pywin32 is optional and lacks type hints               | -        |
+| src/pdf_toolbox/renderers/ms_office.py:24  | pragma: no cover                         | gracefully degrade without pywin32                     | -        |
+| src/pdf_toolbox/renderers/ms_office.py:25  | type: ignore[assignment]                 | treat missing pywin32 as absent backend                | -        |
+| src/pdf_toolbox/renderers/ms_office.py:26  | type: ignore[assignment]                 | treat missing pywin32 as absent backend                | -        |
+| src/pdf_toolbox/renderers/ms_office.py:27  | pragma: no cover                         | PowerPoint COM only available on Windows               | -        |
+| src/pdf_toolbox/renderers/ms_office.py:28  | type: ignore[assignment]                 | COM unsupported on non-Windows platforms               | -        |
+| src/pdf_toolbox/renderers/ms_office.py:29  | type: ignore[assignment]                 | COM unsupported on non-Windows platforms               | -        |
+| src/pdf_toolbox/renderers/ms_office.py:75  | pragma: no cover                         | surface COM automation failure                         | -        |
+| src/pdf_toolbox/renderers/ms_office.py:104 | pragma: no cover                         | propagate COM initialisation failure                   | -        |
+| src/pdf_toolbox/renderers/ms_office.py:134 | pragma: no cover                         | propagate PowerPoint open failure                      | -        |
+| src/pdf_toolbox/renderers/ms_office.py:161 | pragma: no cover                         | propagate COM initialisation failure                   | -        |
+| src/pdf_toolbox/renderers/ms_office.py:175 | pragma: no cover                         | guard unexpected COM errors                            | -        |
+| src/pdf_toolbox/renderers/ms_office.py:242 | pragma: no cover                         | propagate COM export failure                           | -        |
+| src/pdf_toolbox/renderers/ms_office.py:256 | PLR0913                                  | renderer API requires many parameters                  | -        |
+| src/pdf_toolbox/renderers/ms_office.py:312 | pragma: no cover                         | propagate COM export failure                           | -        |
+| src/pdf_toolbox/renderers/pptx.py:60       | PLR0913                                  | renderer API requires many parameters                  | -        |
 | src/pdf_toolbox/renderers/pptx_base.py:16  | PLR0913                                  | renderer API requires many parameters                  | -        |
 | src/pdf_toolbox/renderers/registry.py:157  | pragma: no cover                         | unreachable once select(strict=True) succeeds          | -        |
 | src/pdf_toolbox/utils.py:13                | type: ignore                             | PyMuPDF lacks type hints                               | -        |
@@ -89,10 +95,15 @@
 | tests/test_miro.py:215                     | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
 | tests/test_pptx.py:90                      | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_pptx.py:135                     | PLR0913                                  | renderer API requires many parameters                  | -        |
-| tests/test_pptx_ms_office_renderer.py:22   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
-| tests/test_pptx_ms_office_renderer.py:27   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
-| tests/test_pptx_ms_office_renderer.py:50   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
-| tests/test_pptx_ms_office_renderer.py:68   | pragma: no cover                         | requires Windows PowerPoint                            | -        |
+| tests/test_pptx_ms_office_renderer.py:21   | N802                                     | mirror COM method name                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:25   | N802                                     | mirror COM method name                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:46   | N802                                     | COM style method name                                  | -        |
+| tests/test_pptx_ms_office_renderer.py:71   | N802                                     | COM style method name                                  | -        |
+| tests/test_pptx_ms_office_renderer.py:77   | N802                                     | COM style method name                                  | -        |
+| tests/test_pptx_ms_office_renderer.py:90   | N802                                     | COM style method name                                  | -        |
+| tests/test_pptx_ms_office_renderer.py:107  | N802                                     | COM style method name                                  | -        |
+| tests/test_pptx_ms_office_renderer.py:120  | N802                                     | COM style method name                                  | -        |
+| tests/test_pptx_ms_office_renderer.py:125  | N802                                     | COM style method name                                  | -        |
 | tests/test_pptx_renderer.py:19             | PLR0913                                  | renderer stub matches renderer API signature           | -        |
 | tests/test_renderer_registry.py:12         | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_utils.py:5                      | type: ignore                             | PyMuPDF lacks type hints                               | -        |
