@@ -11,7 +11,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pdf_toolbox.actions import action
 from pdf_toolbox.actions.pdf_images import QualityChoice, resolve_image_settings
 from pdf_toolbox.paths import validate_path
-from pdf_toolbox.renderers.pptx import get_pptx_renderer
+from pdf_toolbox.renderers.pptx import require_pptx_renderer
 from pdf_toolbox.utils import logger
 
 
@@ -106,7 +106,7 @@ def reorder_pptx(
     return str(out)
 
 
-@action(category="PPTX")
+@action(category="PPTX", requires_pptx_renderer=True)
 def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires many parameters | issue:-
     input_pptx: str,
     out_dir: str | None = None,
@@ -138,7 +138,7 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
         allowed_formats={"PNG", "JPEG", "TIFF"},
     )
     fmt_literal = cast(Literal["PNG", "JPEG", "TIFF"], fmt)
-    renderer = get_pptx_renderer()
+    renderer = require_pptx_renderer()
     return renderer.to_images(
         input_pptx,
         out_dir=out_dir,
@@ -151,12 +151,12 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
     )
 
 
-@action(category="PPTX")
+@action(category="PPTX", requires_pptx_renderer=True)
 def pptx_to_pdf(
     input_pptx: str, output_path: str | None = None, pages: str | None = None
 ) -> str:
     """Render a PPTX file to PDF using the configured provider."""
-    renderer = get_pptx_renderer()
+    renderer = require_pptx_renderer()
     return renderer.to_pdf(input_pptx, output_path=output_path, range_spec=pages)
 
 

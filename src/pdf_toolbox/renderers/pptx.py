@@ -12,9 +12,23 @@ from pdf_toolbox.renderers.registry import available as registry_available
 from pdf_toolbox.renderers.registry import register as register_renderer
 from pdf_toolbox.renderers.registry import select as registry_select
 
+PPTX_PROVIDER_DOCS_URL = (
+    "https://github.com/1cu/pdf_toolbox/blob/main/docs/adr/0001-pptx-provider-"
+    "architecture.md"
+)
+
 
 class PptxRenderingError(RuntimeError):
     """Error raised when a PPTX renderer fails."""
+
+
+class PptxProviderUnavailableError(PptxRenderingError):
+    """Raised when no PPTX renderer is configured."""
+
+    def __init__(self) -> None:
+        """Initialise the error with a translated message."""
+        super().__init__(tr("pptx_renderer_missing"))
+        self.docs_url = PPTX_PROVIDER_DOCS_URL
 
 
 class NullRenderer(BasePptxRenderer):
@@ -44,7 +58,7 @@ class NullRenderer(BasePptxRenderer):
             height,
             range_spec,
         )
-        raise NotImplementedError(tr("pptx_renderer_missing"))
+        raise PptxProviderUnavailableError()
 
     def to_pdf(
         self,
@@ -55,7 +69,8 @@ class NullRenderer(BasePptxRenderer):
         range_spec: str | None = None,
     ) -> str:
         """Always raise because no renderer is configured."""
-        raise NotImplementedError(tr("pptx_renderer_missing"))
+        del input_pptx, output_path, notes, handout, range_spec
+        raise PptxProviderUnavailableError()
 
 
 register_renderer(NullRenderer)
@@ -107,9 +122,20 @@ def get_pptx_renderer() -> BasePptxRenderer:
     return NullRenderer()
 
 
+def require_pptx_renderer() -> BasePptxRenderer:
+    """Return the configured renderer or raise a clear error."""
+    renderer = get_pptx_renderer()
+    if isinstance(renderer, NullRenderer):
+        raise PptxProviderUnavailableError()
+    return renderer
+
+
 __all__ = [
+    "PPTX_PROVIDER_DOCS_URL",
     "BasePptxRenderer",
     "NullRenderer",
+    "PptxProviderUnavailableError",
     "PptxRenderingError",
     "get_pptx_renderer",
+    "require_pptx_renderer",
 ]

@@ -18,7 +18,11 @@ from pdf_toolbox.actions.pptx import (
     reorder_pptx,
 )
 from pdf_toolbox.renderers import pptx
-from pdf_toolbox.renderers.pptx import BasePptxRenderer, get_pptx_renderer
+from pdf_toolbox.renderers.pptx import (
+    BasePptxRenderer,
+    PptxProviderUnavailableError,
+    get_pptx_renderer,
+)
 
 
 @pytest.fixture
@@ -88,10 +92,58 @@ def test_reorder_pptx_range_and_invalid(simple_pptx):
 
 
 def test_rendering_actions_raise(simple_pptx):
-    with pytest.raises(NotImplementedError, match="Rendering PPTX"):
+    with pytest.raises(PptxProviderUnavailableError):
         pptx_to_images(simple_pptx)
-    with pytest.raises(NotImplementedError, match="Rendering PPTX"):
+    with pytest.raises(PptxProviderUnavailableError):
         pptx_to_pdf(simple_pptx)
+
+
+def test_null_renderer_methods_raise():
+    renderer = pptx.NullRenderer()
+
+    with pytest.raises(PptxProviderUnavailableError) as excinfo:
+        renderer.to_images("deck.pptx")
+
+    assert excinfo.value.docs_url == pptx.PPTX_PROVIDER_DOCS_URL
+
+    with pytest.raises(PptxProviderUnavailableError):
+        renderer.to_pdf("deck.pptx")
+
+
+def test_ensure_registered_skips_unknown(monkeypatch):
+    monkeypatch.setattr(pptx, "registry_available", lambda: set())
+    called: list[str] = []
+
+    def fake_import(name: str) -> None:
+        called.append(name)
+
+    monkeypatch.setattr(pptx.importlib, "import_module", fake_import)
+
+    pptx._ensure_registered("missing")
+
+    assert called == []
+
+
+def test_load_via_registry_handles_empty_and_missing(monkeypatch):
+    monkeypatch.setattr(pptx, "registry_available", lambda: set())
+    seen: list[str] = []
+    monkeypatch.setattr(pptx, "_ensure_registered", lambda name: seen.append(name))
+    monkeypatch.setattr(pptx, "registry_select", lambda _name: None)
+
+    assert pptx._load_via_registry("") is None
+    assert pptx._load_via_registry("custom") is None
+    assert seen == ["custom"]
+
+
+def test_get_pptx_renderer_falls_back(monkeypatch, tmp_path):
+    cfg_path = tmp_path / "pptx.json"
+    cfg_path.write_text(json.dumps({"pptx_renderer": "custom"}))
+    monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
+    monkeypatch.setattr(pptx, "_load_via_registry", lambda _name: None)
+
+    renderer = pptx.get_pptx_renderer()
+
+    assert isinstance(renderer, pptx.NullRenderer)
 
 
 def test_renderer_config(monkeypatch, tmp_path):

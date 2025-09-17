@@ -7,11 +7,39 @@ import logging
 import re
 import tokenize
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_FILE = ROOT / "DEVELOPMENT_EXCEPTIONS.md"
 
 SEARCH_DIRS = [ROOT / "src", ROOT / "scripts", ROOT / "tests"]
+
+
+class RuntimeExceptionEntry(TypedDict):
+    """Metadata describing a documented runtime exception."""
+
+    exception: str
+    message_key: str
+    locales: list[tuple[str, str]]
+    docs: str
+    docs_label: NotRequired[str]
+
+
+RUNTIME_EXCEPTIONS: list[RuntimeExceptionEntry] = [
+    {
+        "exception": "pdf_toolbox.renderers.pptx.PptxProviderUnavailableError",
+        "message_key": "pptx_renderer_missing",
+        "locales": [
+            ("en", "src/pdf_toolbox/locales/en.json"),
+            ("de", "src/pdf_toolbox/locales/de.json"),
+        ],
+        "docs": (
+            "https://github.com/1cu/pdf_toolbox/blob/main/docs/adr/0001-pptx-provider-"
+            "architecture.md"
+        ),
+        "docs_label": "PPTX_PROVIDER_DOCS_URL",
+    }
+]
 
 ISSUE_SPLIT = re.compile(r"\s*\|\s*issue:")
 NOQA_RE = re.compile(r"# noqa: (?P<codes>[A-Z0-9_, ]+)")
@@ -78,11 +106,10 @@ def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:  # noqa: PLR0
     return sorted(records, key=sort_key), errors
 
 
-def render_table(rows: list[tuple[str, str, str, str]]) -> str:
+def render_table(headers: list[str], rows: list[list[str]]) -> str:
     """Return a Markdown table for *rows* with padded columns."""
-    headers = ["File", "Rule", "Reason", "Issue/PR"]
-    matrix = [headers] + [list(r) for r in rows]
-    widths = [max(len(row[i]) for row in matrix) for i in range(4)]
+    matrix = [headers, *rows]
+    widths = [max(len(row[i]) for row in matrix) for i in range(len(headers))]
 
     def fmt(row: list[str]) -> str:
         return (
@@ -91,9 +118,12 @@ def render_table(rows: list[tuple[str, str, str, str]]) -> str:
             + " |"
         )
 
-    lines = [fmt(headers), "| " + " | ".join("-" * widths[i] for i in range(4)) + " |"]
+    lines = [
+        fmt(headers),
+        "| " + " | ".join("-" * widths[i] for i in range(len(headers))) + " |",
+    ]
     if not rows:
-        lines.append(fmt(["*(none yet)*", "-", "-", "-"]))
+        lines.append(fmt(["*(none yet)*"] + ["-" for _ in headers[1:]]))
     else:
         for row in rows:
             lines.append(fmt(list(row)))
@@ -106,8 +136,32 @@ def main() -> int:
     if errors:
         logging.error("\n".join(errors))
         return 1
-    table = render_table(rows)
-    content = "# Documented Exceptions\n\n" + table + "\n"
+    lint_table = render_table(
+        ["File", "Rule", "Reason", "Issue/PR"], [list(r) for r in rows]
+    )
+    runtime_rows: list[list[str]] = []
+    for entry in RUNTIME_EXCEPTIONS:
+        locales = ", ".join(f"[{code}]({path})" for code, path in entry["locales"])
+        doc_label = entry.get("docs_label", "Documentation")
+        runtime_rows.append(
+            [
+                entry["exception"],
+                entry["message_key"],
+                locales,
+                f"[{doc_label}]({entry['docs']})",
+            ]
+        )
+    runtime_table = render_table(
+        ["Exception", "Message key", "Locales", "Docs"],
+        runtime_rows,
+    )
+    content = (
+        "# Documented Exceptions\n\n"
+        + lint_table
+        + "\n\n## Runtime Exceptions\n\n"
+        + runtime_table
+        + "\n"
+    )
     existing = OUT_FILE.read_text(encoding="utf8") if OUT_FILE.exists() else ""
     if content == existing:
         return 0
