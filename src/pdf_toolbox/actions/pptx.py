@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Literal, cast
 
 from pdf_toolbox.actions import action
-from pdf_toolbox.actions.pdf_images import QualityChoice, resolve_image_settings
+from pdf_toolbox.actions.pdf_images import (
+    QualityChoice,
+    pdf_to_images,
+    resolve_image_settings,
+)
 from pdf_toolbox.renderers.pptx import require_pptx_renderer
+from pdf_toolbox.renderers.registry import convert_pptx_to_pdf
 
 
 @action(category="PPTX", requires_pptx_renderer=True)
@@ -41,17 +47,23 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
         allowed_formats={"PNG", "JPEG", "TIFF"},
     )
     fmt_literal = cast(Literal["PNG", "JPEG", "TIFF"], fmt)
-    renderer = require_pptx_renderer()
-    return renderer.to_images(
-        input_pptx,
-        out_dir=out_dir,
-        max_size_mb=max_size_mb,
-        image_format=fmt_literal,
-        quality=quality_val,
-        width=width,
-        height=height,
-        range_spec=pages,
+    target_out_dir = (
+        Path(out_dir) if out_dir is not None else Path(input_pptx).resolve().parent
     )
+
+    with convert_pptx_to_pdf(input_pptx) as pdf_path:
+        outputs = pdf_to_images(
+            pdf_path,
+            pages=pages,
+            image_format=fmt_literal,
+            quality=quality_val,
+            max_size_mb=max_size_mb,
+            out_dir=target_out_dir,
+            width=width,
+            height=height,
+        )
+        result_dir = Path(outputs[0]).parent if outputs else target_out_dir
+    return str(result_dir)
 
 
 @action(category="PPTX", requires_pptx_renderer=True)

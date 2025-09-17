@@ -15,7 +15,7 @@
 | src/pdf_toolbox/actions/pdf_images.py:11         | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | src/pdf_toolbox/actions/pdf_images.py:127        | PLR0913, PLR0912, PLR0915                | rendering pages needs many parameters and branches     | -        |
 | src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                                  | conversion helper requires many parameters             | -        |
-| src/pdf_toolbox/actions/pptx.py:13               | PLR0913                                  | action interface requires many parameters              | -        |
+| src/pdf_toolbox/actions/pptx.py:19               | PLR0913                                  | action interface requires many parameters              | -        |
 | src/pdf_toolbox/actions/unlock.py:8              | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | src/pdf_toolbox/gui/__init__.py:44               | pragma: no cover                         | environment dependent                                  | -        |
 | src/pdf_toolbox/gui/main_window.py:57            | PLR0915                                  | constructor sets up many widgets                       | -        |
@@ -85,7 +85,7 @@
 | src/pdf_toolbox/renderers/ms_office.py:312       | pragma: no cover                         | propagate COM export failure                           | -        |
 | src/pdf_toolbox/renderers/pptx.py:60             | PLR0913                                  | renderer API requires many parameters                  | -        |
 | src/pdf_toolbox/renderers/pptx_base.py:16        | PLR0913                                  | renderer API requires many parameters                  | -        |
-| src/pdf_toolbox/renderers/registry.py:157        | pragma: no cover                         | unreachable once select(strict=True) succeeds          | -        |
+| src/pdf_toolbox/renderers/registry.py:160        | pragma: no cover                         | unreachable once select(strict=True) succeeds          | -        |
 | src/pdf_toolbox/utils.py:13                      | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/conftest.py:3                              | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_actions.py:99                         | pragma: no cover                         | stub action body unused during registry import         | -        |
@@ -94,8 +94,11 @@
 | tests/test_converters.py:3                       | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_images.py:6                           | type: ignore                             | PyMuPDF lacks type hints                               | -        |
 | tests/test_miro.py:215                           | pragma: no cover                         | ensure dummy renderer keeps simple coverage            | -        |
-| tests/test_pptx.py:90                            | PLR0913                                  | renderer API requires many parameters                  | -        |
-| tests/test_pptx.py:135                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:96                            | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:184                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:272                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:345                           | PLR0913                                  | renderer API requires many parameters                  | -        |
+| tests/test_pptx.py:416                           | PLR0913                                  | renderer API requires many parameters                  | -        |
 | tests/test_pptx_ms_office_renderer.py:21         | N802                                     | mirror COM method name                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:25         | N802                                     | mirror COM method name                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:46         | N802                                     | COM style method name                                  | -        |

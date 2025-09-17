@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+import tempfile
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
+from pathlib import Path
 
 from pdf_toolbox.config import PptxRendererChoice, get_pptx_renderer_choice
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
@@ -159,9 +162,28 @@ def ensure(name: str | None = None) -> type[BasePptxRenderer]:
     return renderer_cls
 
 
+@contextmanager
+def convert_pptx_to_pdf(input_pptx: str) -> Iterator[str]:
+    """Yield a temporary PDF converted from ``input_pptx``.
+
+    The configured PPTX renderer is instantiated via the registry and asked to
+    render ``input_pptx`` into a PDF within a temporary directory. The yielded
+    path remains valid for the duration of the context manager and is removed
+    afterwards to avoid leaking intermediate artefacts.
+    """
+    renderer_cls = ensure()
+    renderer = renderer_cls()
+    stem = Path(input_pptx).stem or "presentation"
+    with tempfile.TemporaryDirectory(prefix="pdf-toolbox-pptx-") as tmp_dir:
+        out_path = Path(tmp_dir) / f"{stem}.pdf"
+        pdf_path = renderer.to_pdf(input_pptx, output_path=str(out_path))
+        yield pdf_path
+
+
 __all__ = [
     "RendererSelectionError",
     "available",
+    "convert_pptx_to_pdf",
     "ensure",
     "register",
     "select",
