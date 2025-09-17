@@ -52,8 +52,15 @@ set author metadata and optionally choose a PPTX renderer:
 }
 ```
 
-Leave `pptx_renderer` unset or `null` to keep the default `NullRenderer`. The
-Qt GUI surfaces missing metadata at startup and lets you update the config.
+Set `pptx_renderer` to control how PPTX files render:
+
+- `auto` (default): prefer local providers, fall back to registered plugins.
+- `none`: disable rendering and surface the helper banner in the GUI.
+- `ms_office`: automate Microsoft PowerPoint via COM on Windows.
+- `http_office`: delegate rendering to an HTTP-capable Office deployment.
+- `lightweight`: use the built-in stub provider for smoke tests.
+
+The Qt GUI surfaces missing metadata at startup and lets you update the config.
 
 ## Select a PPTX renderer
 
