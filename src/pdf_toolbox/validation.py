@@ -2,27 +2,44 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 
 ERR_PDF_NOT_FOUND = "PDF file not found: {path}"
 ERR_EXPECTED_FILE = "Expected a file, got directory: {path}"
-ERR_MUST_BE_PDF = "File must be a PDF: {path}"
+ERR_UNSUPPORTED_TYPE = "File must be one of {types}: {path}"
 ERR_MISSING_CONFIG = "Missing required config field: {key}"
 
 
-def validate_pdf_path(path: str | Path) -> Path:
-    """Validate and sanitize a PDF file path.
+def validate_pdf_path(
+    path: str | Path,
+    *,
+    allowed_suffixes: Iterable[str] | None = None,
+) -> Path:
+    """Validate and sanitize a document path.
 
-    Returns a ``Path`` object if valid, otherwise raises a descriptive
-    exception.
+    Args:
+        path: Path to validate.
+        allowed_suffixes: Optional iterable of accepted suffixes. When omitted,
+            only ``.pdf`` files are accepted. Suffix matching is
+            case-insensitive.
+
+    Returns:
+        ``Path``: Absolute path when validation succeeds.
     """
+
+    suffixes = {".pdf"}
+    if allowed_suffixes is not None:
+        suffixes = {suffix.lower() for suffix in allowed_suffixes}
+
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(ERR_PDF_NOT_FOUND.format(path=path))
     if p.is_dir():
         raise IsADirectoryError(ERR_EXPECTED_FILE.format(path=path))
-    if p.suffix.lower() != ".pdf":
-        raise ValueError(ERR_MUST_BE_PDF.format(path=path))
+    if suffixes and p.suffix.lower() not in suffixes:
+        kinds = ", ".join(sorted(ext.lstrip(".").upper() for ext in suffixes))
+        raise ValueError(ERR_UNSUPPORTED_TYPE.format(types=kinds, path=path))
     return p
 
 

@@ -30,6 +30,7 @@
     "optimised_unchanged": "No optimisation: size unchanged",
     "pdf_to_docx": "PDF to DOCX",
     "pdf_to_images": "PDF to Images",
+    "pptx_renderer_banner": "PPTX rendering is unavailable without an external provider. Configure one in Settings → PPTX Renderer. <a href=\"{docs}\">Read the setup guide</a>.",
     "pptx_renderer_missing": "Rendering PPTX is not available without Office/LibreOffice. Configure an external provider",
     "pptx_to_images": "PPTX to Images",
     "pptx_to_pdf": "PPTX to PDF",

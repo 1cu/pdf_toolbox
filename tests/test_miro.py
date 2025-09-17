@@ -8,6 +8,7 @@ from PIL import Image
 
 from pdf_toolbox import image_utils, miro
 from pdf_toolbox.actions.miro import miro_export
+from pdf_toolbox.renderers.pptx import PptxProviderUnavailableError
 from pdf_toolbox.miro import PROFILE_MIRO, ExportProfile, export_pdf_for_miro
 
 
@@ -240,6 +241,13 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     assert all(Path(path).parent == explicit_dir for path in outputs)
     explicit_manifest = explicit_dir / "miro_export.json"
     assert explicit_manifest.exists()
+
+
+def test_miro_export_pptx_without_provider(tmp_path):
+    pptx_path = tmp_path / "deck.pptx"
+    pptx_path.write_text("pptx")
+    with pytest.raises(PptxProviderUnavailableError):
+        miro_export(str(pptx_path))
 
 
 def test_miro_export_rejects_unknown_extension(tmp_path):

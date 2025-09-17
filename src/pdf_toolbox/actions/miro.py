@@ -16,7 +16,7 @@ from pdf_toolbox.actions.pdf_images import (
 )
 from pdf_toolbox.miro import PROFILE_MIRO, export_pdf_for_miro
 from pdf_toolbox.paths import validate_path
-from pdf_toolbox.renderers.pptx import get_pptx_renderer
+from pdf_toolbox.renderers.pptx import require_pptx_renderer
 from pdf_toolbox.utils import logger, sane_output_dir
 
 ProfileChoice = Literal["standard", "miro"]
@@ -86,7 +86,7 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
         return outcome.files
 
     if suffix == ".pptx":
-        renderer = get_pptx_renderer()
+        renderer = require_pptx_renderer()
         target_dir = sane_output_dir(source, out_dir)
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_pdf = Path(tmp_dir) / f"{source.stem}.pdf"

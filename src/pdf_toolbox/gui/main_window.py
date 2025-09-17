@@ -43,10 +43,19 @@ from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
-from pdf_toolbox.renderers.pptx import get_pptx_renderer
+from pdf_toolbox.renderers.pptx import (
+    PPTX_PROVIDER_DOCS_URL,
+    NullRenderer,
+    get_pptx_renderer,
+)
 from pdf_toolbox.utils import _load_author_info, configure_logging
 
 RESULT_PAIR_LEN = 2
+
+_RENDERER_REQUIRED_ACTIONS = {
+    "pdf_toolbox.actions.pptx.pptx_to_images",
+    "pdf_toolbox.actions.pptx.pptx_to_pdf",
+}
 
 
 class MainWindow(QMainWindow):
@@ -74,6 +83,16 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(central)
         top_bar = QHBoxLayout()
         layout.addLayout(top_bar)
+        self.banner = QLabel()
+        self.banner.setWordWrap(True)
+        self.banner.setTextFormat(Qt.TextFormat.RichText)
+        self.banner.setOpenExternalLinks(True)
+        self.banner.setStyleSheet(
+            "color: #664400; background-color: #fff4ce; border: 1px solid #e0c97f;"
+            " border-radius: 4px; padding: 6px;"
+        )
+        self.banner.setVisible(False)
+        layout.addWidget(self.banner)
         splitter = QSplitter()
         layout.addWidget(splitter)
         bottom = QHBoxLayout()
@@ -198,6 +217,7 @@ class MainWindow(QMainWindow):
         self.field_rows = {}
         self.profile_help_label = None
         self.profile_combo = None
+        self.banner.setVisible(False)
         profile_initial_value: str | None = None
 
         for param in action.params:
@@ -355,6 +375,8 @@ class MainWindow(QMainWindow):
         if profile_initial_value:
             self._apply_profile_ui(profile_initial_value, persist=False)
 
+        self._update_pptx_banner(action)
+
     def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912  # pdf-toolbox: argument collection involves many branches | issue:-
         """Gather user input from the form into keyword arguments."""
         if not self.current_action:
@@ -428,6 +450,21 @@ class MainWindow(QMainWindow):
     def _remember_field(self, name: str, widget: QWidget) -> None:
         """Store the widget representing *name* for later visibility tweaks."""
         self.field_rows[name] = widget
+
+    def _update_pptx_banner(self, action: Action | None) -> None:
+        """Show or hide the PPTX provider warning banner."""
+
+        if not action:
+            self.banner.setVisible(False)
+            return
+        needs_provider = action.fqname in _RENDERER_REQUIRED_ACTIONS
+        if needs_provider and isinstance(get_pptx_renderer(), NullRenderer):
+            self.banner.setText(
+                tr("pptx_renderer_banner", docs=PPTX_PROVIDER_DOCS_URL)
+            )
+            self.banner.setVisible(True)
+        else:
+            self.banner.setVisible(False)
 
     def _set_row_visible(self, name: str, visible: bool) -> None:
         """Show or hide the form row for parameter *name*."""
