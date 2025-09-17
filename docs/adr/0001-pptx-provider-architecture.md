@@ -41,6 +41,9 @@ Introduce a provider pattern for PPTX→PDF conversion.
 Interface:
 
 - Module: `pdf_toolbox.renderers.pptx`
+- Lightweight placeholder: `PptxLightweightStub` keeps the registry stable while
+  the portable backend is implemented. The stub never handles requests and
+  raises `NotImplementedError` for rendering hooks so callers fail fast.
 - Base class: `BasePptxRenderer`
 - Required methods:
   - `to_pdf(input_pptx: Path, output_path: Path | None = None, *, notes: bool = False, handout: bool = False, range_spec: str | None = None) -> Path`
