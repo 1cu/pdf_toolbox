@@ -46,9 +46,38 @@ from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.renderers.pptx import (
     PPTX_PROVIDER_DOCS_URL,
     PptxProviderUnavailableError,
+    PptxRenderingError,
     require_pptx_renderer,
 )
 from pdf_toolbox.utils import _load_author_info, configure_logging
+
+_PPTX_ERROR_KEYS_BY_CODE = {
+    "backend_crashed": "pptx_backend_crashed",
+    "conflicting_options": "pptx_conflicting_options",
+    "corrupt": "pptx_corrupt",
+    "empty_selection": "pptx_empty_selection",
+    "invalid_range": "pptx_invalid_range",
+    "permission_denied": "pptx_permission_denied",
+    "resource_limits_exceeded": "pptx_resource_limits",
+    "timeout": "pptx_timeout",
+    "unavailable": "pptx_unavailable",
+    "unsupported_option": "pptx_unsupported_option",
+}
+
+# Ensure locale integrity checks discover dynamically referenced keys.
+_PPTX_ERROR_KEY_REFERENCES = (
+    tr("pptx_backend_crashed"),
+    tr("pptx_conflicting_options"),
+    tr("pptx_corrupt"),
+    tr("pptx_empty_selection"),
+    tr("pptx_error_unknown"),
+    tr("pptx_invalid_range"),
+    tr("pptx_permission_denied"),
+    tr("pptx_resource_limits"),
+    tr("pptx_timeout"),
+    tr("pptx_unavailable"),
+    tr("pptx_unsupported_option"),
+)
 
 
 class MainWindow(QMainWindow):
@@ -76,17 +105,25 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(central)
         top_bar = QHBoxLayout()
         layout.addLayout(top_bar)
-        self.banner = QLabel()
-        self.banner.setWordWrap(True)
-        self.banner.setTextFormat(Qt.TextFormat.RichText)
-        self.banner.setOpenExternalLinks(True)
-        self.banner.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextBrowserInteraction
-        )
+        self.banner = QWidget()
         self.banner.setStyleSheet(
             "color: #664400; background-color: #fff4ce; border: 1px solid #e0c97f;"
-            " border-radius: 4px; padding: 6px;"
+            " border-radius: 4px;"
         )
+        banner_layout = QHBoxLayout(self.banner)
+        banner_layout.setContentsMargins(8, 6, 8, 6)
+        banner_layout.setSpacing(8)
+        self.banner_label = QLabel(tr("pptx_banner_message"))
+        self.banner_label.setWordWrap(True)
+        self.banner_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        banner_layout.addWidget(self.banner_label, 1)
+        self.banner_button = QPushButton(tr("pptx_open_docs"))
+        self.banner_button.setAutoDefault(False)
+        self.banner_button.setDefault(False)
+        self.banner_button.clicked.connect(self._open_pptx_docs)
+        banner_layout.addWidget(self.banner_button)
         self.banner.setVisible(False)
         layout.addWidget(self.banner)
         splitter = QSplitter()
@@ -447,6 +484,12 @@ class MainWindow(QMainWindow):
         """Store the widget representing *name* for later visibility tweaks."""
         self.field_rows[name] = widget
 
+    def _open_pptx_docs(self) -> None:
+        """Open the PPTX provider documentation in the default browser."""
+        QDesktopServices.openUrl(
+            QUrl(PPTX_PROVIDER_DOCS_URL)
+        )  # pragma: no cover  # pdf-toolbox: opens external documentation | issue:-
+
     def _update_pptx_banner(self, action: Action | None) -> None:
         """Show or hide the PPTX provider warning banner."""
         if not action or not action.requires_pptx_renderer:
@@ -455,7 +498,8 @@ class MainWindow(QMainWindow):
         try:
             require_pptx_renderer()
         except PptxProviderUnavailableError:
-            self.banner.setText(tr("pptx_renderer_banner", docs=PPTX_PROVIDER_DOCS_URL))
+            self.banner_label.setText(tr("pptx_banner_message"))
+            self.banner_button.setText(tr("pptx_open_docs"))
             self.banner.setVisible(True)
         else:
             self.banner.setVisible(False)
@@ -565,20 +609,50 @@ class MainWindow(QMainWindow):
         self.worker = None
 
     def on_error(
-        self, msg: str
+        self, error: object
     ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
         """Handle errors emitted by the worker thread."""
+        message = self._format_error_message(error)
         self.log.setVisible(True)
         if self.log.toPlainText():
-            self.log.appendPlainText(msg)
+            self.log.appendPlainText(message)
         else:
-            self.log.setPlainText(msg)
+            self.log.setPlainText(message)
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         self.run_btn.setText(tr("start"))
         self.update_status(tr("error"), "error")
         self.resize(self.width(), self.base_height + self.log.height())
         self.worker = None
+
+    def _format_error_message(self, error: object) -> str:
+        """Return a translated, user-friendly message for *error*."""
+        if isinstance(error, BaseException):
+            return self._format_exception_message(error)
+        return str(error)
+
+    def _format_exception_message(self, error: BaseException) -> str:
+        """Translate PPTX errors while preserving diagnostic detail."""
+        if isinstance(error, PptxProviderUnavailableError):
+            return tr("pptx_no_provider")
+        if isinstance(error, PptxRenderingError):
+            code = (error.code or "").lower()
+            key = _PPTX_ERROR_KEYS_BY_CODE.get(code, "pptx_error_unknown")
+            base = tr(key)
+            extras: list[str] = []
+            if error.detail:
+                extras.append(str(error.detail))
+            raw = str(error)
+            if raw and raw.lower() != code and raw != base:
+                extras.append(raw)
+            filtered: list[str] = []
+            for item in extras:
+                if item and item not in filtered:
+                    filtered.append(item)
+            if filtered:
+                return base + "\n" + "\n".join(filtered)
+            return base
+        return str(error)
 
     def closeEvent(  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
         self, event: QCloseEvent
@@ -678,6 +752,8 @@ class MainWindow(QMainWindow):
             self.action_log_level.setText(tr("log_level"))
             self.action_language.setText(tr("language"))
             self.action_about.setText(tr("about"))
+            self.banner_label.setText(tr("pptx_banner_message"))
+            self.banner_button.setText(tr("pptx_open_docs"))
             self.tree.clear()
             self._populate_actions()
             self.update_status(tr(self.status_key), self.status_key)
@@ -710,7 +786,7 @@ class MainWindow(QMainWindow):
         try:
             renderer = require_pptx_renderer()
         except PptxProviderUnavailableError:
-            eff = QLabel(tr("no_pptx_provider"))
+            eff = QLabel(tr("pptx_no_provider"))
         else:
             eff = QLabel(type(renderer).__name__)
         form.addRow("Effective renderer", eff)

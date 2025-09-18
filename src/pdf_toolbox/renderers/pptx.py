@@ -48,7 +48,7 @@ class PptxProviderUnavailableError(PptxRenderingError):
 
     def __init__(self) -> None:
         """Initialise the error with a translated message."""
-        super().__init__(tr("pptx_renderer_missing"), code="unavailable")
+        super().__init__(tr("pptx_no_provider"), code="unavailable")
         self.docs_url = PPTX_PROVIDER_DOCS_URL
 
 
