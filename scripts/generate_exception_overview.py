@@ -28,7 +28,7 @@ class RuntimeExceptionEntry(TypedDict):
 RUNTIME_EXCEPTIONS: list[RuntimeExceptionEntry] = [
     {
         "exception": "pdf_toolbox.renderers.pptx.PptxProviderUnavailableError",
-        "message_key": "pptx_renderer_missing",
+        "message_key": "pptx_no_provider",
         "locales": [
             ("en", "src/pdf_toolbox/locales/en.json"),
             ("de", "src/pdf_toolbox/locales/de.json"),

@@ -12,7 +12,7 @@ class Worker(QThread):  # pragma: no cover  # pdf-toolbox: thread/GUI | issue:-
     """Run an action in a background thread with cooperative cancellation."""
 
     finished = Signal(object)
-    error = Signal(str)
+    error = Signal(object)
 
     def __init__(self, func, kwargs: dict[str, object]):
         """Initialize worker with the callable and keyword arguments."""
@@ -35,7 +35,7 @@ class Worker(QThread):  # pragma: no cover  # pdf-toolbox: thread/GUI | issue:-
                 self.finished.emit(result)
         except Exception as exc:
             if not self._cancel.is_set():
-                self.error.emit(str(exc))
+                self.error.emit(exc)
 
 
 __all__ = ["Worker"]

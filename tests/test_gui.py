@@ -192,3 +192,33 @@ def test_miro_profile_toggles_fields(app, monkeypatch):
         assert saved.get("last_export_profile") == "miro"
     finally:
         win.close()
+
+
+def test_pptx_error_messages_use_translations(app, monkeypatch):
+    _ = app
+    import pdf_toolbox.gui.main_window as mw
+    from pdf_toolbox.i18n import tr
+    from pdf_toolbox.renderers.pptx import (
+        PptxProviderUnavailableError,
+        PptxRenderingError,
+    )
+
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+
+    cfg = gui.DEFAULT_CONFIG.copy()
+    cfg.update({"language": "en"})
+    monkeypatch.setattr(mw, "load_config", lambda: cfg.copy())
+    monkeypatch.setattr(mw, "save_config", lambda _cfg: None)
+
+    win = gui.MainWindow()
+    try:
+        win.on_error(PptxRenderingError("invalid_range", code="invalid_range"))
+        text = win.log.toPlainText()
+        assert "invalid_range" not in text
+        assert tr("pptx_invalid_range") in text
+
+        win.log.clear()
+        win.on_error(PptxProviderUnavailableError())
+        assert tr("pptx_no_provider") in win.log.toPlainText()
+    finally:
+        win.close()
