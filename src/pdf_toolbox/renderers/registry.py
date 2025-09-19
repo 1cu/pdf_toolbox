@@ -76,68 +76,84 @@ def available_renderers() -> list[str]:
     return names
 
 
-def _load_entry_points() -> None:  # noqa: PLR0912  # pdf-toolbox: handles diverse entry point backends and failure modes | issue:-
+def _iter_entry_points() -> Iterator[metadata.EntryPoint]:
+    """Yield configured entry points while handling discovery errors."""
+    try:
+        collection = metadata.entry_points()
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: metadata backends can raise arbitrary errors; degrade to no plugins | issue:-
+        logger.debug("pptx renderer entry point discovery failed: %s", exc)
+        return iter(())
+
+    if hasattr(collection, "select"):
+        selected = cast(
+            EntryPointIterable,
+            collection.select(group=_ENTRY_POINT_GROUP),
+        )
+        return iter(selected)
+
+    legacy_points = cast(Mapping[str, EntryPointIterable], collection)
+    return iter(legacy_points.get(_ENTRY_POINT_GROUP, ()))
+
+
+def _load_renderer_from_entry(
+    entry: metadata.EntryPoint,
+) -> type[BasePptxRenderer] | None:
+    """Return a renderer class exposed by ``entry`` when available."""
+    name = getattr(entry, "name", "<unknown>")
+    renderer_cls: type[BasePptxRenderer] | None = None
+    try:
+        payload = entry.load()
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin entry point import may fail arbitrarily; degrade to warning | issue:-
+        logger.warning(
+            "pptx renderer entry point '%s' failed to load: %s",
+            name,
+            exc,
+        )
+        return None
+
+    if isinstance(payload, type) and issubclass(payload, BasePptxRenderer):
+        renderer_cls = payload
+    elif isinstance(payload, BasePptxRenderer):
+        renderer_cls = payload.__class__
+    elif isinstance(payload, str):
+        module_name, _, attr = payload.partition(":")
+        if not module_name:
+            renderer_cls = None
+        else:
+            try:
+                module = importlib.import_module(module_name)
+            except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin modules may be missing or broken; degrade to warning | issue:-
+                logger.warning(
+                    "pptx renderer entry point '%s' could not import %s: %s",
+                    name,
+                    module_name,
+                    exc,
+                )
+            else:
+                candidate = getattr(module, attr or "", None)
+                if isinstance(candidate, type) and issubclass(
+                    candidate, BasePptxRenderer
+                ):
+                    renderer_cls = candidate
+
+    if renderer_cls is None:
+        logger.warning(
+            "pptx renderer entry point '%s' did not expose a renderer class",
+            name,
+        )
+
+    return renderer_cls
+
+
+def _load_entry_points() -> None:
     """Load PPTX renderer entry points once."""
     if _ENTRY_POINT_STATE["loaded"]:
         return
     _ENTRY_POINT_STATE["loaded"] = True
 
-    try:
-        entry_points = metadata.entry_points()
-    except Exception as exc:  # pragma: no cover  # pdf-toolbox: entry point discovery may fail when metadata backend is absent | issue:-
-        logger.debug("pptx renderer entry point discovery failed: %s", exc)
-        return
-
-    if hasattr(entry_points, "select"):
-        group = cast(
-            EntryPointIterable,
-            entry_points.select(group=_ENTRY_POINT_GROUP),
-        )
-    else:  # pragma: no cover  # pdf-toolbox: compatibility shim for older importlib.metadata implementations | issue:-
-        legacy_points = cast(Mapping[str, EntryPointIterable], entry_points)
-        group = legacy_points.get(_ENTRY_POINT_GROUP, ())
-
-    for entry in group:
-        try:
-            loaded = entry.load()
-        except Exception as exc:  # pragma: no cover  # pdf-toolbox: plugin entry point import may fail due to third-party issues | issue:-
-            logger.warning(
-                "pptx renderer entry point '%s' failed to load: %s",
-                getattr(entry, "name", "<unknown>"),
-                exc,
-            )
-            continue
-
-        renderer_cls: type[BasePptxRenderer] | None = None
-        if isinstance(loaded, type) and issubclass(loaded, BasePptxRenderer):
-            renderer_cls = loaded
-        elif isinstance(loaded, BasePptxRenderer):
-            renderer_cls = loaded.__class__
-        elif isinstance(loaded, str):
-            module_name, _, attr = loaded.partition(":")
-            if module_name:
-                try:
-                    module = importlib.import_module(module_name)
-                except Exception as exc:  # pragma: no cover  # pdf-toolbox: entry point may reference unavailable module | issue:-
-                    logger.warning(
-                        "pptx renderer entry point '%s' could not import %s: %s",
-                        getattr(entry, "name", "<unknown>"),
-                        module_name,
-                        exc,
-                    )
-                    continue
-                renderer_cls = getattr(module, attr or "", None)
-                if not isinstance(renderer_cls, type) or not issubclass(
-                    renderer_cls,
-                    BasePptxRenderer,
-                ):
-                    renderer_cls = None
-
+    for entry in _iter_entry_points():
+        renderer_cls = _load_renderer_from_entry(entry)
         if renderer_cls is None:
-            logger.warning(
-                "pptx renderer entry point '%s' did not expose a renderer class",
-                getattr(entry, "name", "<unknown>"),
-            )
             continue
         try:
             register(renderer_cls)
@@ -155,7 +171,7 @@ def _ensure_builtin_registered(name: str) -> None:
         return
     try:
         importlib.import_module(module_name)
-    except Exception as exc:  # pragma: no cover  # pdf-toolbox: builtin providers may be unavailable on this platform | issue:-
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: builtin providers rely on optional platform modules; degrade to debug | issue:-
         logger.debug("pptx renderer '%s' import failed: %s", key, exc)
 
 
@@ -176,19 +192,19 @@ def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
     return RendererSelectionError(detail)
 
 
-def _assess_renderer(  # noqa: PLR0911  # pdf-toolbox: evaluation flow returns early for availability outcomes | issue:-
+def _assess_renderer(
     renderer_cls: type[BasePptxRenderer],
 ) -> tuple[BasePptxRenderer | None, bool]:
     """Return an instance and whether ``renderer_cls`` can handle rendering."""
     instance: BasePptxRenderer | None = None
 
-    def _get_instance() -> BasePptxRenderer | None:
+    def _ensure_instance() -> BasePptxRenderer | None:
         nonlocal instance
         if instance is not None:
             return instance
         try:
             instance = renderer_cls()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: renderer constructors may fail arbitrarily; treat as unavailable | issue:-
             logger.info(
                 "pptx renderer %s failed to initialise: %s",
                 getattr(renderer_cls, "name", renderer_cls.__name__),
@@ -197,41 +213,45 @@ def _assess_renderer(  # noqa: PLR0911  # pdf-toolbox: evaluation flow returns e
             return None
         return instance
 
-    can_handle: Any | None = getattr(renderer_cls, "can_handle", None)
-    if can_handle is None:
-        inst = _get_instance()
-        return inst, inst is not None
-
-    try:
-        available = bool(can_handle())
-    except TypeError:
-        inst = _get_instance()
-        if inst is None:
-            return None, False
-        method = getattr(inst, "can_handle", None)
-        if not callable(method):
-            return inst, True
+    def _evaluate_can_handle() -> bool:
+        candidate: Any | None = getattr(renderer_cls, "can_handle", None)
+        if candidate is None:
+            return _ensure_instance() is not None
+        available = False
         try:
-            return inst, bool(method())
-        except Exception as exc:
+            available = bool(candidate())
+        except TypeError:
+            inst = _ensure_instance()
+            if inst is None:
+                return False
+            method = getattr(inst, "can_handle", None)
+            if not callable(method):
+                return True
+            try:
+                available = bool(method())
+            except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
+                logger.info(
+                    "pptx renderer %s.can_handle() failed: %s",
+                    getattr(renderer_cls, "name", renderer_cls.__name__),
+                    exc,
+                )
+                available = False
+        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
             logger.info(
                 "pptx renderer %s.can_handle() failed: %s",
                 getattr(renderer_cls, "name", renderer_cls.__name__),
                 exc,
             )
-            return None, False
-    except Exception as exc:
-        logger.info(
-            "pptx renderer %s.can_handle() failed: %s",
-            getattr(renderer_cls, "name", renderer_cls.__name__),
-            exc,
-        )
-        return None, False
-    else:
+            available = False
         if not available:
-            return None, False
-        inst = _get_instance()
-        return inst, inst is not None
+            return False
+        return _ensure_instance() is not None
+
+    if not _evaluate_can_handle():
+        return None, False
+
+    inst = _ensure_instance()
+    return inst, inst is not None
 
 
 def _resolve_renderer(name: str) -> BasePptxRenderer | None:

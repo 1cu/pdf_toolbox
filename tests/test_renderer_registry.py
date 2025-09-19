@@ -200,6 +200,84 @@ def test_entry_points_registration_variants(
     assert available == ("from_class", "from_instance", "from_string")
 
 
+def test_entry_point_discovery_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+
+    def boom() -> object:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(registry.metadata, "entry_points", boom)
+
+    assert registry.available() == ()
+
+
+def test_entry_points_legacy_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+
+    class LegacyEntry:
+        def __init__(self, name: str, payload: object) -> None:
+            self.name = name
+            self._payload = payload
+
+        def load(self) -> object:
+            return self._payload
+
+    class LegacyRenderer(_BaseStub):
+        name = "legacy"
+
+    entries = {registry._ENTRY_POINT_GROUP: [LegacyEntry("legacy", LegacyRenderer)]}
+    monkeypatch.setattr(registry.metadata, "entry_points", lambda: entries)
+
+    assert registry.available() == ("legacy",)
+
+
+def test_entry_point_load_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+
+    class ExplodingEntry:
+        name = "explode"
+
+        def load(self) -> object:
+            raise RuntimeError("boom")
+
+    class EntryPoints:
+        def select(self, *, group: str) -> list[ExplodingEntry]:
+            assert group == registry._ENTRY_POINT_GROUP
+            return [ExplodingEntry()]
+
+    monkeypatch.setattr(registry.metadata, "entry_points", lambda: EntryPoints())
+
+    assert registry.available() == ()
+
+
+def test_entry_point_string_import_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+
+    class ImportEntry:
+        name = "import"
+
+        def load(self) -> str:
+            return "pkg.module:Renderer"
+
+    class EntryPoints:
+        def select(self, *, group: str) -> list[ImportEntry]:
+            assert group == registry._ENTRY_POINT_GROUP
+            return [ImportEntry()]
+
+    monkeypatch.setattr(registry.metadata, "entry_points", lambda: EntryPoints())
+    monkeypatch.setattr(
+        registry.importlib,
+        "import_module",
+        lambda module_name: (_ for _ in ()).throw(RuntimeError(module_name)),
+    )
+
+    assert registry.available() == ()
+
+
 def test_available_triggers_builtin_import(monkeypatch: pytest.MonkeyPatch) -> None:
     _reset_registry(monkeypatch)
 
@@ -224,6 +302,20 @@ def test_available_triggers_builtin_import(monkeypatch: pytest.MonkeyPatch) -> N
     assert available == ("builtin",)
     assert imported["name"] == module_name
     assert registry.available_renderers() == ["builtin"]
+
+
+def test_builtin_import_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    monkeypatch.setattr(registry, "_BUILTIN_MODULES", {"broken": "pkg.broken"})
+    monkeypatch.setattr(registry, "_load_entry_points", lambda: None)
+
+    def boom(_module: str) -> None:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(registry.importlib, "import_module", boom)
+
+    assert registry.available() == ()
 
 
 def test_select_returns_none_for_unknown(monkeypatch: pytest.MonkeyPatch) -> None:

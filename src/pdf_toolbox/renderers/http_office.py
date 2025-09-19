@@ -141,6 +141,18 @@ class RendererConfig:
         return cls(http_office=HttpOfficeSection.from_mapping(http_section))
 
 
+@dataclass(frozen=True, slots=True)
+class _HttpRequestContext:
+    """Request metadata computed for an HTTP rendering call."""
+
+    endpoint: str
+    field: Literal["file", "files"]
+    headers: Mapping[str, str]
+    timeout_s: float | None
+    verify_tls: bool
+    mode: Literal["stirling", "gotenberg"]
+
+
 class PptxHttpOfficeRenderer(BasePptxRenderer):
     """Render PPTX files to PDF using an HTTP Office service."""
 
@@ -168,7 +180,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         """Return ``True`` when the renderer has a usable configuration."""
         try:
             renderer = cls()
-        except Exception as exc:  # pragma: no cover  # pdf-toolbox: defensive guard against unexpected config state | issue:-
+        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: renderer initialisation may fail for arbitrary config data; degrade to unavailable | issue:-
             logger.info("HTTP PPTX renderer probe failed: %s", exc)
             return False
         return renderer.can_handle()
@@ -189,15 +201,14 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             return "stirling"
         return mode
 
-    def to_pdf(  # noqa: PLR0915  # pdf-toolbox: method orchestrates HTTP upload and error mapping | issue:-
+    def _validate_pdf_options(
         self,
-        input_pptx: str,
-        output_path: str | None = None,
-        notes: bool = False,
-        handout: bool = False,
-        range_spec: str | None = None,
-    ) -> str:
-        """Render ``input_pptx`` to ``output_path`` via the configured endpoint."""
+        *,
+        notes: bool,
+        handout: bool,
+        range_spec: str | None,
+    ) -> None:
+        """Ensure mutually exclusive options are not set for PDF export."""
         if notes and handout:
             msg = "Notes and handout export cannot be combined."
             raise UnsupportedOptionError(msg, code="conflicting_options")
@@ -208,6 +219,22 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             msg = "Slide range selection is not supported by the HTTP renderer."
             raise UnsupportedOptionError(msg)
 
+    def _prepare_paths(
+        self,
+        input_pptx: str,
+        output_path: str | None,
+    ) -> tuple[Path, Path]:
+        """Return validated source and destination paths for the export."""
+        source = Path(input_pptx).resolve()
+        if not source.exists():
+            msg = f"Input file not found: {source}"
+            raise PptxRenderingError(msg, code="unavailable")
+        destination = Path(output_path) if output_path else source.with_suffix(".pdf")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        return source, destination
+
+    def _request_context(self) -> _HttpRequestContext:
+        """Compute request metadata for the current renderer configuration."""
         endpoint = self._cfg.http_office.endpoint
         if not endpoint:
             raise PptxRenderingError(
@@ -217,27 +244,36 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         if requests is None:
             msg = "Install the 'pptx_http' extra to enable the HTTP renderer."
             raise PptxRenderingError(msg, code="unavailable")
-
-        source = Path(input_pptx).resolve()
-        if not source.exists():
-            msg = f"Input file not found: {source}"
-            raise PptxRenderingError(msg, code="unavailable")
-
-        destination = Path(output_path) if output_path else source.with_suffix(".pdf")
-        destination.parent.mkdir(parents=True, exist_ok=True)
-
         mode = self._selected_mode()
         field = "files" if mode == "gotenberg" else "file"
-        headers = self._cfg.http_office.headers
-        timeout = self._cfg.http_office.timeout_s
-        verify = self._cfg.http_office.verify_tls
+        return _HttpRequestContext(
+            endpoint=endpoint,
+            field=cast(Literal["file", "files"], field),
+            headers=self._cfg.http_office.headers,
+            timeout_s=self._cfg.http_office.timeout_s,
+            verify_tls=self._cfg.http_office.verify_tls,
+            mode=mode,
+        )
+
+    def to_pdf(
+        self,
+        input_pptx: str,
+        output_path: str | None = None,
+        notes: bool = False,
+        handout: bool = False,
+        range_spec: str | None = None,
+    ) -> str:
+        """Render ``input_pptx`` to ``output_path`` via the configured endpoint."""
+        self._validate_pdf_options(notes=notes, handout=handout, range_spec=range_spec)
+        context = self._request_context()
+        source, destination = self._prepare_paths(input_pptx, output_path)
 
         logger.info(
             "Rendering PPTX via HTTP provider",
             extra={
                 "renderer": self.name,
-                "mode": mode,
-                "endpoint": endpoint,
+                "mode": context.mode,
+                "endpoint": context.endpoint,
             },
         )
 
@@ -246,11 +282,11 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         try:
             with source.open("rb") as handle:
                 status, chunks = _post_stream_file(
-                    endpoint,
-                    {field: (source.name, handle, _MIME_TYPE)},
-                    headers,
-                    timeout,
-                    verify,
+                    context.endpoint,
+                    {context.field: (source.name, handle, _MIME_TYPE)},
+                    context.headers,
+                    context.timeout_s,
+                    context.verify_tls,
                 )
         except req.Timeout as exc:
             raise PptxRenderingError(
@@ -294,8 +330,8 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             "Rendered PPTX via HTTP provider",
             extra={
                 "renderer": self.name,
-                "mode": mode,
-                "endpoint": endpoint,
+                "mode": context.mode,
+                "endpoint": context.endpoint,
                 "bytes": written,
             },
         )
