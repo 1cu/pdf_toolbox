@@ -3,7 +3,7 @@
 
 Checks:
 - JSON parses and contains objects "strings" and "labels"
-- keys for both maps are snake_case (a-z0-9_)
+- keys for both maps use lowercase letters, numbers, underscores, or dots
 - all locale files share identical key sets
 - No obsolete keys present (exact match with referenced keys in source)
 """
@@ -22,7 +22,10 @@ LOCALES = ROOT / "src" / "pdf_toolbox" / "locales"
 
 ERR_OBJECT = "{path} must be an object"
 ERR_MISSING = "{path} must define object '{key}'"
-ERR_SNAKE = "{path}:{group} key '{key}' must be snake_case"
+ERR_KEY_FORMAT = (
+    "{path}:{group} key '{key}' must use lowercase letters, numbers, underscores,"
+    " or dots"
+)
 ERR_STRING = "{path}:{group} key '{key}' must map to string"
 
 
@@ -35,11 +38,11 @@ def load_locale(lang: str) -> dict:
     for k in ("strings", "labels"):
         if k not in data or not isinstance(data[k], dict):
             raise SystemExit(ERR_MISSING.format(path=p, key=k))
-    snake = re.compile(r"^[a-z0-9_]+$")
+    key_pattern = re.compile(r"^[a-z0-9_.]+$")
     for group in ("strings", "labels"):
         for key, val in data[group].items():
-            if not snake.match(key):
-                raise SystemExit(ERR_SNAKE.format(path=p, group=group, key=key))
+            if not key_pattern.match(key):
+                raise SystemExit(ERR_KEY_FORMAT.format(path=p, group=group, key=key))
             if not isinstance(val, str):
                 raise SystemExit(ERR_STRING.format(path=p, group=group, key=key))
     return data
@@ -50,7 +53,7 @@ def referenced_keys() -> tuple[set[str], set[str]]:
     src = ROOT / "src"
     string_keys: set[str] = set()
     label_keys: set[str] = set()
-    tr_re = re.compile(r"\btr\(\"([a-z0-9_]+)\"")
+    tr_re = re.compile(r"\btr\(\"([a-z0-9_.]+)\"")
     lab_re = re.compile(r"\blabel\(\"([a-z0-9_]+)\"\)")
     for path in src.rglob("*.py"):
         text = path.read_text(encoding="utf-8", errors="ignore")
