@@ -169,6 +169,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             self._cfg = RendererConfig.from_mapping(cfg)
         else:
             self._cfg = RendererConfig.from_mapping(load_config())
+        self._cached_context: _HttpRequestContext | None = None
 
     @property
     def cfg(self) -> RendererConfig:
@@ -180,7 +181,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         """Return ``True`` when the renderer has a usable configuration."""
         try:
             renderer = cls()
-        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: renderer initialisation may fail for arbitrary config data; degrade to unavailable | issue:-
+        except (FileNotFoundError, ValueError) as exc:
             logger.info("HTTP PPTX renderer probe failed: %s", exc)
             return False
         return renderer.can_handle()
@@ -235,6 +236,9 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
 
     def _request_context(self) -> _HttpRequestContext:
         """Compute request metadata for the current renderer configuration."""
+        if self._cached_context is not None:
+            return self._cached_context
+
         endpoint = self._cfg.http_office.endpoint
         if not endpoint:
             raise PptxRenderingError(
@@ -246,7 +250,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             raise PptxRenderingError(msg, code="unavailable")
         mode = self._selected_mode()
         field = "files" if mode == "gotenberg" else "file"
-        return _HttpRequestContext(
+        self._cached_context = _HttpRequestContext(
             endpoint=endpoint,
             field=cast(Literal["file", "files"], field),
             headers=self._cfg.http_office.headers,
@@ -254,6 +258,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             verify_tls=self._cfg.http_office.verify_tls,
             mode=mode,
         )
+        return self._cached_context
 
     def to_pdf(
         self,

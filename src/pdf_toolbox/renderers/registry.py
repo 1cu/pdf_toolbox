@@ -192,66 +192,106 @@ def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
     return RendererSelectionError(detail)
 
 
+def _renderer_display_name(renderer_cls: type[BasePptxRenderer]) -> str:
+    """Return a readable identifier for ``renderer_cls``."""
+    return getattr(renderer_cls, "name", renderer_cls.__name__)
+
+
+def _safe_instantiate_renderer(
+    renderer_cls: type[BasePptxRenderer],
+) -> BasePptxRenderer | None:
+    """Return an instance of ``renderer_cls`` while logging failures."""
+    try:
+        return renderer_cls()
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: renderer constructors may fail arbitrarily; treat as unavailable | issue:-
+        logger.info(
+            "pptx renderer %s failed to initialise: %s",
+            _renderer_display_name(renderer_cls),
+            exc,
+        )
+        return None
+
+
+def _ensure_instance(
+    renderer_cls: type[BasePptxRenderer],
+    instance: BasePptxRenderer | None,
+) -> BasePptxRenderer | None:
+    """Return ``instance`` or try instantiating ``renderer_cls``."""
+    if instance is not None:
+        return instance
+    return _safe_instantiate_renderer(renderer_cls)
+
+
+def _log_can_handle_failure(
+    renderer_cls: type[BasePptxRenderer],
+    exc: Exception,
+) -> None:
+    """Log ``exc`` raised by a renderer's ``can_handle`` implementation."""
+    logger.info(
+        "pptx renderer %s.can_handle() failed: %s",
+        _renderer_display_name(renderer_cls),
+        exc,
+    )
+
+
+def _evaluate_instance_can_handle(
+    renderer_cls: type[BasePptxRenderer],
+    instance: BasePptxRenderer,
+) -> bool:
+    """Return ``True`` when ``instance.can_handle`` signals availability."""
+    method = getattr(instance, "can_handle", None)
+    if not callable(method):
+        return True
+    try:
+        return bool(method())
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
+        _log_can_handle_failure(renderer_cls, exc)
+        return False
+
+
+def _evaluate_can_handle(
+    renderer_cls: type[BasePptxRenderer],
+    candidate: Any,
+    instance: BasePptxRenderer | None,
+) -> tuple[bool, BasePptxRenderer | None]:
+    """Return whether ``candidate`` signals availability for ``renderer_cls``."""
+    try:
+        available = bool(candidate())
+    except TypeError:
+        instance = _ensure_instance(renderer_cls, instance)
+        if instance is None:
+            return False, None
+        available = _evaluate_instance_can_handle(renderer_cls, instance)
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
+        _log_can_handle_failure(renderer_cls, exc)
+        return False, instance
+    else:
+        if not available:
+            return False, instance
+    return available, instance
+
+
 def _assess_renderer(
     renderer_cls: type[BasePptxRenderer],
 ) -> tuple[BasePptxRenderer | None, bool]:
     """Return an instance and whether ``renderer_cls`` can handle rendering."""
     instance: BasePptxRenderer | None = None
 
-    def _ensure_instance() -> BasePptxRenderer | None:
-        nonlocal instance
-        if instance is not None:
-            return instance
-        try:
-            instance = renderer_cls()
-        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: renderer constructors may fail arbitrarily; treat as unavailable | issue:-
-            logger.info(
-                "pptx renderer %s failed to initialise: %s",
-                getattr(renderer_cls, "name", renderer_cls.__name__),
-                exc,
-            )
-            return None
-        return instance
+    candidate: Any | None = getattr(renderer_cls, "can_handle", None)
+    if candidate is None:
+        instance = _ensure_instance(renderer_cls, instance)
+        if instance is None:
+            return None, False
+        return instance, True
 
-    def _evaluate_can_handle() -> bool:
-        candidate: Any | None = getattr(renderer_cls, "can_handle", None)
-        if candidate is None:
-            return _ensure_instance() is not None
-        available = False
-        try:
-            available = bool(candidate())
-        except TypeError:
-            inst = _ensure_instance()
-            if inst is None:
-                return False
-            method = getattr(inst, "can_handle", None)
-            if not callable(method):
-                return True
-            try:
-                available = bool(method())
-            except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
-                logger.info(
-                    "pptx renderer %s.can_handle() failed: %s",
-                    getattr(renderer_cls, "name", renderer_cls.__name__),
-                    exc,
-                )
-                available = False
-        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
-            logger.info(
-                "pptx renderer %s.can_handle() failed: %s",
-                getattr(renderer_cls, "name", renderer_cls.__name__),
-                exc,
-            )
-            available = False
-        if not available:
-            return False
-        return _ensure_instance() is not None
-
-    if not _evaluate_can_handle():
+    available, instance = _evaluate_can_handle(renderer_cls, candidate, instance)
+    if not available:
         return None, False
 
-    inst = _ensure_instance()
-    return inst, inst is not None
+    instance = _ensure_instance(renderer_cls, instance)
+    if instance is None:
+        return None, False
+    return instance, True
 
 
 def _resolve_renderer(name: str) -> BasePptxRenderer | None:

@@ -52,6 +52,28 @@ def test_can_handle_requires_endpoint(monkeypatch):
     assert renderer_no_dep.can_handle() is False
 
 
+def test_request_context_is_cached(monkeypatch):
+    renderer = _renderer_with_endpoint("https://example.test/convert")
+    monkeypatch.setattr(http_office_module, "requests", object())
+
+    calls = 0
+
+    def fake_selected_mode(
+        _self: PptxHttpOfficeRenderer,
+    ) -> Literal["stirling", "gotenberg"]:
+        nonlocal calls
+        calls += 1
+        return "stirling"
+
+    monkeypatch.setattr(PptxHttpOfficeRenderer, "_selected_mode", fake_selected_mode)
+
+    first = renderer._request_context()
+    second = renderer._request_context()
+
+    assert first is second
+    assert calls == 1
+
+
 def test_to_pdf_streams_response(tmp_path, monkeypatch):
     captured: dict[str, object] = {}
 
@@ -324,7 +346,8 @@ def test_probe_handles_init_failure(monkeypatch):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(http_office_module.PptxHttpOfficeRenderer, "__init__", boom)
-    assert http_office_module.PptxHttpOfficeRenderer.probe() is False
+    with pytest.raises(RuntimeError):
+        http_office_module.PptxHttpOfficeRenderer.probe()
 
 
 def test_to_pdf_rejects_notes_and_handout(tmp_path):
