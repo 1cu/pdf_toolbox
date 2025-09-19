@@ -7,7 +7,13 @@ from typing import ClassVar, Literal
 
 
 class BasePptxRenderer(ABC):
-    """Define the public PPTX rendering interface."""
+    """Define the public PPTX rendering interface.
+
+    Subclasses may implement ``can_handle`` either as a class method with the
+    signature ``can_handle() -> bool`` or as an instance method returning a
+    boolean. Additional parameters are not supported so the registry can probe
+    availability uniformly.
+    """
 
     #: Canonical provider name used for registry lookups.
     name: ClassVar[str] = ""

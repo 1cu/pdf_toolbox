@@ -2,39 +2,37 @@
 
 from __future__ import annotations
 
+import importlib
 import tempfile
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
+from importlib import metadata
 from pathlib import Path
+from typing import Any, cast
 
 from pdf_toolbox.config import PptxRendererChoice, get_pptx_renderer_choice
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.utils import logger
 
 _REGISTRY: dict[str, type[BasePptxRenderer]] = {}
-_AUTO_PRIORITY = ("lightweight", "ms_office")
+_ENTRY_POINT_STATE = {"loaded": False}
+_ENTRY_POINT_GROUP = "pdf_toolbox.pptx_renderers"
+_AUTO_PRIORITY = ("ms_office", "http_office")
+_BUILTIN_MODULES = {
+    "lightweight": "pdf_toolbox.renderers.lightweight_stub",
+    "http_office": "pdf_toolbox.renderers.http_office",
+    "ms_office": "pdf_toolbox.renderers.ms_office",
+}
+
+type EntryPointIterable = Iterable[metadata.EntryPoint]
 
 
 class RendererSelectionError(LookupError):
     """Raised when selecting a PPTX renderer fails."""
 
 
-def register[RendererT: BasePptxRenderer](
-    renderer_cls: type[RendererT],
-) -> type[RendererT]:
-    """Register ``renderer_cls`` under its ``name`` attribute.
-
-    Args:
-        renderer_cls: Subclass that implements the renderer interface.
-
-    Returns:
-        The ``renderer_cls`` argument to support decorator usage.
-
-    Raises:
-        ValueError: If ``renderer_cls`` does not declare a non-empty ``name``
-            attribute or if the name is already registered with a different
-            class.
-    """
+def register(renderer_cls: type[BasePptxRenderer]) -> type[BasePptxRenderer]:
+    """Register ``renderer_cls`` under its ``name`` attribute."""
     name = getattr(renderer_cls, "name", "")
     if not isinstance(name, str) or not name.strip():
         msg = (
@@ -58,21 +56,130 @@ def register[RendererT: BasePptxRenderer](
 
 def available() -> tuple[str, ...]:
     """Return registered renderer names in registration order."""
+    _load_entry_points()
+    for name in _BUILTIN_MODULES:
+        _ensure_builtin_registered(name)
     return tuple(_REGISTRY.keys())
 
 
-def _iter_auto_candidates() -> Iterable[type[BasePptxRenderer]]:
-    """Yield renderer classes in the order considered for ``auto`` selection."""
-    yielded: set[str] = set()
-    for preferred in _AUTO_PRIORITY:
-        renderer_cls = _REGISTRY.get(preferred)
-        if renderer_cls is not None:
-            yielded.add(preferred)
-            yield renderer_cls
-    for name, renderer_cls in _REGISTRY.items():
-        if name == "null" or name in yielded:
+def available_renderers() -> list[str]:
+    """Return renderer names that can handle conversions right now."""
+    _load_entry_points()
+    for name in _BUILTIN_MODULES:
+        _ensure_builtin_registered(name)
+
+    names: list[str] = []
+    for key, renderer_cls in _REGISTRY.items():
+        _instance, can_handle = _assess_renderer(renderer_cls)
+        if can_handle:
+            names.append(key)
+    return names
+
+
+def _iter_entry_points() -> Iterator[metadata.EntryPoint]:
+    """Yield configured entry points while handling discovery errors."""
+    try:
+        collection = metadata.entry_points()
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: metadata backends can raise arbitrary errors; degrade to no plugins | issue:-
+        logger.debug("pptx renderer entry point discovery failed: %s", exc)
+        return iter(())
+
+    if hasattr(collection, "select"):
+        selected = cast(
+            EntryPointIterable,
+            collection.select(group=_ENTRY_POINT_GROUP),
+        )
+        return iter(selected)
+
+    legacy_points = cast(Mapping[str, EntryPointIterable], collection)
+    return iter(legacy_points.get(_ENTRY_POINT_GROUP, ()))
+
+
+def _load_renderer_from_entry(
+    entry: metadata.EntryPoint,
+) -> type[BasePptxRenderer] | None:
+    """Return a renderer class exposed by ``entry`` when available."""
+    name = getattr(entry, "name", "<unknown>")
+    renderer_cls: type[BasePptxRenderer] | None = None
+    try:
+        payload = entry.load()
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin entry point import may fail arbitrarily; degrade to warning | issue:-
+        logger.warning(
+            "pptx renderer entry point '%s' failed to load: %s",
+            name,
+            exc,
+        )
+        return None
+
+    if isinstance(payload, type) and issubclass(payload, BasePptxRenderer):
+        renderer_cls = payload
+    elif isinstance(payload, BasePptxRenderer):
+        renderer_cls = payload.__class__
+    elif isinstance(payload, str):
+        module_name, _, attr = payload.partition(":")
+        if not module_name:
+            renderer_cls = None
+        else:
+            try:
+                module = importlib.import_module(module_name)
+            except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin modules may be missing or broken; degrade to warning | issue:-
+                logger.warning(
+                    "pptx renderer entry point '%s' could not import %s: %s",
+                    name,
+                    module_name,
+                    exc,
+                )
+            else:
+                candidate = getattr(module, attr or "", None)
+                if isinstance(candidate, type) and issubclass(
+                    candidate, BasePptxRenderer
+                ):
+                    renderer_cls = candidate
+
+    if renderer_cls is None:
+        logger.warning(
+            "pptx renderer entry point '%s' did not expose a renderer class",
+            name,
+        )
+
+    return renderer_cls
+
+
+def _load_entry_points() -> None:
+    """Load PPTX renderer entry points once."""
+def _load_entry_points() -> None:
+    """Load PPTX renderer entry points once."""
+    if _ENTRY_POINT_STATE["loaded"]:
+        return
+
+    for entry in _iter_entry_points():
+        renderer_cls = _load_renderer_from_entry(entry)
+        if renderer_cls is None:
             continue
-        yield renderer_cls
+        try:
+            register(renderer_cls)
+        except ValueError as exc:
+            logger.debug("pptx renderer registration skipped: %s", exc)
+    _ENTRY_POINT_STATE["loaded"] = True
+            continue
+        try:
+            register(renderer_cls)
+        except ValueError as exc:
+            logger.debug("pptx renderer registration skipped: %s", exc)
+
+
+def _ensure_builtin_registered(name: str) -> None:
+    """Import built-in renderers on demand."""
+    key = name.strip().lower()
+    if not key or key in _REGISTRY:
+        return
+    module_name = _BUILTIN_MODULES.get(key)
+    if not module_name:
+        return
+    try:
+        importlib.import_module(module_name)
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: builtin providers rely on optional platform modules; degrade to debug | issue:-
+        logger.debug("pptx renderer '%s' import failed: %s", key, exc)
 
 
 def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
@@ -92,87 +199,155 @@ def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
     return RendererSelectionError(detail)
 
 
-def select(
-    name: str | None = None,
-    *,
-    strict: bool = False,
-) -> type[BasePptxRenderer] | None:
-    """Return the renderer class matching ``name`` or ``auto``.
+def _renderer_display_name(renderer_cls: type[BasePptxRenderer]) -> str:
+    """Return a readable identifier for ``renderer_cls``."""
+    return getattr(renderer_cls, "name", renderer_cls.__name__)
 
-    Args:
-        name: Renderer identifier or the special value ``"auto"``. When omitted
-            the persisted configuration is inspected.
-        strict: Whether to raise :class:`RendererSelectionError` when no
-            renderer matches the request.
 
-    Returns:
-        A renderer class when a match is found, otherwise ``None``. When
-        ``name`` resolves to ``"auto"`` the first non-``null`` renderer is
-        returned if available. The ``null`` renderer is used as a fallback when
-        registered.
-    """
+def _safe_instantiate_renderer(
+    renderer_cls: type[BasePptxRenderer],
+) -> BasePptxRenderer | None:
+    """Return an instance of ``renderer_cls`` while logging failures."""
+    try:
+        return renderer_cls()
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: renderer constructors may fail arbitrarily; treat as unavailable | issue:-
+        logger.info(
+            "pptx renderer %s failed to initialise: %s",
+            _renderer_display_name(renderer_cls),
+            exc,
+        )
+        return None
+
+
+def _ensure_instance(
+    renderer_cls: type[BasePptxRenderer],
+    instance: BasePptxRenderer | None,
+) -> BasePptxRenderer | None:
+    """Return ``instance`` or try instantiating ``renderer_cls``."""
+    if instance is not None:
+        return instance
+    return _safe_instantiate_renderer(renderer_cls)
+
+
+def _log_can_handle_failure(
+    renderer_cls: type[BasePptxRenderer],
+    exc: Exception,
+) -> None:
+    """Log ``exc`` raised by a renderer's ``can_handle`` implementation."""
+    logger.info(
+        "pptx renderer %s.can_handle() failed: %s",
+        _renderer_display_name(renderer_cls),
+        exc,
+    )
+
+
+def _evaluate_instance_can_handle(
+    renderer_cls: type[BasePptxRenderer],
+    instance: BasePptxRenderer,
+) -> bool:
+    """Return ``True`` when ``instance.can_handle`` signals availability."""
+    method = getattr(instance, "can_handle", None)
+    if not callable(method):
+        return True
+    try:
+        return bool(method())
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
+        _log_can_handle_failure(renderer_cls, exc)
+        return False
+
+
+def _evaluate_can_handle(
+    renderer_cls: type[BasePptxRenderer],
+    candidate: Any,
+    instance: BasePptxRenderer | None,
+) -> tuple[bool, BasePptxRenderer | None]:
+    """Return whether ``candidate`` signals availability for ``renderer_cls``."""
+    try:
+        available = bool(candidate())
+    except TypeError:
+        instance = _ensure_instance(renderer_cls, instance)
+        if instance is None:
+            return False, None
+        available = _evaluate_instance_can_handle(renderer_cls, instance)
+    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: plugin can_handle implementations may fail; treat as unavailable | issue:-
+        _log_can_handle_failure(renderer_cls, exc)
+        return False, instance
+    else:
+        if not available:
+            return False, instance
+    return available, instance
+
+
+def _assess_renderer(
+    renderer_cls: type[BasePptxRenderer],
+) -> tuple[BasePptxRenderer | None, bool]:
+    """Return an instance and whether ``renderer_cls`` can handle rendering."""
+    instance: BasePptxRenderer | None = None
+
+    candidate: Any | None = getattr(renderer_cls, "can_handle", None)
+    if candidate is None:
+        instance = _ensure_instance(renderer_cls, instance)
+        if instance is None:
+            return None, False
+        return instance, True
+
+    available, instance = _evaluate_can_handle(renderer_cls, candidate, instance)
+    if not available:
+        return None, False
+
+    instance = _ensure_instance(renderer_cls, instance)
+    if instance is None:
+        return None, False
+    return instance, True
+
+
+def _resolve_renderer(name: str) -> BasePptxRenderer | None:
+    """Return an instantiated renderer for ``name`` when available."""
+    renderer_cls = _REGISTRY.get(name)
+    if renderer_cls is None:
+        return None
+    instance, available = _assess_renderer(renderer_cls)
+    if not available:
+        return None
+    return instance
+
+
+def select(name: str) -> BasePptxRenderer | None:
+    """Return an instantiated renderer for ``name`` or ``None`` when missing."""
+    lookup = (name or "").strip().lower()
+    if not lookup or lookup == "none":
+        return None
+
+    _load_entry_points()
+
+    if lookup == "auto":
+        for candidate in _AUTO_PRIORITY:
+            _ensure_builtin_registered(candidate)
+            renderer = _resolve_renderer(candidate)
+            if renderer is not None:
+                return renderer
+        return None
+
+    _ensure_builtin_registered(lookup)
+    return _resolve_renderer(lookup)
+
+
+def ensure(name: str | None = None) -> BasePptxRenderer:
+    """Return a renderer instance or raise if selection fails."""
     cfg: dict[str, object] | None = None
     if name is not None:
         cfg = {"pptx_renderer": name}
     choice = get_pptx_renderer_choice(cfg)
-
-    if choice == "none":
-        renderer_cls = _REGISTRY.get("null")
-        if renderer_cls is None and strict:
-            raise _selection_error(choice)
-        return renderer_cls
-
-    if choice == "auto":
-        for candidate in _iter_auto_candidates():
-            probe = getattr(candidate, "probe", None)
-            if callable(probe):
-                try:
-                    available = probe()
-                except Exception as exc:
-                    renderer_name = getattr(candidate, "name", candidate.__name__)
-                    logger.warning(
-                        "Probe for PPTX renderer %s failed: %s",
-                        renderer_name,
-                        exc,
-                        exc_info=exc,
-                    )
-                    available = False
-                if not available:
-                    continue
-
-            return candidate
-        renderer_cls = _REGISTRY.get("null")
-        if renderer_cls is None and strict:
-            raise _selection_error(choice)
-        return renderer_cls
-
-    renderer_cls = _REGISTRY.get(choice)
-    if renderer_cls is None and strict:
+    renderer = select(choice)
+    if renderer is None:
         raise _selection_error(choice)
-    return renderer_cls
-
-
-def ensure(name: str | None = None) -> type[BasePptxRenderer]:
-    """Return a renderer class or raise if selection fails."""
-    renderer_cls = select(name, strict=True)
-    if (
-        renderer_cls is None
-    ):  # pragma: no cover  # pdf-toolbox: unreachable once select(strict=True) succeeds | issue:-
-        raise _selection_error(get_pptx_renderer_choice({"pptx_renderer": name}))
-    return renderer_cls
+    return renderer
 
 
 @contextmanager
 def convert_pptx_to_pdf(input_pptx: str) -> Iterator[str]:
-    """Yield a temporary PDF converted from ``input_pptx``.
-
-    The configured PPTX renderer is instantiated via the registry and asked to
-    render ``input_pptx`` into a PDF within a temporary directory. The yielded
-    path remains valid for the duration of the context manager and is removed
-    afterwards to avoid leaking intermediate artefacts.
-    """
-    renderer_cls = ensure()
-    renderer = renderer_cls()
+    """Yield a temporary PDF converted from ``input_pptx``."""
+    renderer = ensure()
     stem = Path(input_pptx).stem or "presentation"
     with tempfile.TemporaryDirectory(prefix="pdf-toolbox-pptx-") as tmp_dir:
         out_path = Path(tmp_dir) / f"{stem}.pdf"
@@ -183,6 +358,7 @@ def convert_pptx_to_pdf(input_pptx: str) -> Iterator[str]:
 __all__ = [
     "RendererSelectionError",
     "available",
+    "available_renderers",
     "convert_pptx_to_pdf",
     "ensure",
     "register",
