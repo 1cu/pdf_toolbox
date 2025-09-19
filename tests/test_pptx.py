@@ -32,7 +32,7 @@ def simple_pptx(tmp_path) -> str:
 
 
 def test_rendering_actions_raise(simple_pptx):
-    with pytest.raises(PptxProviderUnavailableError):
+    with pytest.raises(pptx_registry.RendererSelectionError):
         pptx_to_images(simple_pptx)
     with pytest.raises(PptxProviderUnavailableError):
         pptx_to_pdf(simple_pptx)
@@ -51,24 +51,26 @@ def test_null_renderer_methods_raise():
 
 
 def test_ensure_registered_skips_unknown(monkeypatch):
-    monkeypatch.setattr(pptx, "registry_available", lambda: set())
-    called: list[str] = []
+    seen: list[str] = []
 
-    def fake_import(name: str) -> None:
-        called.append(name)
+    def fake_select(name: str) -> BasePptxRenderer | None:
+        seen.append(name)
+        return None
 
-    monkeypatch.setattr(pptx.importlib, "import_module", fake_import)
+    monkeypatch.setattr(pptx, "registry_select", fake_select)
 
-    pptx._ensure_registered("missing")
-
-    assert called == []
+    assert pptx._load_via_registry("missing") is None
+    assert seen == ["missing"]
 
 
 def test_load_via_registry_handles_empty_and_missing(monkeypatch):
-    monkeypatch.setattr(pptx, "registry_available", lambda: set())
     seen: list[str] = []
-    monkeypatch.setattr(pptx, "_ensure_registered", lambda name: seen.append(name))
-    monkeypatch.setattr(pptx, "registry_select", lambda _name: None)
+
+    def fake_select(name: str) -> BasePptxRenderer | None:
+        seen.append(name)
+        return None
+
+    monkeypatch.setattr(pptx, "registry_select", fake_select)
 
     assert pptx._load_via_registry("") is None
     assert pptx._load_via_registry("custom") is None

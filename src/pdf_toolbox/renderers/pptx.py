@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import importlib
 from typing import Literal
 
 from pdf_toolbox.config import load_config
 from pdf_toolbox.i18n import tr
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
-from pdf_toolbox.renderers.registry import available as registry_available
 from pdf_toolbox.renderers.registry import register as register_renderer
 from pdf_toolbox.renderers.registry import select as registry_select
 
@@ -96,38 +94,13 @@ class NullRenderer(BasePptxRenderer):
 
 register_renderer(NullRenderer)
 
-_BUILTIN_MODULES = {
-    "lightweight": "pdf_toolbox.renderers.lightweight_stub",
-    "http_office": "pdf_toolbox.renderers.http_office",
-    "ms_office": "pdf_toolbox.renderers.ms_office",
-}
-
-
-def _ensure_registered(name: str) -> None:
-    """Import and register built-in providers on demand."""
-    key = name.strip().lower()
-    if not key or key in registry_available():
-        return
-    module = _BUILTIN_MODULES.get(key)
-    if not module:
-        return
-    importlib.import_module(module)
-
 
 def _load_via_registry(name: str) -> BasePptxRenderer | None:
     """Return renderer ``name`` from the internal registry if present."""
     lookup = (name or "").strip().lower()
     if not lookup:
         return None
-    if lookup == "auto":
-        for candidate in _BUILTIN_MODULES:
-            _ensure_registered(candidate)
-    else:
-        _ensure_registered(lookup)
-    renderer_cls = registry_select(lookup)
-    if renderer_cls is None:
-        return None
-    return renderer_cls()
+    return registry_select(lookup)
 
 
 def get_pptx_renderer() -> BasePptxRenderer:

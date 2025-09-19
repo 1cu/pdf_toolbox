@@ -29,12 +29,12 @@ def test_lightweight_stub_to_images_raises_unavailable(tmp_path) -> None:
         stub.to_images(str(tmp_path / "input.pptx"))
 
 
-def test_lightweight_mapping_loads_via_registry(monkeypatch) -> None:
-    """Selecting ``lightweight`` via config yields the stub and raises."""
+def test_lightweight_mapping_falls_back_to_null(monkeypatch) -> None:
+    """Selecting ``lightweight`` falls back to the null renderer."""
     monkeypatch.setattr(
         pptx_mod, "load_config", lambda: {"pptx_renderer": "lightweight"}
     )
     renderer = pptx_mod.get_pptx_renderer()
-    assert isinstance(renderer, PptxLightweightStub)
+    assert not isinstance(renderer, PptxLightweightStub)
     with pytest.raises(PptxProviderUnavailableError):
-        renderer.to_pdf("dummy.pptx")
+        pptx_mod.require_pptx_renderer()

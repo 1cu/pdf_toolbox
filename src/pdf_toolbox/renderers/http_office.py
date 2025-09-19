@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, Mapping, MutableMapping, Literal, cast
+from typing import Any, ClassVar, Literal, cast
 from urllib.parse import urlparse
 
 from pdf_toolbox.config import load_config
 from pdf_toolbox.i18n import tr
+from pdf_toolbox.renderers._http_util import _post_stream_file
 from pdf_toolbox.renderers.pptx import (
     PptxRenderingError,
     UnsupportedOptionError,
@@ -18,14 +20,14 @@ from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.renderers.registry import register
 from pdf_toolbox.utils import logger
 
-from pdf_toolbox.renderers._http_util import _post_stream_file
-
 try:  # pragma: no cover  # pdf-toolbox: optional dependency import guard exercised via unit tests | issue:-
     import requests  # type: ignore[import-untyped]  # pdf-toolbox: requests library does not ship type information | issue:-
 except Exception:  # pragma: no cover  # pdf-toolbox: gracefully handle missing optional dependency | issue:-
     requests = None  # type: ignore[assignment]  # pdf-toolbox: sentinel assignment when dependency unavailable | issue:-
 
-if requests is None:  # pragma: no cover  # pdf-toolbox: branch only aids type checking when dependency missing | issue:-
+if (
+    requests is None
+):  # pragma: no cover  # pdf-toolbox: branch only aids type checking when dependency missing | issue:-
     requests_module: Any = None
 else:
     requests_module = requests
@@ -33,14 +35,12 @@ else:
 Mode = Literal["auto", "stirling", "gotenberg"]
 
 _DEFAULT_TIMEOUT = 60.0
-_MIME_TYPE = (
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-)
+_HTTP_OK = 200
+_MIME_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 
 
 def _coerce_bool(value: object, default: bool) -> bool:
     """Return ``value`` coerced to :class:`bool` when possible."""
-
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
@@ -54,11 +54,10 @@ def _coerce_bool(value: object, default: bool) -> bool:
 
 def _coerce_timeout(value: object) -> float | None:
     """Normalise ``timeout`` seconds, returning ``None`` for disabled timeouts."""
-
     if value is None:
         return _DEFAULT_TIMEOUT
     number: float
-    if isinstance(value, (int, float)):
+    if isinstance(value, int | float):
         number = float(value)
     elif isinstance(value, str):
         try:
@@ -74,7 +73,6 @@ def _coerce_timeout(value: object) -> float | None:
 
 def _coerce_mode(value: object) -> Mode:
     """Return a valid renderer mode from ``value``."""
-
     if isinstance(value, str):
         lowered = value.strip().lower()
         if lowered in {"stirling", "gotenberg"}:
@@ -84,7 +82,6 @@ def _coerce_mode(value: object) -> Mode:
 
 def _normalise_headers(headers: object) -> Mapping[str, str]:
     """Return a case-preserving header mapping from ``headers``."""
-
     if not isinstance(headers, Mapping):
         return {}
     result: MutableMapping[str, str] = {}
@@ -111,7 +108,6 @@ class HttpOfficeSection:
     @classmethod
     def from_mapping(cls, data: Mapping[str, object] | None) -> HttpOfficeSection:
         """Create an :class:`HttpOfficeSection` from a configuration mapping."""
-
         if not isinstance(data, Mapping):
             return cls()
         endpoint = str(data.get("endpoint") or "").strip()
@@ -137,7 +133,6 @@ class RendererConfig:
     @classmethod
     def from_mapping(cls, cfg: Mapping[str, object] | None) -> RendererConfig:
         """Return :class:`RendererConfig` created from ``cfg``."""
-
         http_section: Mapping[str, object] | None = None
         if isinstance(cfg, Mapping):
             candidate = cfg.get("http_office")
@@ -155,6 +150,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         self,
         cfg: RendererConfig | Mapping[str, object] | None = None,
     ) -> None:
+        """Initialise the renderer configuration from ``cfg`` or disk."""
         if isinstance(cfg, RendererConfig):
             self._cfg = cfg
         elif isinstance(cfg, Mapping):
@@ -165,13 +161,11 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
     @property
     def cfg(self) -> RendererConfig:
         """Expose the renderer configuration for tests and debugging."""
-
         return self._cfg
 
     @classmethod
     def probe(cls) -> bool:
         """Return ``True`` when the renderer has a usable configuration."""
-
         try:
             renderer = cls()
         except Exception as exc:  # pragma: no cover  # pdf-toolbox: defensive guard against unexpected config state | issue:-
@@ -181,7 +175,6 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
 
     def can_handle(self) -> bool:
         """Return ``True`` when endpoint and dependencies are available."""
-
         if requests is None:
             return False
         return bool(self._cfg.http_office.endpoint)
@@ -196,7 +189,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             return "stirling"
         return mode
 
-    def to_pdf(
+    def to_pdf(  # noqa: PLR0915  # pdf-toolbox: method orchestrates HTTP upload and error mapping | issue:-
         self,
         input_pptx: str,
         output_path: str | None = None,
@@ -205,7 +198,6 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         range_spec: str | None = None,
     ) -> str:
         """Render ``input_pptx`` to ``output_path`` via the configured endpoint."""
-
         if notes and handout:
             msg = "Notes and handout export cannot be combined."
             raise UnsupportedOptionError(msg, code="conflicting_options")
@@ -276,7 +268,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 code="backend_crashed",
             ) from exc
 
-        if status != 200:
+        if status != _HTTP_OK:
             detail = f"HTTP {status}"
             raise PptxRenderingError(
                 tr("pptx.http.bad_status"),
@@ -322,7 +314,6 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         range_spec: str | None = None,
     ) -> str:
         """The HTTP renderer does not support slide image export."""
-
         del (
             input_pptx,
             out_dir,
@@ -333,7 +324,8 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             height,
             range_spec,
         )
-        raise UnsupportedOptionError("Slide image export is not supported.")
+        msg = "Slide image export is not supported."
+        raise UnsupportedOptionError(msg)
 
 
 register(PptxHttpOfficeRenderer)

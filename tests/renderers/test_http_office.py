@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from types import SimpleNamespace
-from typing import IO, Iterable, Literal, Mapping
+from typing import IO, Literal, cast
 
 import pytest
 
+import pdf_toolbox.renderers._http_util as http_util_module
+import pdf_toolbox.renderers.http_office as http_office_module
+from pdf_toolbox.renderers import registry
 from pdf_toolbox.renderers.http_office import (
     HttpOfficeSection,
     PptxHttpOfficeRenderer,
     RendererConfig,
 )
 from pdf_toolbox.renderers.pptx import PptxRenderingError, UnsupportedOptionError
-import pdf_toolbox.renderers.http_office as http_office_module
-import pdf_toolbox.renderers._http_util as http_util_module
 
 _BASE_SECTION = HttpOfficeSection()
 HttpFiles = Mapping[str, tuple[str, IO[bytes], str]]
@@ -114,6 +116,7 @@ def test_to_pdf_uses_gotenberg_field(tmp_path, monkeypatch):
         timeout: float | None,
         verify: bool,
     ) -> PostResult:
+        del endpoint, headers, timeout, verify
         fields.extend(files.keys())
 
         def _chunks():
@@ -142,6 +145,8 @@ def test_to_pdf_raises_on_bad_status(tmp_path, monkeypatch):
         timeout: float | None,
         verify: bool,
     ) -> PostResult:
+        del endpoint, files, headers, timeout, verify
+
         def _chunks():
             yield b""
 
@@ -169,6 +174,7 @@ def test_to_pdf_raises_on_empty_response(tmp_path, monkeypatch):
         timeout: float | None,
         verify: bool,
     ) -> PostResult:
+        del endpoint, files, headers, timeout, verify
         return 200, iter(())
 
     monkeypatch.setattr(
@@ -197,6 +203,7 @@ def test_to_pdf_maps_timeout(tmp_path, monkeypatch):
         timeout: float | None,
         verify: bool,
     ) -> PostResult:
+        del endpoint, files, headers, timeout, verify
         raise requests.Timeout("boom")
 
     monkeypatch.setattr(
@@ -223,6 +230,7 @@ def test_to_pdf_maps_connection_error(tmp_path, monkeypatch):
         timeout: float | None,
         verify: bool,
     ) -> PostResult:
+        del endpoint, files, headers, timeout, verify
         raise requests.ConnectionError("boom")
 
     monkeypatch.setattr(
@@ -312,6 +320,7 @@ def test_probe_handles_init_failure(monkeypatch):
         self: http_office_module.PptxHttpOfficeRenderer,
         cfg: Mapping[str, object] | None = None,
     ) -> None:
+        del self, cfg
         raise RuntimeError("boom")
 
     monkeypatch.setattr(http_office_module.PptxHttpOfficeRenderer, "__init__", boom)
@@ -375,6 +384,7 @@ def test_post_stream_file_streams_and_closes(tmp_path, monkeypatch):
         status_code = 200
 
         def iter_content(self, chunk_size: int):
+            del chunk_size
             yield b"abc"
             yield b""
             yield b"def"
@@ -387,18 +397,17 @@ def test_post_stream_file_streams_and_closes(tmp_path, monkeypatch):
     def fake_post(
         endpoint: str,
         files: HttpFiles,
-        headers: Mapping[str, str] | None,
-        timeout: float | None,
-        verify: bool,
-        stream: bool = True,
+        **options: object,
     ) -> DummyResponse:
         captured.update(
             {
                 "endpoint": endpoint,
-                "headers": dict(headers or {}),
-                "timeout": timeout,
-                "verify": verify,
-                "stream": stream,
+                "headers": dict(
+                    cast(Mapping[str, str] | None, options.get("headers")) or {}
+                ),
+                "timeout": cast(float | None, options.get("timeout")),
+                "verify": bool(options.get("verify")),
+                "stream": bool(options.get("stream", True)),
                 "files": {key: (value[0], value[2]) for key, value in files.items()},
             }
         )
@@ -434,15 +443,14 @@ def test_post_stream_file_requires_requests(monkeypatch, tmp_path):
     pptx = tmp_path / "deck.pptx"
     pptx.write_bytes(b"deck")
 
-    with pptx.open("rb") as handle:
-        with pytest.raises(RuntimeError):
-            http_util_module._post_stream_file(
-                "https://endpoint",
-                {"file": (pptx.name, handle, "application/test")},
-                {},
-                None,
-                True,
-            )
+    with pptx.open("rb") as handle, pytest.raises(RuntimeError):
+        http_util_module._post_stream_file(
+            "https://endpoint",
+            {"file": (pptx.name, handle, "application/test")},
+            {},
+            None,
+            True,
+        )
 
 
 def test_to_pdf_maps_request_exception(tmp_path, monkeypatch):
@@ -455,11 +463,10 @@ def test_to_pdf_maps_request_exception(tmp_path, monkeypatch):
         timeout: float | None,
         verify: bool,
     ) -> PostResult:
+        del endpoint, files, headers, timeout, verify
         raise requests.RequestException("boom")
 
-    monkeypatch.setattr(
-        http_office_module, "_post_stream_file", fake_post
-    )
+    monkeypatch.setattr(http_office_module, "_post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint("https://example")
     pptx = tmp_path / "deck.pptx"
@@ -477,17 +484,16 @@ def test_to_pdf_respects_manual_mode(tmp_path, monkeypatch):
     def fake_post(
         endpoint: str,
         files: HttpFiles,
-        headers: Mapping[str, str] | None,
-        timeout: float | None,
-        verify: bool,
-        stream: bool = True,
+        **options: object,
     ) -> SimpleNamespace:
+        del endpoint, options
         fields.extend(files.keys())
 
         class DummyResponse:
             status_code = 200
 
             def iter_content(self, chunk_size: int):
+                del chunk_size
                 yield b"%PDF-1.7\n"
 
             def close(self) -> None:
@@ -515,3 +521,24 @@ def test_to_images_raises_unsupported(tmp_path):
     renderer = _renderer_with_endpoint("https://example")
     with pytest.raises(UnsupportedOptionError):
         renderer.to_images(str(tmp_path / "deck.pptx"))
+
+
+def test_registry_can_handle_depends_on_endpoint(monkeypatch):
+    monkeypatch.setitem(registry._ENTRY_POINT_STATE, "loaded", True)
+    monkeypatch.setattr(registry, "_BUILTIN_MODULES", {})
+    monkeypatch.setattr(http_office_module, "requests", object())
+
+    monkeypatch.setattr(registry, "_REGISTRY", {})
+    monkeypatch.setattr(
+        http_office_module,
+        "load_config",
+        lambda: {"http_office": {"endpoint": "https://example.test/render"}},
+    )
+    registry.register(http_office_module.PptxHttpOfficeRenderer)
+    renderer = registry.select("http_office")
+    assert isinstance(renderer, http_office_module.PptxHttpOfficeRenderer)
+
+    monkeypatch.setattr(registry, "_REGISTRY", {})
+    monkeypatch.setattr(http_office_module, "load_config", lambda: {})
+    registry.register(http_office_module.PptxHttpOfficeRenderer)
+    assert registry.select("http_office") is None
