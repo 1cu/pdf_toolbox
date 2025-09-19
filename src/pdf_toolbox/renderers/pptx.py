@@ -98,6 +98,7 @@ register_renderer(NullRenderer)
 
 _BUILTIN_MODULES = {
     "lightweight": "pdf_toolbox.renderers.lightweight_stub",
+    "http_office": "pdf_toolbox.renderers.http_office",
     "ms_office": "pdf_toolbox.renderers.ms_office",
 }
 

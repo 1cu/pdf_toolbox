@@ -9,6 +9,8 @@ import tokenize
 from pathlib import Path
 from typing import NotRequired, TypedDict
 
+import mdformat
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT_FILE = ROOT / "DEVELOPMENT_EXCEPTIONS.md"
 
@@ -109,12 +111,14 @@ def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:  # noqa: PLR0
 def render_table(headers: list[str], rows: list[list[str]]) -> str:
     """Return a Markdown table for *rows* with padded columns."""
     matrix = [headers, *rows]
-    widths = [max(len(row[i]) for row in matrix) for i in range(len(headers))]
+    escaped_matrix = [[cell.replace("_", "\\_") for cell in row] for row in matrix]
+    widths = [max(len(row[i]) for row in escaped_matrix) for i in range(len(headers))]
 
     def fmt(row: list[str]) -> str:
+        escaped = [cell.replace("_", "\\_") for cell in row]
         return (
             "| "
-            + " | ".join(cell.ljust(widths[i]) for i, cell in enumerate(row))
+            + " | ".join(escaped[i].ljust(widths[i]) for i in range(len(row)))
             + " |"
         )
 
@@ -157,11 +161,11 @@ def main() -> int:
     )
     content = (
         "# Documented Exceptions\n\n"
-        + lint_table
-        + "\n\n## Runtime Exceptions\n\n"
-        + runtime_table
-        + "\n"
+        "<!-- mdformat off -->\n\n" + lint_table + "\n<!-- mdformat on -->\n\n"
+        "## Runtime Exceptions\n\n"
+        "<!-- mdformat off -->\n\n" + runtime_table + "\n<!-- mdformat on -->\n"
     )
+    content = mdformat.text(content, extensions={"gfm"})
     existing = OUT_FILE.read_text(encoding="utf8") if OUT_FILE.exists() else ""
     if content == existing:
         return 0
