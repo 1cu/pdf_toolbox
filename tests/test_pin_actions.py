@@ -8,7 +8,7 @@ from scripts.pin_actions import normalise_uses_line
 
 
 @pytest.mark.parametrize(
-    "line,commit_sha,comment_label,published,expected",
+    ("line", "commit_sha", "comment_label", "published", "expected"),
     [
         (
             "- uses: actions/cache@v3  # pinned: actions/cache@v2 (2023-01-01)  # pinned: actions/cache@v3 (2024-02-01)  # note: keep 3.13",
@@ -27,7 +27,6 @@ def test_preserves_manual_comments_and_single_pinned(
     expected: str,
 ) -> None:
     """Ensure duplicate pinned entries collapse while manual comments stay."""
-
     assert (
         normalise_uses_line(
             line,
@@ -41,7 +40,6 @@ def test_preserves_manual_comments_and_single_pinned(
 
 def test_normalise_is_idempotent() -> None:
     """Running the normaliser twice should not change the line further."""
-
     line = "- uses: actions/setup-python@v5  # pinned: actions/setup-python@v4 (2023-01-01)  # note"
     first = normalise_uses_line(
         line,
@@ -60,7 +58,6 @@ def test_normalise_is_idempotent() -> None:
 
 def test_adds_pinned_comment_when_missing() -> None:
     """Lines without existing comments gain a pinned annotation."""
-
     line = "  uses: owner/action@v1"
     expected = (
         "  uses: owner/action@abcdefabcdefabcdefabcdefabcdefabcdef  "
@@ -79,10 +76,7 @@ def test_adds_pinned_comment_when_missing() -> None:
 
 def test_deduplicates_manual_comments_preserving_order() -> None:
     """Manual comments are deduplicated while keeping their original order."""
-
-    line = (
-        "- uses: owner/action@v1  # keep  # keep  # foo  # pinned: owner/action@v0 (2023-01-01)  # foo"
-    )
+    line = "- uses: owner/action@v1  # keep  # keep  # foo  # pinned: owner/action@v0 (2023-01-01)  # foo"
     expected = (
         "- uses: owner/action@1234567890abcdef1234567890abcdef12345678  "
         "# pinned: owner/action@v1 (2024-04-05)  # keep  # foo"
@@ -100,7 +94,6 @@ def test_deduplicates_manual_comments_preserving_order() -> None:
 
 def test_handles_subpath_repositories() -> None:
     """Subpath references keep the full path while normalising comments."""
-
     line = "- uses: owner/action/sub/path@v2  # note"
     expected = (
         "- uses: owner/action/sub/path@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  "
@@ -119,7 +112,6 @@ def test_handles_subpath_repositories() -> None:
 
 def test_non_uses_lines_are_untouched() -> None:
     """Only ``uses`` lines are rewritten."""
-
     line = "  run: echo 'uses: owner/action@v1'  # pinned: should stay"
     assert (
         normalise_uses_line(
@@ -134,7 +126,6 @@ def test_non_uses_lines_are_untouched() -> None:
 
 def test_tagged_inputs_normalise_to_sha() -> None:
     """Tagged inputs are rewritten to SHAs while referencing the tag in comments."""
-
     line = "- uses: owner/action@v9"
     expected = (
         "- uses: owner/action@cccccccccccccccccccccccccccccccccccccccc  "
