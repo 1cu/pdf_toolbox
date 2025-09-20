@@ -10,6 +10,8 @@ and the enforcement rules in [AGENTS](AGENTS.md).
   matches CI.
 - Work inside the `src/pdf_toolbox` package; tests live under `tests` and helper
   scripts under `scripts`.
+- Scripts are usually thin wrappers. `scripts/pin_actions.py` is the deliberate
+  exception because it automates the workflow pinning process end to end.
 - Discover architecture and API details through docstrings and your IDE. No
   Sphinx documentation exists.
 

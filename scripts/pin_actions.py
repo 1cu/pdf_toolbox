@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import logging
 import os
 import re
 import ssl
@@ -13,8 +14,15 @@ import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TextIO
 from urllib import error, parse, request
+
+try:
+    from pdf_toolbox.utils import logger as _project_logger
+except ImportError:  # pragma: no cover - fallback for isolated script runs  # pdf-toolbox: allow standalone use when package logging unavailable | issue:-
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    logger = logging.getLogger("pdf_toolbox.scripts.pin_actions")
+else:
+    logger = _project_logger.getChild("scripts.pin_actions")
 
 WORKFLOW_DIR = Path(".github/workflows")
 USES_PATTERN = re.compile(
@@ -22,11 +30,6 @@ USES_PATTERN = re.compile(
 )
 PIN_COMMENT_PREFIX = "# pinned:"
 MIN_REPO_SEGMENTS = 2
-
-
-def write_line(message: str, *, stream: TextIO = sys.stdout) -> None:
-    """Write a newline-terminated message to the provided stream."""
-    stream.write(f"{message}\n")
 
 
 class GitHubAPI:
@@ -341,12 +344,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     files = list(iter_workflow_files())
     if not files:
-        write_line("No workflow files found.")
+        logger.info("No workflow files found.")
         return 0
 
     occurrences = collect_occurrences(files)
     if not occurrences:
-        write_line("No third-party actions found.")
+        logger.info("No third-party actions found.")
         return 0
 
     token = os.getenv("GITHUB_TOKEN")
@@ -363,23 +366,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if errors:
         error_block = "\n".join(f"- {err}" for err in errors)
-        write_line(
-            "Encountered issues while resolving actions:\n" + error_block,
-            stream=sys.stderr,
-        )
+        logger.error("Encountered issues while resolving actions:\n%s", error_block)
     if not resolutions:
         return 1
 
     if args.apply:
         apply_updates(occurrences, resolutions)
 
-    write_line("Pinned action summary:\n")
-    write_line(build_summary(resolutions))
+    summary = build_summary(resolutions)
+    lines = ["Pinned action summary:", "", summary]
     notes = [res.note for res in resolutions.values() if res.note]
     if notes:
-        write_line("\nNotes:")
-        for note in notes:
-            write_line(f"- {note}")
+        lines.append("")
+        lines.append("Notes:")
+        lines.extend(f"- {note}" for note in notes)
+    logger.info("\n".join(lines))
 
     if errors:
         return 1
