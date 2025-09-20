@@ -14,12 +14,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      QT_QPA_PLATFORM: offscreen
+      QT_QPA_PLATFORM: xcb
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # pinned: actions/checkout@v5.0.0 (2025-08-11)  # actions/checkout@v5.0.0 (2025-08-11)
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)  # actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
+      - name: Install Qt system dependencies
+        run: &install-qt-deps |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-keysyms1 \
+            libxcb-shape0 \
+            libegl1 \
+            libgl1
+          # pytest-qt: ensure DISPLAY via Xvfb/libxcb/libEGL on ubuntu-latest
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -27,10 +40,20 @@ jobs:
       - name: Pre-commit (lint/format/security)
         env:
           SKIP: pytest-slow
-        run: pre-commit run --all-files --hook-stage manual
-      - name: Pytest fast (exclude slow)
-        run: pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+        run: |
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+            pre-commit run --all-files --hook-stage manual
+      - name: Pytest fast (include GUI, exclude slow)
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+              pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+          else
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+              pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75
+          fi
       - name: Check coverage thresholds
+        if: github.event_name == 'push'
         run: python scripts/check_coverage.py
 
   tests-slow:
@@ -39,15 +62,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      QT_QPA_PLATFORM: offscreen
+      QT_QPA_PLATFORM: xcb
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # pinned: actions/checkout@v5.0.0 (2025-08-11)  # actions/checkout@v5.0.0 (2025-08-11)
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)  # actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
+      - name: Install Qt system dependencies
+        run: *install-qt-deps
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install .[dev]
       - name: Pytest slow only
-        run: pytest -n auto -m "slow" -q --timeout=120 --durations=0 --durations-min=0.75
+        run: |
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+            pytest -n auto -m "slow" -q --timeout=120 --durations=0 --durations-min=0.75

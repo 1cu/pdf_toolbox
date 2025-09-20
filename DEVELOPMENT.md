@@ -101,6 +101,29 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 - Use fixtures such as `tmp_path` for filesystem interactions and prefer
   deterministic tests.
 
+### GUI tests
+
+- GUI smoke tests rely on [pytest-qt](https://pytest-qt.readthedocs.io/) and its
+  `qtbot` fixture to manage the Qt event loop and simulate user interaction
+  helpers such as `waitUntil`, `waitSignal`, and `mouseClick`.
+
+- Run the focused GUI suite locally with:
+
+  ```bash
+  pytest -q -m gui
+  ```
+
+- On Linux systems without a graphical session, wrap the command with Xvfb:
+
+  ```bash
+  xvfb-run -a pytest -q -m gui
+  ```
+
+- CI runs GUI tests under `xvfb-run` and sets `QT_QPA_PLATFORM=xcb` so Qt
+  widgets initialise reliably in CI. Install the xcb support libraries that the
+  Qt plugin expects on Ubuntu runners (`libxkbcommon-x11-0`, `libxcb-cursor0`,
+  `libxcb-icccm4`, `libxcb-keysyms1`, `libxcb-shape0`, `libegl1`, and `libgl1`).
+
 ### Slow tests & policy
 
 - Tests that take **0.75 seconds or longer** (`tool.pytest.ini_options.slow_threshold`)
@@ -123,7 +146,7 @@ fail_on_unmarked_slow = "true"
   `python scripts/check_coverage.py`.
 
   ```bash
-  pytest -n auto -m "not slow" --timeout=60 --maxfail=1 \
+   pytest -n auto -m "not slow" --timeout=60 --maxfail=1 \
          --durations=0 --durations-min=0.75
   ```
 
