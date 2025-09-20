@@ -219,6 +219,83 @@ def test_pptx_error_messages_use_translations(app, monkeypatch):
 
         win.log.clear()
         win.on_error(PptxProviderUnavailableError())
-        assert tr("pptx_no_provider") in win.log.toPlainText()
+        assert tr("pptx.no_provider") in win.log.toPlainText()
+    finally:
+        win.close()
+
+
+def test_on_run_fails_fast_without_pptx_provider(app, monkeypatch):
+    _ = app
+    import pdf_toolbox.gui.main_window as mw
+    from pdf_toolbox.i18n import tr
+
+    def sample(input_pptx: str) -> None:
+        del input_pptx
+
+    act = actions.build_action(sample, name="Sample", requires_pptx_renderer=True)
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+
+    cfg = gui.DEFAULT_CONFIG.copy()
+    cfg.update({"language": "en"})
+    monkeypatch.setattr(mw, "load_config", lambda: cfg.copy())
+    monkeypatch.setattr(mw, "save_config", lambda _cfg: None)
+    calls: list[str] = []
+
+    def fake_select(choice: str) -> None:
+        calls.append(choice)
+
+    monkeypatch.setattr(mw.pptx_registry, "select", fake_select)
+
+    warnings: list[tuple[str, str]] = []
+
+    def fake_warning(_parent, title, text):
+        warnings.append((title, text))
+        return mw.QMessageBox.StandardButton.Ok
+
+    monkeypatch.setattr(mw.QMessageBox, "warning", fake_warning)
+
+    win = gui.MainWindow()
+    try:
+        win.current_action = act
+        win.build_form(act)
+        widget = win.current_widgets["input_pptx"]
+        widget.setText("deck.pptx")
+        baseline_calls = len(calls)
+        win.on_run()
+        assert warnings
+        title, text = warnings[-1]
+        assert title == tr("warning")
+        assert text == tr("pptx.no_provider")
+        assert win.worker is None
+        assert win.banner.isVisible()
+        assert len(calls) == baseline_calls + 1
+    finally:
+        win.close()
+
+
+def test_select_pptx_provider_handles_truthy_non_string(app, monkeypatch):
+    _ = app
+    import pdf_toolbox.gui.main_window as mw
+
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+
+    cfg = gui.DEFAULT_CONFIG.copy()
+    cfg.update({"language": "en", "pptx_renderer": True})
+    monkeypatch.setattr(mw, "load_config", lambda: cfg.copy())
+    monkeypatch.setattr(mw, "save_config", lambda _cfg: None)
+
+    calls: list[str] = []
+
+    def fake_select(choice: str) -> None:
+        calls.append(choice)
+
+    monkeypatch.setattr(mw.pptx_registry, "select", fake_select)
+
+    win = gui.MainWindow()
+    try:
+        win.cfg["pptx_renderer"] = True
+        provider = win._select_pptx_provider()
+        assert provider is None
+        assert calls == ["True"]
     finally:
         win.close()

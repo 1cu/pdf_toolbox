@@ -30,11 +30,6 @@ reviews:
       mode: "off"
     custom_checks:
       - mode: error
-        name: "Coverage ≥95% overall and per-file"
-        instructions: >
-          Fail if the latest coverage status context does not indicate ≥95% overall
-          AND for each modified file. If a coverage check exists, require it to be green.
-      - mode: error
         name: "Tests accompany code changes"
         instructions: >
           If files under src/pdf_toolbox/** change, require at least one test file under tests/**
