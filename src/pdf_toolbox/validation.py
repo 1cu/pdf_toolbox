@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Final
+
+SUPPORTED_INPUT_SUFFIXES: Final[frozenset[str]] = frozenset({".pdf", ".pptx"})
 
 ERR_FILE_NOT_FOUND = "File not found: {path}"
 ERR_EXPECTED_FILE = "Expected a file, got directory: {path}"
@@ -61,4 +64,15 @@ def validate_config(config: dict) -> dict:
     return config
 
 
-__all__ = ["validate_config", "validate_pdf_path"]
+def is_supported_input(path: str | Path) -> bool:
+    """Return ``True`` when *path* points to a supported document type."""
+    suffix = Path(path).suffix.lower()
+    return suffix in SUPPORTED_INPUT_SUFFIXES
+
+
+__all__ = [
+    "SUPPORTED_INPUT_SUFFIXES",
+    "is_supported_input",
+    "validate_config",
+    "validate_pdf_path",
+]

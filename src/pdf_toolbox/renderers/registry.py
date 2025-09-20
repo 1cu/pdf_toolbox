@@ -147,8 +147,6 @@ def _load_renderer_from_entry(
 
 def _load_entry_points() -> None:
     """Load PPTX renderer entry points once."""
-def _load_entry_points() -> None:
-    """Load PPTX renderer entry points once."""
     if _ENTRY_POINT_STATE["loaded"]:
         return
 
@@ -161,11 +159,6 @@ def _load_entry_points() -> None:
         except ValueError as exc:
             logger.debug("pptx renderer registration skipped: %s", exc)
     _ENTRY_POINT_STATE["loaded"] = True
-            continue
-        try:
-            register(renderer_cls)
-        except ValueError as exc:
-            logger.debug("pptx renderer registration skipped: %s", exc)
 
 
 def _ensure_builtin_registered(name: str) -> None:
