@@ -14,8 +14,7 @@ def test_main_window_shows_and_has_expected_state(qtbot):
     qtbot.addWidget(window)
     window.show()
 
-    qtbot.waitUntil(window.isVisible, timeout=1000)
-
+    qtbot.waitExposed(window, timeout=3000)
     assert window.isVisible()
     assert window.windowTitle() == "PDF Toolbox"
     assert window.action_about in window.settings_menu.actions()

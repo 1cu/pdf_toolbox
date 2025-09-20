@@ -40,7 +40,7 @@ class DummySlide:
 
     def __init__(self) -> None:
         """Initialise slide transition state."""
-        self.SlideShowTransition = DummyTransition()
+        self.SlideShowTransition: DummyTransition | None = DummyTransition()
         self.exports: list[tuple[Path, str, tuple[int, int] | None]] = []
 
     def Export(  # noqa: N802  # pdf-toolbox: COM style method name | issue:-
@@ -128,11 +128,24 @@ class DummyClient:
         return self._app
 
 
+class NoTransitionSlide(DummySlide):
+    """Slide without a transition attribute."""
+
+    def __init__(self) -> None:
+        """Initialise the slide without a transition handle."""
+        super().__init__()
+        self.SlideShowTransition = None
+
+
 @pytest.fixture
 def setup_com(monkeypatch):
-    def _setup(slide_count: int = 3) -> SimpleNamespace:
-        slides = [DummySlide() for _ in range(slide_count)]
-        presentation = DummyPresentation(slides)
+    def _setup(
+        slide_count: int = 3,
+        *,
+        slides: list[DummySlide] | None = None,
+    ) -> SimpleNamespace:
+        actual_slides = slides or [DummySlide() for _ in range(slide_count)]
+        presentation = DummyPresentation(actual_slides)
         app = DummyApp(presentation)
         client = DummyClient(app)
         pythoncom_mod = DummyPythonCom()
@@ -146,10 +159,65 @@ def setup_com(monkeypatch):
             client=client,
             presentation=presentation,
             app=app,
-            slides=slides,
+            slides=actual_slides,
         )
 
     return _setup
+
+
+def test_ensure_com_environment_requires_windows(monkeypatch):
+    monkeypatch.setattr(ms_office, "IS_WINDOWS", False)
+    monkeypatch.setattr(ms_office, "pythoncom", None)
+    monkeypatch.setattr(ms_office, "win32_client", None)
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._ensure_com_environment()
+
+    assert excinfo.value.code == "unavailable"
+
+
+def test_ensure_com_environment_requires_pywin32(monkeypatch):
+    monkeypatch.setattr(ms_office, "IS_WINDOWS", True)
+    monkeypatch.setattr(ms_office, "pythoncom", None)
+    monkeypatch.setattr(ms_office, "win32_client", None)
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._ensure_com_environment()
+
+    assert excinfo.value.code == "unavailable"
+
+
+def test_get_dispatch_requires_callable():
+    class Empty:
+        pass
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._get_dispatch(Empty())
+
+    assert excinfo.value.code == "backend_crashed"
+
+
+def test_resolve_slide_numbers_handles_empty_total():
+    assert ms_office._resolve_slide_numbers(None, 0) == []
+
+
+def test_resolve_slide_numbers_requires_selection(monkeypatch):
+    monkeypatch.setattr(ms_office, "parse_page_spec", lambda *_args, **_kwargs: [])
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._resolve_slide_numbers("1-2", 3)
+
+    assert excinfo.value.code == "empty_selection"
+
+
+def test_open_presentation_requires_collection():
+    class Dummy:
+        Presentations = None
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._open_presentation(Dummy(), Path("deck.pptx"))
+
+    assert excinfo.value.code == "backend_crashed"
 
 
 def test_probe_true_when_com_available(setup_com, monkeypatch):
@@ -182,6 +250,21 @@ def test_probe_false_on_non_windows(monkeypatch):
 
     assert PptxMsOfficeRenderer.probe() is False
     assert any("unsupported platform" in message for message in messages)
+
+
+def test_probe_false_when_pywin32_missing(monkeypatch):
+    messages: list[str] = []
+
+    def record(msg: str, *args: object, **_kwargs: object) -> None:
+        messages.append(msg % args if args else msg)
+
+    monkeypatch.setattr(ms_office.logger, "info", record)
+    monkeypatch.setattr(ms_office, "IS_WINDOWS", True)
+    monkeypatch.setattr(ms_office, "pythoncom", None)
+    monkeypatch.setattr(ms_office, "win32_client", None)
+
+    assert PptxMsOfficeRenderer.probe() is False
+    assert any("pywin32 libraries missing" in message for message in messages)
 
 
 def test_probe_false_when_dispatch_fails(setup_com, monkeypatch):
@@ -220,6 +303,21 @@ def test_to_pdf_exports_selected_slides(tmp_path, setup_com):
     assert env.presentation.closed is True
     assert env.app.quit_called is True
     assert env.pythoncom.uninit_calls == 1
+
+
+def test_to_pdf_ignores_missing_transitions(tmp_path, setup_com):
+    slides = [DummySlide(), DummySlide(), NoTransitionSlide()]
+    env = setup_com(slides=slides)
+    src = tmp_path / "deck.pptx"
+    src.write_text("pptx")
+    out = tmp_path / "deck.pdf"
+
+    renderer = PptxMsOfficeRenderer()
+    renderer.to_pdf(str(src), str(out), range_spec="1-2")
+
+    assert slides[2].SlideShowTransition is None
+    assert env.presentation.closed is True
+    assert env.app.quit_called is True
 
 
 def test_to_pdf_rejects_notes(tmp_path):
@@ -268,6 +366,19 @@ def test_to_pdf_missing_input(tmp_path):
     assert excinfo.value.code == "unavailable"
 
 
+def test_can_handle_delegates_to_probe(monkeypatch):
+    calls: list[object] = []
+
+    def fake_probe(cls: type[PptxMsOfficeRenderer]) -> bool:
+        calls.append(cls)
+        return False
+
+    monkeypatch.setattr(PptxMsOfficeRenderer, "probe", classmethod(fake_probe))
+
+    assert PptxMsOfficeRenderer.can_handle() is False
+    assert calls == [PptxMsOfficeRenderer]
+
+
 def test_to_images_exports_all_slides(tmp_path, setup_com):
     env = setup_com(slide_count=2)
     src = tmp_path / "deck.pptx"
@@ -308,3 +419,51 @@ def test_to_images_rejects_unsupported_format(tmp_path, setup_com):
         renderer.to_images(str(src), image_format="GIF")
 
     assert excinfo.value.code == "unsupported_option"
+
+
+def test_to_images_missing_input(tmp_path):
+    renderer = PptxMsOfficeRenderer()
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        renderer.to_images(str(tmp_path / "missing.pptx"))
+
+    assert excinfo.value.code == "unavailable"
+
+
+def test_to_images_removes_existing_files_and_defaults_dimensions(tmp_path, setup_com):
+    env = setup_com(slide_count=1)
+    src = tmp_path / "deck.pptx"
+    src.write_text("pptx")
+    out_dir = tmp_path / "images"
+    out_dir.mkdir()
+    stale = out_dir / "slide-001.jpeg"
+    stale.write_text("OLD")
+
+    renderer = PptxMsOfficeRenderer()
+    result = Path(
+        renderer.to_images(str(src), out_dir=str(out_dir), image_format="JPEG")
+    )
+
+    files = sorted(result.glob("slide-*.jpeg"))
+    assert [path.name for path in files] == ["slide-001.jpeg"]
+    assert files[0].read_text() == "JPEG"
+    # Without explicit dimensions the Export call receives only the format.
+    assert env.slides[0].exports == [(files[0], "JPEG", None)]
+
+
+def test_to_images_propagates_renderer_errors(monkeypatch, tmp_path, setup_com):
+    setup_com(slide_count=1)
+    src = tmp_path / "deck.pptx"
+    src.write_text("pptx")
+
+    renderer = PptxMsOfficeRenderer()
+
+    def boom(*_args: object, **_kwargs: object) -> None:
+        raise PptxRenderingError("fail", code="backend_crashed")
+
+    monkeypatch.setattr(ms_office, "_open_presentation", boom)
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        renderer.to_images(str(src))
+
+    assert excinfo.value.code == "backend_crashed"
