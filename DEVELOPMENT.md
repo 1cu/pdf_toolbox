@@ -146,7 +146,7 @@ fail_on_unmarked_slow = "true"
   `python scripts/check_coverage.py`.
 
   ```bash
-  pytest -n auto -m "not slow or gui" --timeout=60 --maxfail=1 \
+   pytest -n auto -m "not slow" --timeout=60 --maxfail=1 \
          --durations=0 --durations-min=0.75
   ```
 
