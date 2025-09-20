@@ -2,9 +2,8 @@ name: Coverage
 
 on:
   push:
-    branches-ignore:
-      - gh-pages
-  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -12,6 +11,8 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # pinned: actions/checkout@v5.0.0 (2025-08-11)
 
@@ -19,6 +20,16 @@ jobs:
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
+
+      - name: Install Qt system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb \
+            libxkbcommon-x11-0 \
+            libegl1 \
+            libgl1
+          # pytest-qt: ensure DISPLAY via Xvfb/libxcb/libEGL on ubuntu-latest
 
       - name: Install deps
         run: |
@@ -30,8 +41,9 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: |
-          pytest --maxfail=1 --disable-warnings -q \
-                 --cov=pdf_toolbox --cov-report=term-missing --cov-report=xml
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+            pytest --maxfail=1 --disable-warnings -q \
+                   --cov=pdf_toolbox --cov-report=term-missing --cov-report=xml
           mkdir -p dist/badges
           coverage-badge -o dist/badges/coverage.svg -f
 
