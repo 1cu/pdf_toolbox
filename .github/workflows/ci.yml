@@ -32,7 +32,10 @@ jobs:
       - name: Pre-commit (lint/format/security)
         env:
           SKIP: pytest-slow
-        run: pre-commit run --all-files --hook-stage manual
+          QT_QPA_PLATFORM: xcb
+        run: |
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+            pre-commit run --all-files --hook-stage manual
       - name: Pytest fast (exclude slow)
         env:
           QT_QPA_PLATFORM: xcb
