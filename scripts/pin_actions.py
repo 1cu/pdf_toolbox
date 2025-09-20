@@ -10,9 +10,10 @@ import os
 import re
 import ssl
 import sys
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import TextIO
 from urllib import error, parse, request
 
 WORKFLOW_DIR = Path(".github/workflows")
@@ -20,12 +21,19 @@ USES_PATTERN = re.compile(
     r"^(?P<indent>\s*)(?P<dash>-\s+)?uses:\s*(?P<quote>['\"]?)(?P<value>[^'\"#]+?)(?P=quote)\s*(#.*)?$"
 )
 PIN_COMMENT_PREFIX = "# pinned:"
+MIN_REPO_SEGMENTS = 2
+
+
+def write_line(message: str, *, stream: TextIO = sys.stdout) -> None:
+    """Write a newline-terminated message to the provided stream."""
+    stream.write(f"{message}\n")
 
 
 class GitHubAPI:
     """Minimal helper for GitHub REST API requests."""
 
-    def __init__(self, token: Optional[str]) -> None:
+    def __init__(self, token: str | None) -> None:
+        """Initialise the client with optional token-based authentication."""
         self._base_url = "https://api.github.com"
         headers = {
             "Accept": "application/vnd.github+json",
@@ -47,11 +55,18 @@ class GitHubAPI:
             context = ssl.create_default_context()
         self._context = context
 
-    def get(self, path: str, *, params: Optional[Dict[str, str]] = None) -> dict:
+    def get(self, path: str, *, params: dict[str, str] | None = None) -> dict:
+        """Execute a GET request and return the parsed JSON payload."""
         url = f"{self._base_url}{path}"
         if params:
             url = f"{url}?{parse.urlencode(params)}"
-        req = request.Request(url, headers=self._headers)
+        scheme = parse.urlsplit(url).scheme
+        if scheme not in {"https", "http"}:
+            message = f"Unsupported URL scheme for GitHub API: {scheme}"
+            raise ValueError(message)
+        req = request.Request(  # noqa: S310  # pdf-toolbox: validated HTTPS request to GitHub API | issue:-
+            url, headers=self._headers
+        )
         try:
             with request.urlopen(  # noqa: S310 - GitHub API client  # nosec B310  # pdf-toolbox: GitHub API requests rely on urllib with pinned CA bundle | issue:-
                 req, context=self._context
@@ -60,11 +75,14 @@ class GitHubAPI:
                 return json.loads(payload)
         except error.HTTPError as exc:  # pragma: no cover - network failures are rare  # pdf-toolbox: log and rethrow network errors for diagnostics | issue:-
             message = exc.read().decode("utf-8", errors="ignore")
-            raise RuntimeError(f"GitHub API request failed for {url}: {exc}\n{message}") from exc
+            error_message = f"GitHub API request failed for {url}: {exc}\n{message}"
+            raise RuntimeError(error_message) from exc
 
 
 @dataclass
 class ActionOccurrence:
+    """Occurrence of a third-party action reference in a workflow."""
+
     path: Path
     line_index: int
     leading: str
@@ -76,24 +94,28 @@ class ActionOccurrence:
 
 @dataclass
 class ActionResolution:
+    """Pinned resolution metadata for an action repository."""
+
     repo: str
-    previous_refs: List[str]
+    previous_refs: list[str]
     commit_sha: str
     comment_label: str
     published_date: str
     display_tag: str
     release_url: str
-    note: Optional[str] = None
+    note: str | None = None
 
 
 def iter_workflow_files() -> Iterable[Path]:
+    """Return workflow files sorted by path for deterministic processing."""
     if not WORKFLOW_DIR.exists():
         return []
     return sorted(path for path in WORKFLOW_DIR.glob("**/*.yml") if path.is_file())
 
 
-def parse_uses_lines(path: Path) -> List[ActionOccurrence]:
-    occurrences: List[ActionOccurrence] = []
+def parse_uses_lines(path: Path) -> list[ActionOccurrence]:
+    """Extract action usages from a workflow file."""
+    occurrences: list[ActionOccurrence] = []
     lines = path.read_text(encoding="utf-8").splitlines()
     for idx, line in enumerate(lines):
         match = USES_PATTERN.match(line)
@@ -114,7 +136,7 @@ def parse_uses_lines(path: Path) -> List[ActionOccurrence]:
         if not action_path or not previous_ref:
             continue
         segments = action_path.split("/")
-        if len(segments) < 2:
+        if len(segments) < MIN_REPO_SEGMENTS:
             continue
         repo = "/".join(segments[:2])
         subpath = "/".join(segments[2:])
@@ -132,8 +154,9 @@ def parse_uses_lines(path: Path) -> List[ActionOccurrence]:
     return occurrences
 
 
-def collect_occurrences(files: Iterable[Path]) -> Dict[str, List[ActionOccurrence]]:
-    action_map: Dict[str, List[ActionOccurrence]] = {}
+def collect_occurrences(files: Iterable[Path]) -> dict[str, list[ActionOccurrence]]:
+    """Group action occurrences by repository."""
+    action_map: dict[str, list[ActionOccurrence]] = {}
     for path in files:
         for occurrence in parse_uses_lines(path):
             action_map.setdefault(occurrence.repo, []).append(occurrence)
@@ -141,18 +164,26 @@ def collect_occurrences(files: Iterable[Path]) -> Dict[str, List[ActionOccurrenc
 
 
 def iso_date(date_str: str) -> str:
-    parsed = dt.datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    """Convert an ISO timestamp to YYYY-MM-DD."""
+    timestamp = date_str
+    if timestamp.endswith("Z"):
+        timestamp = f"{timestamp[:-1]}+00:00"
+    parsed = dt.datetime.fromisoformat(timestamp)
     return parsed.date().isoformat()
 
 
 def resolve_tag_to_commit(api: GitHubAPI, owner: str, repo: str, tag: str) -> str:
+    """Return the commit SHA for the given annotated or lightweight tag."""
     encoded_tag = parse.quote(tag, safe="")
     data = api.get(f"/repos/{owner}/{repo}/git/refs/tags/{encoded_tag}")
-    ref_obj: Optional[dict]
+    ref_obj: dict | None
     if isinstance(data, list):
-        ref_obj = next((item for item in data if item.get("ref") == f"refs/tags/{tag}"), None)
+        ref_obj = next(
+            (item for item in data if item.get("ref") == f"refs/tags/{tag}"), None
+        )
         if ref_obj is None:
-            raise RuntimeError(f"Unable to resolve tag {tag} for {owner}/{repo}")
+            message = f"Unable to resolve tag {tag} for {owner}/{repo}"
+            raise RuntimeError(message)
     else:
         ref_obj = data
     obj = ref_obj["object"]
@@ -161,33 +192,46 @@ def resolve_tag_to_commit(api: GitHubAPI, owner: str, repo: str, tag: str) -> st
         return tag_data["object"]["sha"]
     if obj["type"] == "commit":
         return obj["sha"]
-    raise RuntimeError(f"Unsupported tag object type {obj['type']} for {owner}/{repo}")
+    message = f"Unsupported tag object type {obj['type']} for {owner}/{repo}"
+    raise RuntimeError(message)
 
 
-def get_latest_release(api: GitHubAPI, owner: str, repo: str) -> Optional[dict]:
+def get_latest_release(api: GitHubAPI, owner: str, repo: str) -> dict | None:
+    """Fetch the most recent non-prerelease GitHub release."""
     releases = api.get(f"/repos/{owner}/{repo}/releases", params={"per_page": "100"})
-    stable = [rel for rel in releases if not rel.get("draft") and not rel.get("prerelease")]
+    stable = [
+        rel for rel in releases if not rel.get("draft") and not rel.get("prerelease")
+    ]
     if not stable:
         return None
-    stable.sort(key=lambda rel: rel.get("published_at") or rel.get("created_at") or "", reverse=True)
+    stable.sort(
+        key=lambda rel: rel.get("published_at") or rel.get("created_at") or "",
+        reverse=True,
+    )
     return stable[0]
 
 
 def get_repo_metadata(api: GitHubAPI, owner: str, repo: str) -> dict:
+    """Return repository metadata required for release resolution."""
     return api.get(f"/repos/{owner}/{repo}")
 
 
-def resolve_action(api: GitHubAPI, repo: str, previous_refs: Sequence[str]) -> ActionResolution:
+def resolve_action(
+    api: GitHubAPI, repo: str, previous_refs: Sequence[str]
+) -> ActionResolution:
+    """Resolve the newest stable release (or default branch) for an action."""
     owner, name = repo.split("/", 1)
     metadata = get_repo_metadata(api, owner, name)
     if metadata.get("archived"):
-        raise RuntimeError(f"Repository {repo} is archived; skipping.")
+        message = f"Repository {repo} is archived; skipping."
+        raise RuntimeError(message)
     release = get_latest_release(api, owner, name)
     if release:
         tag = release["tag_name"]
         published = release.get("published_at") or release.get("created_at")
         if not published:
-            raise RuntimeError(f"Release {repo}@{tag} lacks publication date")
+            message = f"Release {repo}@{tag} lacks publication date"
+            raise RuntimeError(message)
         commit_sha = resolve_tag_to_commit(api, owner, name, tag)
         comment_label = f"{repo}@{tag}"
         return ActionResolution(
@@ -219,13 +263,15 @@ def resolve_action(api: GitHubAPI, repo: str, previous_refs: Sequence[str]) -> A
 
 
 def apply_updates(
-    occurrences: Dict[str, List[ActionOccurrence]], resolutions: Dict[str, ActionResolution]
+    occurrences: dict[str, list[ActionOccurrence]],
+    resolutions: dict[str, ActionResolution],
 ) -> None:
+    """Rewrite workflow files with the resolved SHAs and annotations."""
     for repo, occs in occurrences.items():
         if repo not in resolutions:
             continue
         resolution = resolutions[repo]
-        by_file: Dict[Path, List[ActionOccurrence]] = {}
+        by_file: dict[Path, list[ActionOccurrence]] = {}
         for occ in occs:
             by_file.setdefault(occ.path, []).append(occ)
         for path, file_occs in by_file.items():
@@ -235,14 +281,13 @@ def apply_updates(
                 if occ.subpath:
                     base_value = f"{base_value}/{occ.subpath}"
                 quoted = f"{occ.quote}{base_value}@{resolution.commit_sha}{occ.quote}"
-                comment = (
-                    f" {PIN_COMMENT_PREFIX} {resolution.comment_label} ({resolution.published_date})"
-                )
+                comment = f" {PIN_COMMENT_PREFIX} {resolution.comment_label} ({resolution.published_date})"
                 lines[occ.line_index] = f"{occ.leading}uses: {quoted}{comment}"
             path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def build_summary(resolutions: Dict[str, ActionResolution]) -> str:
+def build_summary(resolutions: dict[str, ActionResolution]) -> str:
+    """Render a Markdown table summarising pinned actions."""
     headers = [
         "Action",
         "Previous",
@@ -251,7 +296,7 @@ def build_summary(resolutions: Dict[str, ActionResolution]) -> str:
         "Release link",
         "Published",
     ]
-    rows: List[List[str]] = []
+    rows: list[list[str]] = []
     for repo in sorted(resolutions):
         res = resolutions[repo]
         previous = ", ".join(sorted(set(res.previous_refs)))
@@ -265,7 +310,10 @@ def build_summary(resolutions: Dict[str, ActionResolution]) -> str:
                 res.published_date,
             ]
         )
-    widths = [max(len(str(row[idx])) for row in [headers] + rows) for idx in range(len(headers))]
+    widths = [
+        max(len(str(row[idx])) for row in [headers, *rows])
+        for idx in range(len(headers))
+    ]
     lines = [
         "| "
         + " | ".join(f"{headers[idx]:<{widths[idx]}}" for idx in range(len(headers)))
@@ -275,13 +323,14 @@ def build_summary(resolutions: Dict[str, ActionResolution]) -> str:
     for row in rows:
         lines.append(
             "| "
-            + " | ".join(f"{str(row[idx]):<{widths[idx]}}" for idx in range(len(headers)))
+            + " | ".join(f"{row[idx]!s:<{widths[idx]}}" for idx in range(len(headers)))
             + " |"
         )
     return "\n".join(lines)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entry point for pinning actions and printing a summary."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--apply",
@@ -292,19 +341,19 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     files = list(iter_workflow_files())
     if not files:
-        print("No workflow files found.")
+        write_line("No workflow files found.")
         return 0
 
     occurrences = collect_occurrences(files)
     if not occurrences:
-        print("No third-party actions found.")
+        write_line("No third-party actions found.")
         return 0
 
     token = os.getenv("GITHUB_TOKEN")
     api = GitHubAPI(token)
 
-    resolutions: Dict[str, ActionResolution] = {}
-    errors: List[str] = []
+    resolutions: dict[str, ActionResolution] = {}
+    errors: list[str] = []
     for repo, occs in occurrences.items():
         previous_refs = [occ.previous_ref for occ in occs]
         try:
@@ -314,20 +363,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if errors:
         error_block = "\n".join(f"- {err}" for err in errors)
-        print("Encountered issues while resolving actions:\n" + error_block, file=sys.stderr)
+        write_line(
+            "Encountered issues while resolving actions:\n" + error_block,
+            stream=sys.stderr,
+        )
     if not resolutions:
         return 1
 
     if args.apply:
         apply_updates(occurrences, resolutions)
 
-    print("Pinned action summary:\n")
-    print(build_summary(resolutions))
+    write_line("Pinned action summary:\n")
+    write_line(build_summary(resolutions))
     notes = [res.note for res in resolutions.values() if res.note]
     if notes:
-        print("\nNotes:")
+        write_line("\nNotes:")
         for note in notes:
-            print(f"- {note}")
+            write_line(f"- {note}")
 
     if errors:
         return 1
