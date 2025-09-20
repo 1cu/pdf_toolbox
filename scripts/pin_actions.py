@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import logging
 import os
 import re
 import ssl
@@ -16,13 +15,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib import error, parse, request
 
-try:
-    from pdf_toolbox.utils import logger as _project_logger
-except ImportError:  # pragma: no cover - fallback for isolated script runs  # pdf-toolbox: allow standalone use when package logging unavailable | issue:-
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-    logger = logging.getLogger("pdf_toolbox.scripts.pin_actions")
-else:
-    logger = _project_logger.getChild("scripts.pin_actions")
+from pdf_toolbox.utils import logger as _project_logger
+
+logger = _project_logger.getChild("scripts.pin_actions")
 
 WORKFLOW_DIR = Path(".github/workflows")
 USES_PATTERN = re.compile(
@@ -113,7 +108,10 @@ def iter_workflow_files() -> Iterable[Path]:
     """Return workflow files sorted by path for deterministic processing."""
     if not WORKFLOW_DIR.exists():
         return []
-    return sorted(path for path in WORKFLOW_DIR.glob("**/*.yml") if path.is_file())
+    files: set[Path] = set()
+    for pattern in ("**/*.yml", "**/*.yaml"):
+        files.update(path for path in WORKFLOW_DIR.glob(pattern) if path.is_file())
+    return sorted(files)
 
 
 def parse_uses_lines(path: Path) -> list[ActionOccurrence]:
