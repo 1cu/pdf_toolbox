@@ -120,7 +120,9 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   ```
 
 - CI runs GUI tests under `xvfb-run` and sets `QT_QPA_PLATFORM=xcb` so Qt
-  widgets initialise reliably in CI.
+  widgets initialise reliably in CI. Install the xcb support libraries that the
+  Qt plugin expects on Ubuntu runners (`libxkbcommon-x11-0`, `libxcb-cursor0`,
+  `libxcb-icccm4`, `libxcb-keysyms1`, `libxcb-shape0`, `libegl1`, and `libgl1`).
 
 ### Slow tests & policy
 
