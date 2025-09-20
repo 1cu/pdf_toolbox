@@ -119,7 +119,7 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   xvfb-run -a pytest -q -m gui
   ```
 
-- CI runs GUI tests under `xvfb-run` and sets `QT_QPA_PLATFORM=xcb` so Qt
+- CI runs GUI tests under `xvfb-run` and sets `QT_QPA_PLATFORM=offscreen` so Qt
   widgets initialise reliably in CI.
 
 ### Slow tests & policy
