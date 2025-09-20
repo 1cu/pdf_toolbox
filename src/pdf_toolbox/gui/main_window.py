@@ -43,12 +43,13 @@ from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
+from pdf_toolbox.renderers import registry as pptx_registry
 from pdf_toolbox.renderers.pptx import (
     PPTX_PROVIDER_DOCS_URL,
     PptxProviderUnavailableError,
     PptxRenderingError,
-    require_pptx_renderer,
 )
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.utils import _load_author_info, configure_logging
 
 _PPTX_ERROR_KEYS_BY_CODE = {
@@ -495,14 +496,18 @@ class MainWindow(QMainWindow):
         if not action or not action.requires_pptx_renderer:
             self.banner.setVisible(False)
             return
-        try:
-            require_pptx_renderer()
-        except PptxProviderUnavailableError:
+        provider = self._select_pptx_provider()
+        if provider is None:
             self.banner_label.setText(tr("pptx_banner_message"))
             self.banner_button.setText(tr("pptx_open_docs"))
             self.banner.setVisible(True)
-        else:
-            self.banner.setVisible(False)
+            return
+        self.banner.setVisible(False)
+
+    def _select_pptx_provider(self) -> BasePptxRenderer | None:
+        """Return the configured PPTX provider for the current configuration."""
+        choice = (self.cfg.get("pptx_renderer") or "auto").strip() or "auto"
+        return pptx_registry.select(choice)
 
     def _set_row_visible(self, name: str, visible: bool) -> None:
         """Show or hide the form row for parameter *name*."""
@@ -570,6 +575,18 @@ class MainWindow(QMainWindow):
             self.run_btn.setText(tr("start"))
             return
 
+        if (
+            self.current_action.requires_pptx_renderer
+            and self._select_pptx_provider() is None
+        ):
+            self._update_pptx_banner(self.current_action)
+            QMessageBox.warning(self, tr("warning"), tr("pptx.no_provider"))
+            self.progress.setRange(0, 1)
+            self.progress.setValue(0)
+            self.update_status(tr("error"), "error")
+            self.run_btn.setText(tr("start"))
+            return
+
         self.progress.setRange(0, 0)
         self.update_status(tr("running"), "running")
         self.log.clear()
@@ -634,7 +651,7 @@ class MainWindow(QMainWindow):
     def _format_exception_message(self, error: BaseException) -> str:
         """Translate PPTX errors while preserving diagnostic detail."""
         if isinstance(error, PptxProviderUnavailableError):
-            return tr("pptx_no_provider")
+            return tr("pptx.no_provider")
         if isinstance(error, PptxRenderingError):
             code = (error.code or "").lower()
             key = _PPTX_ERROR_KEYS_BY_CODE.get(code, "pptx_error_unknown")
@@ -783,10 +800,9 @@ class MainWindow(QMainWindow):
         index = combo.findData(current)
         combo.setCurrentIndex(max(index, 0))
         form.addRow("PPTX Renderer", combo)
-        try:
-            renderer = require_pptx_renderer()
-        except PptxProviderUnavailableError:
-            eff = QLabel(tr("pptx_no_provider"))
+        renderer = self._select_pptx_provider()
+        if renderer is None:
+            eff = QLabel(tr("pptx.no_provider"))
         else:
             eff = QLabel(type(renderer).__name__)
         form.addRow("Effective renderer", eff)

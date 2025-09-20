@@ -30,14 +30,14 @@ class RuntimeExceptionEntry(TypedDict):
 RUNTIME_EXCEPTIONS: list[RuntimeExceptionEntry] = [
     {
         "exception": "pdf_toolbox.renderers.pptx.PptxProviderUnavailableError",
-        "message_key": "pptx_no_provider",
+        "message_key": "pptx.no_provider",
         "locales": [
             ("en", "src/pdf_toolbox/locales/en.json"),
             ("de", "src/pdf_toolbox/locales/de.json"),
         ],
         "docs": (
-            "https://github.com/1cu/pdf_toolbox/blob/main/docs/adr/0001-pptx-provider-"
-            "architecture.md"
+            "https://github.com/1cu/pdf_toolbox/blob/main/README.md#select-a-pptx-"
+            "renderer"
         ),
         "docs_label": "PPTX_PROVIDER_DOCS_URL",
     }

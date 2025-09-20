@@ -1,6 +1,12 @@
+from pathlib import Path
+
 import pytest
 
-from pdf_toolbox.validation import validate_config, validate_pdf_path
+from pdf_toolbox.validation import (
+    is_supported_input,
+    validate_config,
+    validate_pdf_path,
+)
 
 
 def test_validate_pdf_path_ok(tmp_path):
@@ -44,6 +50,12 @@ def test_validate_pdf_path_normalises_suffixes(tmp_path):
         validate_pdf_path(pptx_path, allowed_suffixes={"pdf", "pptx"})
         == pptx_path.resolve()
     )
+
+
+def test_is_supported_input_handles_pdf_and_pptx():
+    assert is_supported_input("file.pdf")
+    assert is_supported_input(Path("deck.PPTX"))
+    assert not is_supported_input("notes.txt")
 
 
 def test_validate_config_ok():
