@@ -187,3 +187,5 @@ fail_on_unmarked_slow = "true"
 1. Commit the change and create a tag matching `v*` (for example `v0.6.21`).
 1. Push the tag; the `release` workflow builds wheels and platform executables
    and attaches them to the GitHub release while pruning older artifacts.
+1. Workflows pin third-party actions to immutable commit SHAs and periodically
+   update to the latest stable release.
