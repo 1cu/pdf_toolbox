@@ -29,6 +29,9 @@ python -m pdf_toolbox.gui          # launch the Qt GUI
 pre-commit run tests --all-files   # run pytest with coverage
 ```
 
+On headless Linux environments, prefix GUI or test commands with `xvfb-run -a`
+and export `QT_QPA_PLATFORM=xcb` so Qt can connect to the virtual display.
+
 ## Run an action from Python
 
 Any registered action is available from the CLI or your own scripts:

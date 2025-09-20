@@ -17,8 +17,8 @@ Read the primary docs before making changes:
 - Use Python 3.13 only.
 - Install dependencies with `pip install -e '.[dev]'`.
 - Enable git hooks with `pre-commit install`.
-- Export `QT_QPA_PLATFORM=offscreen` when running hooks or tests without a
-  display.
+- When running hooks or tests without a display, wrap the command with
+  `xvfb-run -a` and export `QT_QPA_PLATFORM=xcb`.
 
 ## Follow the workflow
 

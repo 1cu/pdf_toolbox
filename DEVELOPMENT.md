@@ -27,8 +27,9 @@ pre-commit install
 Use `pip install .[dev]` for a non-editable installation when the editable mode
 isn't required.
 
-Set `QT_QPA_PLATFORM=offscreen` when running hooks or tests on headless systems
-(the CI and pre-commit configuration do this for you).
+Set `QT_QPA_PLATFORM=xcb` and run commands under `xvfb-run -a` when executing
+hooks or tests on headless systems (the CI and pre-commit configuration do this
+for you).
 
 ## Run the sources
 

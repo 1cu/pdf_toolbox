@@ -1,16 +1,16 @@
-"""Shared Qt fixtures for GUI smoke tests."""
+"""Shared Qt fixtures for GUI tests."""
 
 from __future__ import annotations
 
 import os
-import tempfile
 from collections.abc import Iterator
 from pathlib import Path
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-os.environ.setdefault("QT_OPENGL", "software")
+from tempfile import TemporaryDirectory
 
 import pytest
+
+os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
+os.environ.setdefault("QT_OPENGL", "software")
 
 pytest.importorskip("PySide6.QtWidgets")
 
@@ -18,6 +18,54 @@ from PySide6.QtWidgets import QFileDialog
 
 from pdf_toolbox import config, gui, i18n, utils
 from pdf_toolbox.gui import main_window as gui_main_window
+
+
+class _DialogStubs:
+    """Deterministic responses for :mod:`PySide6.QtWidgets.QFileDialog`."""
+
+    def __init__(self, base: Path) -> None:
+        self._base = base
+        self._base.mkdir(parents=True, exist_ok=True)
+        self.directory = self._base / "chosen-dir"
+        self.directory.mkdir(exist_ok=True)
+        self.file = self._base / "chosen.pdf"
+        self.file.write_text("dummy")
+        self.files: list[Path] = [self.file]
+        self._cancel_next: set[str] = set()
+
+    def cancel_next(self, dialog: str) -> None:
+        """Mark *dialog* to return a cancelled selection on the next call."""
+        valid = {"existing_directory", "open_file_name", "open_file_names"}
+        if dialog not in valid:
+            raise ValueError(dialog)
+        self._cancel_next.add(dialog)
+
+    def get_existing_directory(self, *_args, **_kwargs) -> str:
+        """Return the deterministic directory selection."""
+        if "existing_directory" in self._cancel_next:
+            self._cancel_next.remove("existing_directory")
+            return ""
+        return str(self.directory)
+
+    def get_open_file_name(self, *_args, **_kwargs) -> tuple[str, str]:
+        """Return the deterministic single-file selection."""
+        if "open_file_name" in self._cancel_next:
+            self._cancel_next.remove("open_file_name")
+            return "", ""
+        return str(self.file), ""
+
+    def get_open_file_names(self, *_args, **_kwargs) -> tuple[list[str], str]:
+        """Return the deterministic multi-file selection."""
+        if "open_file_names" in self._cancel_next:
+            self._cancel_next.remove("open_file_names")
+            return ([], "")
+        return ([str(path) for path in self.files], "")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _session_qapp(qapp):
+    """Ensure pytest-qt initialises a single :class:`QApplication`."""
+    return qapp
 
 
 @pytest.fixture
@@ -28,52 +76,33 @@ def force_lang_en() -> Iterator[None]:
     try:
         yield
     finally:
-        if previous is None:
-            i18n.set_language(None)
-        else:
-            i18n.set_language(previous)
+        i18n.set_language(previous)
 
 
 @pytest.fixture
 def temp_config_dir(monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """Redirect configuration reads and writes to a temporary directory."""
-    with tempfile.TemporaryDirectory() as tmp:
+    with TemporaryDirectory() as tmp:
         base = Path(tmp)
-        config_file = base / "pdf_toolbox_config.json"
-        base.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setattr(utils, "CONFIG_FILE", config_file)
-        monkeypatch.setattr(config, "CONFIG_PATH", config_file)
-        monkeypatch.setattr(gui, "CONFIG_PATH", config_file)
-        monkeypatch.setattr(gui_main_window, "CONFIG_PATH", config_file)
+        cfg_path = base / "pdf_toolbox_config.json"
+        cfg_path.parent.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
+        monkeypatch.setattr(gui, "CONFIG_PATH", cfg_path)
+        monkeypatch.setattr(gui_main_window, "CONFIG_PATH", cfg_path)
+        monkeypatch.setattr(utils, "CONFIG_FILE", cfg_path)
         yield base
 
 
 @pytest.fixture
-def no_file_dialogs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def no_file_dialogs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> _DialogStubs:
     """Make file dialogs deterministic so tests avoid native UI prompts."""
-    dialog_dir = tmp_path / "dialog-selection"
-    dialog_dir.mkdir()
-    selected_dir = dialog_dir / "chosen-dir"
-    selected_dir.mkdir()
-    selected_file = dialog_dir / "chosen.pdf"
-    selected_file.write_text("dummy")
-    multi_file = dialog_dir / "multi.pdf"
-    multi_file.write_text("dummy")
-
-    def fake_get_existing_directory(*_args, **_kwargs) -> str:
-        return str(selected_dir)
-
-    def fake_get_open_file_name(*_args, **_kwargs) -> tuple[str, str]:
-        return str(selected_file), ""
-
-    def fake_get_open_file_names(*_args, **_kwargs) -> tuple[list[str], str]:
-        return ([str(multi_file)], "")
-
+    stubs = _DialogStubs(tmp_path / "dialog-selection")
     monkeypatch.setattr(
-        QFileDialog, "getExistingDirectory", fake_get_existing_directory
+        QFileDialog, "getExistingDirectory", stubs.get_existing_directory
     )
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", fake_get_open_file_name)
-    monkeypatch.setattr(QFileDialog, "getOpenFileNames", fake_get_open_file_names)
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", stubs.get_open_file_name)
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", stubs.get_open_file_names)
+    return stubs
 
 
 @pytest.fixture(autouse=True)

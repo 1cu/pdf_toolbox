@@ -18,8 +18,8 @@ pip install -e '.[dev]'
 pre-commit install
 ```
 
-Use Python 3.13. Export `QT_QPA_PLATFORM=offscreen` when running hooks or tests
-without a display.
+Use Python 3.13. When running hooks or tests without a display, wrap them with
+`xvfb-run -a` and export `QT_QPA_PLATFORM=xcb`.
 
 Launch the GUI from source to verify changes:
 
