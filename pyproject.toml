@@ -19,6 +19,7 @@ dependencies = [
 dev = [
   "pytest>=8",
   "pytest-cov",
+  "pytest-qt",
   "pytest-xdist>=3",
   "pytest-timeout>=2.3",
   "pytest-json-report>=1.5",
@@ -112,6 +113,7 @@ fail_under = 95
 addopts = "-q --durations=0 --durations-min=0.75"
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "gui: marks GUI tests (run with '-m gui')",
 ]
 slow_threshold = "0.75"
 fail_on_unmarked_slow = "true"
