@@ -1,40 +1,72 @@
-name: coverage
+name: Coverage
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  coverage:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # pinned: actions/checkout@v5.0.0 (2025-08-11)
+
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # pinned: actions/setup-python@v6.0.0 (2025-09-04)
+        with:
+          python-version: '3.13'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e '.[dev]'
+          pip install coverage coverage-badge
+
+      - name: Run tests with coverage
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          pytest --maxfail=1 --disable-warnings -q \
+                 --cov=pdf_toolbox --cov-report=term-missing --cov-report=xml
+          mkdir -p dist/badges
+          coverage-badge -o dist/badges/coverage.svg -f
+
+      - name: Upload badge artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
+        with:
+          name: coverage-badge
+          path: dist/badges/coverage.svg
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-badge:
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # pinned: actions/checkout@v5.0.0 (2025-08-11)
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # pinned: actions/setup-python@v6.0.0 (2025-09-04)
+      - name: Download badge
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
         with:
-          python-version: '3.13'
-      - name: Install deps
+          name: coverage-badge
+          path: public/badges
+
+      - name: Add .nojekyll (serve SVG as-is)
         run: |
-          pip install -e '.[dev]'
-      - name: Run tests (with XML report)
-        run: |
-          pytest --cov=src --cov-report=xml --cov-report=term-missing
-      - name: Generate coverage badge
-        run: |
-          pip install 'genbadge[coverage]'
-          genbadge coverage -i coverage.xml -o coverage.svg
-          mkdir -p .artifacts/badges
-          mv coverage.svg .artifacts/badges/coverage.svg
-      - name: Publish badge to gh-pages
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          mkdir -p public
+          touch public/.nojekyll
+
+      - name: Deploy to gh-pages (keep existing files)
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # pinned: peaceiris/actions-gh-pages@v4.0.0 (2024-04-08)
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: .artifacts
-          destination_dir: badges
+          publish_dir: public
+          destination_dir: .
           keep_files: true
-          enable_jekyll: false
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          full_commit_message: "docs(badge): update coverage.svg for ${{ github.sha }}"
