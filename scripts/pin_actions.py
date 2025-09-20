@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import difflib
 import json
 import os
 import re
@@ -25,19 +26,90 @@ USES_PATTERN = re.compile(
 PIN_COMMENT_PREFIX = "# pinned:"
 MIN_REPO_SEGMENTS = 2
 REQUEST_TIMEOUT_SECONDS = 10
-PIN_COMMENT_CLEAN_PATTERN = re.compile(r"(?i)^#\s*pinned:\s*")
+PINNED_COMMENT_PATTERN = re.compile(r"(?i)^pinned:\s*")
+COMMENT_TOKEN_PATTERN = re.compile(r"#([^#]*)")
 
 
-def normalise_existing_comment(comment: str | None) -> str:
-    """Return a formatted inline comment without duplicate pin markers."""
-    if not comment:
-        return ""
-    text = comment.strip()
-    text = PIN_COMMENT_CLEAN_PATTERN.sub("", text, count=1)
-    text = text.lstrip("#").strip()
-    if not text:
-        return ""
-    return f" # {text}"
+def _deduplicate(tokens: Iterable[str]) -> list[str]:
+    """Return tokens in first-seen order without duplicates.
+
+    Args:
+        tokens: Iterable of comment fragments to deduplicate.
+
+    Returns:
+        A list preserving the first occurrence of each token.
+    """
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for token in tokens:
+        if token in seen:
+            continue
+        seen.add(token)
+        ordered.append(token)
+    return ordered
+
+
+def extract_manual_comments(comment_blob: str) -> list[str]:
+    """Split a trailing comment blob into manual comments without pinned entries.
+
+    Args:
+        comment_blob: Raw trailing comment text captured from a workflow line.
+
+    Returns:
+        Manual comment tokens (excluding ``pinned`` markers) without duplicates.
+    """
+    if not comment_blob:
+        return []
+    tokens = [
+        match.group(1).strip() for match in COMMENT_TOKEN_PATTERN.finditer(comment_blob)
+    ]
+    manuals = [
+        token for token in tokens if token and not PINNED_COMMENT_PATTERN.match(token)
+    ]
+    return _deduplicate(manuals)
+
+
+def normalise_uses_line(
+    line: str,
+    *,
+    commit_sha: str,
+    comment_label: str,
+    published_date: str,
+) -> str:
+    """Return a normalised ``uses`` line with a single pinned comment.
+
+    Args:
+        line: The original workflow line.
+        commit_sha: The resolved commit SHA for the action reference.
+        comment_label: The version text to include in the ``pinned`` comment.
+        published_date: The publication date for the resolved ref.
+
+    Returns:
+        The updated line with the new SHA and deduplicated inline comments.
+    """
+    match = USES_PATTERN.match(line)
+    if not match:
+        return line
+    if not match.group("dash") and not line.lstrip().startswith("uses:"):
+        return line
+
+    value = match.group("value").strip()
+    if "@" not in value:
+        return line
+    action_path, _ = value.split("@", 1)
+
+    manual_comments = extract_manual_comments(match.group("comment") or "")
+    prefix = f"{match.group('indent') or ''}{match.group('dash') or ''}uses: "
+    quote = match.group("quote") or ""
+    pinned_comment = f"{PIN_COMMENT_PREFIX} {comment_label} ({published_date})"
+    comment_suffix = ""
+    if manual_comments:
+        manual_suffix = "  ".join(f"# {token}" for token in manual_comments)
+        comment_suffix = f"  {pinned_comment}  {manual_suffix}"
+    else:
+        comment_suffix = f"  {pinned_comment}"
+
+    return f"{prefix}{quote}{action_path}@{commit_sha}{quote}{comment_suffix}"
 
 
 class GitHubAPI:
@@ -265,7 +337,7 @@ def resolve_action(
     )
     commit_sha = commit["sha"]
     date_str = commit["commit"]["committer"]["date"]
-    comment_label = f"default-branch {default_branch}"
+    comment_label = f"{repo}@default-branch {default_branch}"
     return ActionResolution(
         repo=repo,
         previous_refs=list(previous_refs),
@@ -278,31 +350,62 @@ def resolve_action(
     )
 
 
-def apply_updates(
+def build_updates(
     occurrences: dict[str, list[ActionOccurrence]],
     resolutions: dict[str, ActionResolution],
-) -> None:
-    """Rewrite workflow files with the resolved SHAs and annotations."""
+) -> dict[Path, tuple[str, str]]:
+    """Return a mapping of files to their original and updated contents.
+
+    Args:
+        occurrences: Action references grouped by repository.
+        resolutions: Resolved action metadata keyed by repository.
+
+    Returns:
+        Mapping of workflow paths to tuples of ``(original_text, updated_text)``.
+    """
+    updates: dict[Path, tuple[str, str]] = {}
+    file_occurrences: dict[Path, list[tuple[ActionOccurrence, ActionResolution]]] = {}
     for repo, occs in occurrences.items():
-        if repo not in resolutions:
+        resolution = resolutions.get(repo)
+        if not resolution:
             continue
-        resolution = resolutions[repo]
-        by_file: dict[Path, list[ActionOccurrence]] = {}
         for occ in occs:
-            by_file.setdefault(occ.path, []).append(occ)
-        for path, file_occs in by_file.items():
-            lines = path.read_text(encoding="utf-8").splitlines()
-            for occ in file_occs:
-                base_value = occ.repo
-                if occ.subpath:
-                    base_value = f"{base_value}/{occ.subpath}"
-                quoted = f"{occ.quote}{base_value}@{resolution.commit_sha}{occ.quote}"
-                comment = f" {PIN_COMMENT_PREFIX} {resolution.comment_label} ({resolution.published_date})"
-                existing_comment = normalise_existing_comment(occ.trailing_comment)
-                lines[occ.line_index] = (
-                    f"{occ.leading}uses: {quoted}{comment}{existing_comment}"
-                )
-            path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            file_occurrences.setdefault(occ.path, []).append((occ, resolution))
+
+    for path, file_occs in file_occurrences.items():
+        original_text = path.read_text(encoding="utf-8")
+        lines = original_text.splitlines()
+        for occ, resolution in file_occs:
+            lines[occ.line_index] = normalise_uses_line(
+                lines[occ.line_index],
+                commit_sha=resolution.commit_sha,
+                comment_label=resolution.comment_label,
+                published_date=resolution.published_date,
+            )
+        updated_text = "\n".join(lines) + "\n"
+        if updated_text != original_text:
+            updates[path] = (original_text, updated_text)
+    return updates
+
+
+def emit_diffs(updates: dict[Path, tuple[str, str]]) -> None:
+    """Write unified diffs for pending workflow updates to stdout.
+
+    Args:
+        updates: Mapping of workflow paths to their original and updated
+            contents.
+    """
+    for path in sorted(updates):
+        original_text, updated_text = updates[path]
+        diff = difflib.unified_diff(
+            original_text.splitlines(),
+            updated_text.splitlines(),
+            fromfile=str(path),
+            tofile=str(path),
+            lineterm="",
+        )
+        for line in diff:
+            sys.stdout.write(f"{line}\n")
 
 
 def build_summary(resolutions: dict[str, ActionResolution]) -> str:
@@ -348,15 +451,73 @@ def build_summary(resolutions: dict[str, ActionResolution]) -> str:
     return "\n".join(lines)
 
 
+def build_summary_lines(resolutions: dict[str, ActionResolution]) -> list[str]:
+    """Construct the multi-line summary message for pinned actions.
+
+    Args:
+        resolutions: Resolved action metadata keyed by repository.
+
+    Returns:
+        Summary text split into individual lines for logging.
+    """
+    summary = build_summary(resolutions)
+    lines = ["Pinned action summary:", "", summary]
+    notes = [res.note for res in resolutions.values() if res.note]
+    if notes:
+        lines.append("")
+        lines.append("Notes:")
+        lines.extend(f"- {note}" for note in notes)
+    return lines
+
+
+def resolve_all_actions(
+    api: GitHubAPI, occurrences: dict[str, list[ActionOccurrence]]
+) -> tuple[dict[str, ActionResolution], list[str]]:
+    """Resolve all discovered action references via the GitHub API.
+
+    Args:
+        api: GitHub API client used to fetch metadata.
+        occurrences: Action references grouped by repository.
+
+    Returns:
+        Tuple containing resolved metadata and any error messages.
+    """
+    resolutions: dict[str, ActionResolution] = {}
+    errors: list[str] = []
+    for repo, occs in occurrences.items():
+        previous_refs = [occ.previous_ref for occ in occs]
+        try:
+            resolutions[repo] = resolve_action(api, repo, previous_refs)
+        except RuntimeError as exc:
+            errors.append(str(exc))
+    return resolutions, errors
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point for pinning actions and printing a summary."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--apply",
         action="store_true",
+        help="Rewrite workflow files with pinned action SHAs (deprecated; use --write).",
+    )
+    parser.add_argument(
+        "--write",
+        action="store_true",
         help="Rewrite workflow files with pinned action SHAs.",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check whether workflow files would change; prints a unified diff.",
+    )
     args = parser.parse_args(argv)
+
+    if (args.apply or args.write) and args.check:
+        parser.error("--check cannot be combined with --apply/--write")
+
+    should_write = args.apply or args.write
+    check_only = args.check
 
     files = list(iter_workflow_files())
     if not files:
@@ -371,36 +532,30 @@ def main(argv: Sequence[str] | None = None) -> int:
     token = os.getenv("GITHUB_TOKEN")
     api = GitHubAPI(token)
 
-    resolutions: dict[str, ActionResolution] = {}
-    errors: list[str] = []
-    for repo, occs in occurrences.items():
-        previous_refs = [occ.previous_ref for occ in occs]
-        try:
-            resolutions[repo] = resolve_action(api, repo, previous_refs)
-        except RuntimeError as exc:
-            errors.append(str(exc))
-
+    resolutions, errors = resolve_all_actions(api, occurrences)
     if errors:
         error_block = "\n".join(f"- {err}" for err in errors)
         logger.error("Encountered issues while resolving actions:\n%s", error_block)
     if not resolutions:
         return 1
 
-    if args.apply:
-        apply_updates(occurrences, resolutions)
+    updates = build_updates(occurrences, resolutions)
+    lines = build_summary_lines(resolutions)
+    exit_code = 1 if errors else 0
+    if check_only:
+        if updates:
+            emit_diffs(updates)
+            exit_code = 1
+        logger.info("\n".join(lines))
+        return exit_code
 
-    summary = build_summary(resolutions)
-    lines = ["Pinned action summary:", "", summary]
-    notes = [res.note for res in resolutions.values() if res.note]
-    if notes:
-        lines.append("")
-        lines.append("Notes:")
-        lines.extend(f"- {note}" for note in notes)
+    if should_write:
+        for path, (_, updated_text) in updates.items():
+            path.write_text(updated_text, encoding="utf-8")
+
     logger.info("\n".join(lines))
 
-    if errors:
-        return 1
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":
