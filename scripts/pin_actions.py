@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Pin GitHub Actions in workflow files to the latest stable release SHAs."""
 
 from __future__ import annotations
@@ -21,10 +20,24 @@ logger = _project_logger.getChild("scripts.pin_actions")
 
 WORKFLOW_DIR = Path(".github/workflows")
 USES_PATTERN = re.compile(
-    r"^(?P<indent>\s*)(?P<dash>-\s+)?uses:\s*(?P<quote>['\"]?)(?P<value>[^'\"#]+?)(?P=quote)\s*(#.*)?$"
+    r"^(?P<indent>\s*)(?P<dash>-\s+)?uses:\s*(?P<quote>['\"]?)(?P<value>[^'\"#]+?)(?P=quote)\s*(?P<comment>#.*)?$"
 )
 PIN_COMMENT_PREFIX = "# pinned:"
 MIN_REPO_SEGMENTS = 2
+REQUEST_TIMEOUT_SECONDS = 10
+PIN_COMMENT_CLEAN_PATTERN = re.compile(r"(?i)^#\s*pinned:\s*")
+
+
+def normalise_existing_comment(comment: str | None) -> str:
+    """Return a formatted inline comment without duplicate pin markers."""
+    if not comment:
+        return ""
+    text = comment.strip()
+    text = PIN_COMMENT_CLEAN_PATTERN.sub("", text, count=1)
+    text = text.lstrip("#").strip()
+    if not text:
+        return ""
+    return f" # {text}"
 
 
 class GitHubAPI:
@@ -59,7 +72,7 @@ class GitHubAPI:
         if params:
             url = f"{url}?{parse.urlencode(params)}"
         scheme = parse.urlsplit(url).scheme
-        if scheme not in {"https", "http"}:
+        if scheme != "https":
             message = f"Unsupported URL scheme for GitHub API: {scheme}"
             raise ValueError(message)
         req = request.Request(  # noqa: S310  # pdf-toolbox: validated HTTPS request to GitHub API | issue:-
@@ -67,7 +80,7 @@ class GitHubAPI:
         )
         try:
             with request.urlopen(  # noqa: S310 - GitHub API client  # nosec B310  # pdf-toolbox: GitHub API requests rely on urllib with pinned CA bundle | issue:-
-                req, context=self._context
+                req, context=self._context, timeout=REQUEST_TIMEOUT_SECONDS
             ) as resp:
                 payload = resp.read().decode("utf-8")
                 return json.loads(payload)
@@ -88,6 +101,7 @@ class ActionOccurrence:
     repo: str
     subpath: str
     previous_ref: str
+    trailing_comment: str
 
 
 @dataclass
@@ -150,6 +164,7 @@ def parse_uses_lines(path: Path) -> list[ActionOccurrence]:
                 repo=repo,
                 subpath=subpath,
                 previous_ref=previous_ref,
+                trailing_comment=match.group("comment") or "",
             )
         )
     return occurrences
@@ -283,7 +298,10 @@ def apply_updates(
                     base_value = f"{base_value}/{occ.subpath}"
                 quoted = f"{occ.quote}{base_value}@{resolution.commit_sha}{occ.quote}"
                 comment = f" {PIN_COMMENT_PREFIX} {resolution.comment_label} ({resolution.published_date})"
-                lines[occ.line_index] = f"{occ.leading}uses: {quoted}{comment}"
+                existing_comment = normalise_existing_comment(occ.trailing_comment)
+                lines[occ.line_index] = (
+                    f"{occ.leading}uses: {quoted}{comment}{existing_comment}"
+                )
             path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
