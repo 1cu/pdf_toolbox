@@ -4,26 +4,25 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_OPENGL", "software")
 
 import pytest
+
+pytest.importorskip("PySide6.QtWidgets")
+
 from PySide6.QtWidgets import QFileDialog
 
-import pdf_toolbox.config as config
-import pdf_toolbox.gui as gui
-from pdf_toolbox import i18n
-from pdf_toolbox import utils
+from pdf_toolbox import config, gui, i18n, utils
 from pdf_toolbox.gui import main_window as gui_main_window
 
 
 @pytest.fixture
 def force_lang_en() -> Iterator[None]:
     """Force the GUI language to English for deterministic assertions."""
-
     previous = getattr(i18n, "_STATE", {}).get("lang")
     i18n.set_language("en")
     try:
@@ -38,7 +37,6 @@ def force_lang_en() -> Iterator[None]:
 @pytest.fixture
 def temp_config_dir(monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """Redirect configuration reads and writes to a temporary directory."""
-
     with tempfile.TemporaryDirectory() as tmp:
         base = Path(tmp)
         config_file = base / "pdf_toolbox_config.json"
@@ -53,7 +51,6 @@ def temp_config_dir(monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
 @pytest.fixture
 def no_file_dialogs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """Make file dialogs deterministic so tests avoid native UI prompts."""
-
     dialog_dir = tmp_path / "dialog-selection"
     dialog_dir.mkdir()
     selected_dir = dialog_dir / "chosen-dir"
@@ -72,6 +69,14 @@ def no_file_dialogs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     def fake_get_open_file_names(*_args, **_kwargs) -> tuple[list[str], str]:
         return ([str(multi_file)], "")
 
-    monkeypatch.setattr(QFileDialog, "getExistingDirectory", fake_get_existing_directory)
+    monkeypatch.setattr(
+        QFileDialog, "getExistingDirectory", fake_get_existing_directory
+    )
     monkeypatch.setattr(QFileDialog, "getOpenFileName", fake_get_open_file_name)
     monkeypatch.setattr(QFileDialog, "getOpenFileNames", fake_get_open_file_names)
+
+
+@pytest.fixture(autouse=True)
+def _disable_author_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Skip the author metadata prompt during GUI initialisation."""
+    monkeypatch.setattr(gui_main_window.MainWindow, "check_author", lambda _self: None)

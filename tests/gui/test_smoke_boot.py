@@ -19,11 +19,11 @@ pytest_plugins = ("tests.gui.conftest_qt",)
 @pytest.mark.usefixtures("force_lang_en", "temp_config_dir", "no_file_dialogs")
 def test_main_window_boots_and_exposes_core_widgets(qtbot):
     """Launch the main window and verify essential widgets are present."""
-
     window = MainWindow()
     qtbot.addWidget(window)
 
-    qtbot.waitUntil(window.isVisible, timeout=3000)
+    window.show()
+    qtbot.waitExposed(window, timeout=3000)
     assert window.isVisible()
     assert window.windowTitle().strip()
     assert window.tree.topLevelItemCount() > 0
@@ -31,3 +31,7 @@ def test_main_window_boots_and_exposes_core_widgets(qtbot):
     log_widgets = window.findChildren(QPlainTextEdit)
     assert window.log in log_widgets
     assert not window.log.isVisible()
+    assert window.action_about in window.settings_menu.actions()
+    assert window.status_key == "ready"
+
+    window.close()
