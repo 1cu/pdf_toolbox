@@ -1,6 +1,6 @@
 # PDF Toolbox
 
-![coverage](https://raw.githubusercontent.com/1cu/pdf_toolbox/gh-pages/badges/coverage.svg)
+[![coverage](https://1cu.github.io/pdf_toolbox/badges/coverage.svg)](https://1cu.github.io/pdf_toolbox/)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/1cu/pdf_toolbox?utm_source=oss&utm_medium=github&utm_campaign=1cu%2Fpdf_toolbox&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
