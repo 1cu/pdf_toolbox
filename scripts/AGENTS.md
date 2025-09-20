@@ -1,7 +1,8 @@
 # Agent Rules for `scripts`
 
 Follow the repository-wide [AGENTS.md](../AGENTS.md). Scripts should stay thin
-wrappers around reusable library code.
+wrappers around reusable library code. `scripts/pin_actions.py` is the planned
+exception because it automates the workflow action pinning process.
 
 ## Structure scripts
 

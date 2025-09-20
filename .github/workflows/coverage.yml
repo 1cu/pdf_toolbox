@@ -12,8 +12,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v5.0.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # pinned: actions/checkout@v5.0.0 (2025-08-11)
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # pinned: actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
       - name: Install deps
@@ -30,7 +30,7 @@ jobs:
           mv coverage.svg .artifacts/badges/coverage.svg
       - name: Publish badge to gh-pages
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
+        uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # pinned: peaceiris/actions-gh-pages@v4.0.0 (2024-04-08)
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages

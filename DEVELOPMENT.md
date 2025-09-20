@@ -10,6 +10,8 @@ and the enforcement rules in [AGENTS](AGENTS.md).
   matches CI.
 - Work inside the `src/pdf_toolbox` package; tests live under `tests` and helper
   scripts under `scripts`.
+- Scripts are usually thin wrappers. `scripts/pin_actions.py` is the deliberate
+  exception because it automates the workflow pinning process end to end.
 - Discover architecture and API details through docstrings and your IDE. No
   Sphinx documentation exists.
 
@@ -187,3 +189,5 @@ fail_on_unmarked_slow = "true"
 1. Commit the change and create a tag matching `v*` (for example `v0.6.21`).
 1. Push the tag; the `release` workflow builds wheels and platform executables
    and attaches them to the GitHub release while pruning older artifacts.
+1. Workflows pin third-party actions to immutable commit SHAs and periodically
+   update to the latest stable release.

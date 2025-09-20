@@ -29,6 +29,8 @@ Read the primary docs before making changes:
   format, security, and metadata hooks run remotely. Keep the fast pytest hook
   green locally; the slow suite lives in the manual `pytest-slow` hook.
 - Use the shorter aliases when iterating (`pre-commit run format|lint|tests`).
+- Workflows pin third-party actions to immutable commit SHAs and periodically
+  update to the latest stable release.
 - Keep commits focused and use short imperative subject lines (≤72 characters).
 
 ## Meet the quality bar
