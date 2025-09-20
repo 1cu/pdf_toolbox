@@ -239,7 +239,12 @@ def test_on_run_fails_fast_without_pptx_provider(app, monkeypatch):
     cfg.update({"language": "en"})
     monkeypatch.setattr(mw, "load_config", lambda: cfg.copy())
     monkeypatch.setattr(mw, "save_config", lambda _cfg: None)
-    monkeypatch.setattr(mw.pptx_registry, "select", lambda _choice: None)
+    calls: list[str] = []
+
+    def fake_select(choice: str) -> None:
+        calls.append(choice)
+
+    monkeypatch.setattr(mw.pptx_registry, "select", fake_select)
 
     warnings: list[tuple[str, str]] = []
 
@@ -255,6 +260,7 @@ def test_on_run_fails_fast_without_pptx_provider(app, monkeypatch):
         win.build_form(act)
         widget = win.current_widgets["input_pptx"]
         widget.setText("deck.pptx")
+        baseline_calls = len(calls)
         win.on_run()
         assert warnings
         title, text = warnings[-1]
@@ -262,5 +268,34 @@ def test_on_run_fails_fast_without_pptx_provider(app, monkeypatch):
         assert text == tr("pptx.no_provider")
         assert win.worker is None
         assert win.banner.isVisible()
+        assert len(calls) == baseline_calls + 1
+    finally:
+        win.close()
+
+
+def test_select_pptx_provider_handles_truthy_non_string(app, monkeypatch):
+    _ = app
+    import pdf_toolbox.gui.main_window as mw
+
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+
+    cfg = gui.DEFAULT_CONFIG.copy()
+    cfg.update({"language": "en", "pptx_renderer": True})
+    monkeypatch.setattr(mw, "load_config", lambda: cfg.copy())
+    monkeypatch.setattr(mw, "save_config", lambda _cfg: None)
+
+    calls: list[str] = []
+
+    def fake_select(choice: str) -> None:
+        calls.append(choice)
+
+    monkeypatch.setattr(mw.pptx_registry, "select", fake_select)
+
+    win = gui.MainWindow()
+    try:
+        win.cfg["pptx_renderer"] = True
+        provider = win._select_pptx_provider()
+        assert provider is None
+        assert calls == ["True"]
     finally:
         win.close()

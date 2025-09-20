@@ -409,7 +409,7 @@ class MainWindow(QMainWindow):
         if profile_initial_value:
             self._apply_profile_ui(profile_initial_value, persist=False)
 
-        self._update_pptx_banner(action)
+        self._update_pptx_banner(self._select_pptx_provider())
 
     def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912  # pdf-toolbox: argument collection involves many branches | issue:-
         """Gather user input from the form into keyword arguments."""
@@ -491,12 +491,12 @@ class MainWindow(QMainWindow):
             QUrl(PPTX_PROVIDER_DOCS_URL)
         )  # pragma: no cover  # pdf-toolbox: opens external documentation | issue:-
 
-    def _update_pptx_banner(self, action: Action | None) -> None:
+    def _update_pptx_banner(self, provider: BasePptxRenderer | None) -> None:
         """Show or hide the PPTX provider warning banner."""
+        action = self.current_action
         if not action or not action.requires_pptx_renderer:
             self.banner.setVisible(False)
             return
-        provider = self._select_pptx_provider()
         if provider is None:
             self.banner_label.setText(tr("pptx_banner_message"))
             self.banner_button.setText(tr("pptx_open_docs"))
@@ -506,7 +506,8 @@ class MainWindow(QMainWindow):
 
     def _select_pptx_provider(self) -> BasePptxRenderer | None:
         """Return the configured PPTX provider for the current configuration."""
-        choice = (self.cfg.get("pptx_renderer") or "auto").strip() or "auto"
+        raw = self.cfg.get("pptx_renderer", "auto")
+        choice = str(raw if raw else "auto").strip() or "auto"
         return pptx_registry.select(choice)
 
     def _set_row_visible(self, name: str, visible: bool) -> None:
@@ -575,11 +576,13 @@ class MainWindow(QMainWindow):
             self.run_btn.setText(tr("start"))
             return
 
-        if (
-            self.current_action.requires_pptx_renderer
-            and self._select_pptx_provider() is None
-        ):
-            self._update_pptx_banner(self.current_action)
+        provider = (
+            self._select_pptx_provider()
+            if self.current_action.requires_pptx_renderer
+            else None
+        )
+        if self.current_action.requires_pptx_renderer and provider is None:
+            self._update_pptx_banner(provider)
             QMessageBox.warning(self, tr("warning"), tr("pptx.no_provider"))
             self.progress.setRange(0, 1)
             self.progress.setValue(0)

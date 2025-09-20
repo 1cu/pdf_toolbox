@@ -33,26 +33,26 @@
 | src/pdf_toolbox/gui/main_window.py:414           | PLR0912                                  | argument collection involves many branches                            | -        |
 | src/pdf_toolbox/gui/main_window.py:429           | type: ignore[attr-defined]               | PySide6 stubs miss Qt enum                                            | -        |
 | src/pdf_toolbox/gui/main_window.py:492           | pragma: no cover                         | opens external documentation                                          | -        |
-| src/pdf_toolbox/gui/main_window.py:540           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:557           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:603           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:630           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:674           | N802                                     | Qt requires camelCase event name                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:677           | pragma: no cover                         | ensure worker shutdown on close                                       | -        |
-| src/pdf_toolbox/gui/main_window.py:685           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:700           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:709           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:713           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:720           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:729           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:733           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:741           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:753           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:757           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:780           | pragma: no cover                         | GUI handler                                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:809           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:813           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:820           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:541           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:558           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:606           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:633           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:677           | N802                                     | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:680           | pragma: no cover                         | ensure worker shutdown on close                                       | -        |
+| src/pdf_toolbox/gui/main_window.py:688           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:703           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:712           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:716           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:723           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:732           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:736           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:744           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:756           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:760           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:783           | pragma: no cover                         | GUI handler                                                           | -        |
+| src/pdf_toolbox/gui/main_window.py:812           | type: ignore[attr-defined]               | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:816           | type: ignore[attr-defined]               | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:823           | pragma: no cover                         | GUI handler                                                           | -        |
 | src/pdf_toolbox/gui/widgets.py:17                | pragma: no cover                         | GUI helper                                                            | -        |
 | src/pdf_toolbox/gui/widgets.py:38                | type: ignore[override], pragma: no cover | override signal emitter with broader type; GUI-only                   | -        |
 | src/pdf_toolbox/gui/widgets.py:43                | pragma: no cover                         | GUI widget                                                            | -        |
