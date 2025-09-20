@@ -3,8 +3,8 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches-ignore:
+      - main
 
 permissions:
   contents: read
@@ -45,15 +45,9 @@ jobs:
             pre-commit run --all-files --hook-stage manual
       - name: Pytest fast (include GUI, exclude slow)
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            xvfb-run -a --server-args="-screen 0 1920x1080x24" \
-              pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
-          else
-            xvfb-run -a --server-args="-screen 0 1920x1080x24" \
-              pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75
-          fi
+          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+            pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
       - name: Check coverage thresholds
-        if: github.event_name == 'push'
         run: python scripts/check_coverage.py
 
   tests-slow:
