@@ -33,6 +33,12 @@ CI or container environments install the Qt X11/EGL libraries, export
 `QT_QPA_PLATFORM=xcb`, and rely on a virtual display:
 
 ```bash
+scripts/ci/install-qt-headless.sh
+```
+
+For Coding Agents / containers, run: `scripts/ci/install-qt-headless.sh`.
+
+```bash
 xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
 ```
 
