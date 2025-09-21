@@ -27,8 +27,17 @@ pre-commit install
 Use `pip install .[dev]` for a non-editable installation when the editable mode
 isn't required.
 
-Set `QT_QPA_PLATFORM=offscreen` when running hooks or tests on headless systems
-(the CI and pre-commit configuration do this for you).
+On desktop Linux, macOS, and Windows machines run Qt against a real display and
+exercise the fast suite with `pre-commit run tests --all-files`. In Linux-based
+CI or container environments install the Qt X11/EGL libraries, export
+`QT_QPA_PLATFORM=xcb`, and rely on a virtual display:
+
+```bash
+xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
+```
+
+Do not bake headless flags or `QT_QPA_PLATFORM` overrides into tests or
+fixtures—leave display selection to the environment.
 
 ## Run the sources
 
@@ -107,22 +116,48 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   `qtbot` fixture to manage the Qt event loop and simulate user interaction
   helpers such as `waitUntil`, `waitSignal`, and `mouseClick`.
 
-- Run the focused GUI suite locally with:
+- Run the focused GUI suite on a desktop session with:
 
   ```bash
   pytest -q -m gui
   ```
 
-- On Linux systems without a graphical session, wrap the command with Xvfb:
+- In CI or Linux containers without a graphical session, rely on the
+  environment to provide `QT_QPA_PLATFORM=xcb` and run via Xvfb:
 
   ```bash
-  xvfb-run -a pytest -q -m gui
+  xvfb-run -s "-screen 0 1920x1080x24" pytest -q -m gui
   ```
 
-- CI runs GUI tests under `xvfb-run` and sets `QT_QPA_PLATFORM=xcb` so Qt
-  widgets initialise reliably in CI. Install the xcb support libraries that the
-  Qt plugin expects on Ubuntu runners (`libxkbcommon-x11-0`, `libxcb-cursor0`,
-  `libxcb-icccm4`, `libxcb-keysyms1`, `libxcb-shape0`, `libegl1`, and `libgl1`).
+- CI and automation run under `QT_QPA_PLATFORM=xcb` with an Xvfb server; tests
+  must never set their own platform plugin or force offscreen rendering. Install
+  the xcb support libraries that the Qt plugin expects on Ubuntu runners
+  (`libxkbcommon-x11-0`, `libxcb-cursor0`, `libxcb-icccm4`, `libxcb-keysyms1`,
+  `libxcb-shape0`, `libegl1`, and `libgl1`).
+
+### Troubleshooting Qt on Linux containers
+
+- Missing libraries often manifest as `qt.qpa.plugin: Could not load the Qt
+  platform plugin "xcb"`, "This application failed to start because no Qt
+  platform plugin could be initialized", or loader errors mentioning
+  `libEGL.so.1`.
+- Install the CI dependency bundle and rerun the suite under Xvfb:
+
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y \
+    xvfb \
+    libxkbcommon-x11-0 \
+    libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-keysyms1 \
+    libxcb-shape0 \
+    libegl1 \
+    libgl1
+  ```
+
+- After installation, export `QT_QPA_PLATFORM=xcb` and run
+  `xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files`.
 
 ### Slow tests & policy
 
