@@ -29,10 +29,17 @@ isn't required.
 
 On desktop Linux, macOS, and Windows machines run Qt against a real display and
 exercise the fast suite with `pre-commit run tests --all-files`. In Linux-based
-CI or container environments install the Qt X11/EGL libraries, export
-`QT_QPA_PLATFORM=xcb`, and rely on a virtual display:
+CI or container environments install the Qt X11/EGL libraries with the shared
+script, export `QT_QPA_PLATFORM=xcb`, and rely on a virtual display:
 
 ```bash
+# Typical CI or agent runner (non-root user)
+sudo -E bash scripts/ci/install-qt-headless.sh
+
+# Rooted containers
+bash scripts/ci/install-qt-headless.sh
+
+export QT_QPA_PLATFORM=xcb
 xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
 ```
 
@@ -131,10 +138,8 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 - CI and automation run under `QT_QPA_PLATFORM=xcb` with an Xvfb server; tests
   must never set their own platform plugin or force offscreen rendering. Install
-  the xcb support libraries that the Qt plugin expects on Ubuntu runners
-  (`libxkbcommon-x11-0`, `libxcb-cursor0`, `libxcb-icccm4`, `libxcb-keysyms1`,
-  `libxcb-shape0`, `libxcb-xfixes0`, `libxcb-render-util0`, `libegl1`, and
-  `libgl1`).
+  the xcb support libraries using `scripts/ci/install-qt-headless.sh` so the Qt
+  plugin can load on Ubuntu runners.
 
 ### Troubleshooting Qt on Linux containers
 
@@ -142,21 +147,13 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   platform plugin could be initialized", or loader errors mentioning
   `libEGL.so.1`.
 
-- Install the CI dependency bundle and rerun the suite under Xvfb:
+- Install the CI dependency bundle with `scripts/ci/install-qt-headless.sh`
+  (use `sudo -E` when not running as root) and rerun the suite under Xvfb:
 
   ```bash
-  sudo apt-get update
-  sudo apt-get install -y \
-    xvfb \
-    libxkbcommon-x11-0 \
-    libxcb-cursor0 \
-    libxcb-icccm4 \
-    libxcb-keysyms1 \
-    libxcb-shape0 \
-    libxcb-xfixes0 \
-    libxcb-render-util0 \
-    libegl1 \
-    libgl1
+  sudo -E bash scripts/ci/install-qt-headless.sh
+  export QT_QPA_PLATFORM=xcb
+  xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
   ```
 
 - On Linux containers, export `QT_QPA_PLATFORM=xcb` and run
