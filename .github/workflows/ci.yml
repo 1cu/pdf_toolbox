@@ -25,11 +25,29 @@ jobs:
           pip install -e '.[dev]'
       - name: Pre-commit (lint/format/security)
         env:
-          SKIP: pytest-slow
+          SKIP: pytest,pytest-slow
         run: pre-commit run --all-files --hook-stage manual
       - name: Pre-commit (tests fast)
         run: |
-          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run pytest --all-files --hook-stage pre-commit
+          set -euo pipefail
+          if python -c "import sys, yaml; from pathlib import Path; config = yaml.safe_load(Path('.pre-commit-config.yaml').read_text()); sys.exit(0 if any(h.get('id') == 'pytest' and 'manual' in h.get('stages', []) for repo in config.get('repos', []) for h in repo.get('hooks', [])) else 1)"; then
+            echo "Manual-stage fast tests hook detected; running via alias."
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files --hook-stage manual
+          else
+            echo "Manual-stage fast tests hook not present; running manual sweep without slow hooks." >&2
+            SKIP=tests-slow xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
+          fi
+
+          if ! compgen -G '.coverage*' >/dev/null; then
+            echo "No coverage produced by manual-stage runs; invoking default-stage tests hook." >&2
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files
+          fi
+
+          if ! compgen -G '.coverage*' >/dev/null; then
+            echo "Coverage files are still missing after pre-commit test runs." >&2
+            exit 1
+          fi
+
       - name: Upload coverage data
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
@@ -57,11 +75,19 @@ jobs:
           pip install -e '.[dev]'
       - name: Download coverage data
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0  # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
+        continue-on-error: true
         with:
           name: coverage-data
           path: .
       - name: Pre-commit (tests slow)
         run: |
-          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run pytest-slow --all-files --hook-stage manual
+          set -euo pipefail
+          echo "Attempting manual-stage tests-slow hook."
+          if xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage manual; then
+            echo "Manual-stage tests-slow hook completed."
+          else
+            echo "tests-slow hook unavailable; running full manual-stage sweep." >&2
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
+          fi
       - name: Check coverage thresholds
         run: python scripts/check_coverage.py

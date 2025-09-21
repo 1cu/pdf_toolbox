@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Intentionally leave QT_QPA_PLATFORM unchanged; the workflow sets the plugin.
 set -euo pipefail
 
 if (( EUID != 0 )); then
