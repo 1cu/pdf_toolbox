@@ -40,8 +40,15 @@ sudo -E bash scripts/ci/install-qt-headless.sh
 bash scripts/ci/install-qt-headless.sh
 
 export QT_QPA_PLATFORM=xcb
-xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
+xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
 ```
+
+- Desktop development: run the GUI and tests against a native display with
+  `pre-commit run tests --all-files` (no headless overrides).
+- CI and coding agents: call `./scripts/ci/install-qt-headless.sh`, set
+  `QT_QPA_PLATFORM=xcb`, and drive the hooks under `xvfb-run` as above.
+- Never invoke `pytest` directly in CI; always run it through the configured
+  pre-commit hooks so coverage aggregation and gating stay consistent.
 
 Do not bake headless flags or `QT_QPA_PLATFORM` overrides into tests or
 fixtures—leave display selection to the environment.

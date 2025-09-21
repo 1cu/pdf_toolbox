@@ -24,8 +24,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[dev]'
       - name: Run fast pre-commit hooks
+        env:
+          SKIP: tests-slow
         run: |
-          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
+          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
       - name: Upload coverage data
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)  # actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
@@ -60,6 +62,12 @@ jobs:
         run: |
           mv coverage-data/.coverage .coverage
           rmdir coverage-data
-      - name: Run manual pre-commit hooks (slow tests)
+      - name: Run manual pre-commit hook (slow tests)
         run: |
-          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
+          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage manual
+      - name: Generate combined coverage report
+        run: |
+          python -m coverage xml
+      - name: Check coverage thresholds
+        run: |
+          python scripts/check_coverage.py

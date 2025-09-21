@@ -79,22 +79,24 @@ repos:
         alias: format
         stages: [pre-commit, pre-push, manual]
 
-      - id: pytest
-        name: "tests: pytest"
-        entry: pytest -n auto -m "not slow" --timeout=60 --maxfail=1 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+      - id: tests
+        name: "pytest (fast)"
+        entry: pytest
         language: system
         types: [python]
         pass_filenames: false
         alias: tests
-        stages: [pre-commit, pre-push]
+        args: [-m, not slow, -q, -n, auto, --timeout=60, --cov=pdf_toolbox, --cov-append, --cov-report=xml]
+        stages: [pre-commit, pre-push, manual]
 
-      - id: pytest-slow
-        name: "tests: pytest slow"
-        entry: pytest -n auto -m "slow" --timeout=120 --maxfail=1 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing --cov-append
+      - id: tests-slow
+        name: "pytest (slow)"
+        entry: pytest
         language: system
         types: [python]
         pass_filenames: false
         alias: tests
+        args: [-m, slow, -q, -n, auto, --timeout=120, --cov=pdf_toolbox, --cov-append]
         stages: [manual]
 
       - id: coverage-per-file
