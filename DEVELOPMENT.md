@@ -36,7 +36,15 @@ CI or container environments install the Qt X11/EGL libraries, export
 scripts/ci/install-qt-headless.sh
 ```
 
-For Coding Agents / containers, run: `scripts/ci/install-qt-headless.sh`.
+For Coding Agents / containers:
+
+```bash
+# Typical CI or agent runner (non-root user)
+sudo -E bash scripts/ci/install-qt-headless.sh
+
+# Rooted containers
+bash scripts/ci/install-qt-headless.sh
+```
 
 ```bash
 xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
