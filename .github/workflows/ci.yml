@@ -29,27 +29,7 @@ jobs:
         run: pre-commit run --all-files --hook-stage manual
       - name: Pre-commit (tests fast)
         run: |
-          set -eo pipefail
-          if python - <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-config = yaml.safe_load(Path('.pre-commit-config.yaml').read_text())
-for repo in config.get('repos', []):
-    for hook in repo.get('hooks', []):
-        alias = hook.get('alias') or hook.get('id')
-        stages = hook.get('stages', ['commit'])
-        if alias == 'tests' and 'manual' in stages:
-            sys.exit(0)
-sys.exit(1)
-PY
-          then
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files --hook-stage manual
-          else
-            SKIP=tests-slow,pytest-slow xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files --hook-stage pre-commit
-          fi
+          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run pytest --all-files --hook-stage pre-commit
       - name: Upload coverage data
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
@@ -82,24 +62,6 @@ PY
           path: .
       - name: Pre-commit (tests slow)
         run: |
-          set -eo pipefail
-          if python - <<'PY'
-import sys
-from pathlib import Path
-import yaml
-
-config = yaml.safe_load(Path('.pre-commit-config.yaml').read_text())
-for repo in config.get('repos', []):
-    for hook in repo.get('hooks', []):
-        alias = hook.get('alias') or hook.get('id')
-        if alias == 'tests-slow' and 'manual' in hook.get('stages', ['commit']):
-            sys.exit(0)
-sys.exit(1)
-PY
-          then
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage manual
-          else
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
-          fi
+          xvfb-run -s "-screen 0 1920x1080x24" pre-commit run pytest-slow --all-files --hook-stage manual
       - name: Check coverage thresholds
         run: python scripts/check_coverage.py
