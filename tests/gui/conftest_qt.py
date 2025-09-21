@@ -7,7 +7,6 @@ import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_OPENGL", "software")
 
 import pytest
