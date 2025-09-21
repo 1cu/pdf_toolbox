@@ -26,7 +26,7 @@ source .venv/bin/activate
 pip install -e '.[dev]'
 pre-commit install
 python -m pdf_toolbox.gui          # launch the Qt GUI
-pre-commit run tests --all-files   # run pytest with coverage
+pre-commit run tests --all-files   # run pytest with coverage on a desktop session
 ```
 
 ## Run an action from Python
@@ -117,6 +117,49 @@ writes `miro_export.json` with per-page metadata and warnings.
   `scripts/generate_exception_overview.py`.
 - Use the shared logger utilities for diagnostics; do not use `print` for
   logging.
+
+## GUI test policy
+
+- **Desktop developers (Linux, macOS, Windows):** run Qt with a real display.
+  Execute the fast suite with `pre-commit run tests --all-files` and avoid
+  `xvfb-run` or other headless flags.
+
+- **CI jobs and coding agents/containers (Linux):** install the X11/EGL
+  libraries that the Qt xcb plugin requires, export `QT_QPA_PLATFORM=xcb`, and
+  drive the suite through a virtual display:
+
+  ```bash
+  xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
+  ```
+
+- **Tests and fixtures must stay display-agnostic.** Do not set
+  `QT_QPA_PLATFORM`, force offscreen plugins, or add headless-only flags inside
+  the code base. Rely on the surrounding environment instead.
+
+## Troubleshooting Qt on Linux containers
+
+- Symptoms of missing libraries include: `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, "This application failed to start because no Qt
+  platform plugin could be initialized", or loader errors such as
+  `libEGL.so.1: cannot open shared object file`.
+
+- Install the same dependencies used in CI, then retry with `QT_QPA_PLATFORM=xcb`
+  and `xvfb-run`:
+
+  ```bash
+  sudo apt-get update
+  sudo apt-get install -y \
+    xvfb \
+    libxkbcommon-x11-0 \
+    libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-keysyms1 \
+    libxcb-shape0 \
+    libegl1 \
+    libgl1
+  ```
+
+- After installing the libraries, rerun
+  `xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files`.
 
 ## Read next
 
