@@ -137,10 +137,10 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
 
 ### Troubleshooting Qt on Linux containers
 
-- Missing libraries often manifest as `qt.qpa.plugin: Could not load the Qt
-  platform plugin "xcb"`, "This application failed to start because no Qt
+- Missing libraries often manifest as `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, "This application failed to start because no Qt
   platform plugin could be initialized", or loader errors mentioning
   `libEGL.so.1`.
+
 - Install the CI dependency bundle and rerun the suite under Xvfb:
 
   ```bash

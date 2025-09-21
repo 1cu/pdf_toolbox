@@ -123,6 +123,7 @@ writes `miro_export.json` with per-page metadata and warnings.
 - **Desktop developers (Linux, macOS, Windows):** run Qt with a real display.
   Execute the fast suite with `pre-commit run tests --all-files` and avoid
   `xvfb-run` or other headless flags.
+
 - **CI jobs and coding agents/containers (Linux):** install the X11/EGL
   libraries that the Qt xcb plugin requires, export `QT_QPA_PLATFORM=xcb`, and
   drive the suite through a virtual display:
@@ -137,10 +138,10 @@ writes `miro_export.json` with per-page metadata and warnings.
 
 ## Troubleshooting Qt on Linux containers
 
-- Symptoms of missing libraries include: `qt.qpa.plugin: Could not load the Qt
-  platform plugin "xcb"`, "This application failed to start because no Qt
+- Symptoms of missing libraries include: `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, "This application failed to start because no Qt
   platform plugin could be initialized", or loader errors such as
   `libEGL.so.1: cannot open shared object file`.
+
 - Install the same dependencies used in CI, then retry with `QT_QPA_PLATFORM=xcb`
   and `xvfb-run`:
 
