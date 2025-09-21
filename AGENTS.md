@@ -19,9 +19,9 @@ Read the primary docs before making changes:
 - Enable git hooks with `pre-commit install`.
 - Run Qt with a native display on desktop machines; do not override
   `QT_QPA_PLATFORM` locally.
-- In CI or containerised environments rely on the provided configuration
-  (`QT_QPA_PLATFORM=xcb` plus `xvfb-run`) instead of forcing offscreen
-  plugins.
+- In Linux CI or containerised environments rely on the provided configuration
+  (`QT_QPA_PLATFORM=xcb` plus `xvfb-run`). On macOS/Windows CI use the native
+  platform. Do not force offscreen plugins.
 
 ## Follow the workflow
 

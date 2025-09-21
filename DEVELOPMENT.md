@@ -133,7 +133,8 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   must never set their own platform plugin or force offscreen rendering. Install
   the xcb support libraries that the Qt plugin expects on Ubuntu runners
   (`libxkbcommon-x11-0`, `libxcb-cursor0`, `libxcb-icccm4`, `libxcb-keysyms1`,
-  `libxcb-shape0`, `libegl1`, and `libgl1`).
+  `libxcb-shape0`, `libxcb-xfixes0`, `libxcb-render-util0`, `libegl1`, and
+  `libgl1`).
 
 ### Troubleshooting Qt on Linux containers
 
@@ -152,11 +153,13 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
     libxcb-icccm4 \
     libxcb-keysyms1 \
     libxcb-shape0 \
+    libxcb-xfixes0 \
+    libxcb-render-util0 \
     libegl1 \
     libgl1
   ```
 
-- After installation, export `QT_QPA_PLATFORM=xcb` and run
+- On Linux containers, export `QT_QPA_PLATFORM=xcb` and run
   `xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files`.
 
 ### Slow tests & policy
