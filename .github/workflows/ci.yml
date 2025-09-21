@@ -28,19 +28,34 @@ jobs:
           SKIP: pytest-slow
         run: pre-commit run --all-files --hook-stage manual
       - name: Pre-commit (tests fast)
-        env:
-          SKIP: tests-slow,pytest-slow,coverage-per-file
         run: |
           set -eo pipefail
-          xvfb-run -s "-screen 0 1920x1080x24" bash -c '
-            pre-commit run pytest --all-files --hook-stage pre-commit || pre-commit run --all-files --hook-stage pre-commit
-          '
+          if python - <<'PY'
+import sys
+from pathlib import Path
+import yaml
+
+config = yaml.safe_load(Path('.pre-commit-config.yaml').read_text())
+for repo in config.get('repos', []):
+    for hook in repo.get('hooks', []):
+        alias = hook.get('alias') or hook.get('id')
+        stages = hook.get('stages', ['commit'])
+        if alias == 'tests' and 'manual' in stages:
+            sys.exit(0)
+sys.exit(1)
+PY
+          then
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files --hook-stage manual
+          else
+            SKIP=tests-slow,pytest-slow xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files --hook-stage pre-commit
+          fi
       - name: Upload coverage data
-        if: ${{ hashFiles('.coverage*') != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
           name: coverage-data
           path: .coverage*
+          if-no-files-found: error
 
   tests-slow:
     needs: tests-fast
@@ -61,7 +76,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[dev]'
       - name: Download coverage data
-        continue-on-error: true
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0  # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
         with:
           name: coverage-data
@@ -69,8 +83,23 @@ jobs:
       - name: Pre-commit (tests slow)
         run: |
           set -eo pipefail
-          xvfb-run -s "-screen 0 1920x1080x24" bash -c '
-            pre-commit run tests-slow --all-files --hook-stage manual || pre-commit run pytest-slow --all-files --hook-stage manual
-          '
+          if python - <<'PY'
+import sys
+from pathlib import Path
+import yaml
+
+config = yaml.safe_load(Path('.pre-commit-config.yaml').read_text())
+for repo in config.get('repos', []):
+    for hook in repo.get('hooks', []):
+        alias = hook.get('alias') or hook.get('id')
+        if alias == 'tests-slow' and 'manual' in hook.get('stages', ['commit']):
+            sys.exit(0)
+sys.exit(1)
+PY
+          then
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage manual
+          else
+            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
+          fi
       - name: Check coverage thresholds
         run: python scripts/check_coverage.py
