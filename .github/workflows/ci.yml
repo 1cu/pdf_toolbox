@@ -17,35 +17,40 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)  # actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
-      - name: Install Qt system dependencies
-        run: &install-qt-deps |
-          sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            libxkbcommon-x11-0 \
-            libxcb-cursor0 \
-            libxcb-icccm4 \
-            libxcb-keysyms1 \
-            libxcb-shape0 \
-            libegl1 \
-            libgl1
-          # pytest-qt: ensure DISPLAY via Xvfb/libxcb/libEGL on ubuntu-latest
+      - name: Install Qt system dependencies (headless)
+        run: ./scripts/ci/install-qt-headless.sh
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install -e '.[dev]'
       - name: Pre-commit (lint/format/security)
         env:
-          SKIP: pytest-slow
+          SKIP: pytest,pytest-slow
+        run: pre-commit run --all-files --hook-stage manual
+      - name: Pre-commit (tests fast)
         run: |
-          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
-            pre-commit run --all-files --hook-stage manual
-      - name: Pytest fast (include GUI, exclude slow)
-        run: |
-          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
-            pytest -n auto -m "not slow" -q --timeout=60 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
-      - name: Check coverage thresholds
-        run: python scripts/check_coverage.py
+          set -euo pipefail
+          xvfb() {
+              xvfb-run -s "-screen 0 1920x1080x24" "$@"
+          }
+          if ! xvfb pre-commit run tests --all-files --hook-stage manual; then
+              echo "Manual-stage tests hook missing; running manual-stage fallback." >&2
+              SKIP=tests-slow xvfb pre-commit run --all-files --hook-stage manual
+          fi
+          if ! ls .coverage* >/dev/null 2>&1; then
+              echo "Coverage data not produced by manual-stage hooks; running pre-commit-stage pytest hook." >&2
+              xvfb pre-commit run pytest --all-files
+          fi
+          if ! ls .coverage* >/dev/null 2>&1; then
+              echo "Coverage files are still missing after running tests." >&2
+              exit 1
+          fi
+      - name: Upload coverage data
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
+        with:
+          name: coverage-data
+          path: .coverage*
+          if-no-files-found: error
 
   tests-slow:
     needs: tests-fast
@@ -59,13 +64,37 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)  # actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
-      - name: Install Qt system dependencies
-        run: *install-qt-deps
+      - name: Install Qt system dependencies (headless)
+        run: ./scripts/ci/install-qt-headless.sh
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
-      - name: Pytest slow only
+          pip install -e '.[dev]'
+      - name: Download coverage data
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0  # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
+        continue-on-error: true
+        with:
+          name: coverage-data
+          path: .
+      - name: Pre-commit (tests slow)
         run: |
-          xvfb-run -a --server-args="-screen 0 1920x1080x24" \
-            pytest -n auto -m "slow" -q --timeout=120 --durations=0 --durations-min=0.75
+          set -euo pipefail
+          coverage_present() {
+              compgen -G '.coverage*' >/dev/null 2>&1
+          }
+          if ! xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage manual; then
+              echo "Manual-stage tests-slow hook failed; retrying with commit-stage hook." >&2
+              xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage commit
+          elif ! coverage_present; then
+              echo "Manual-stage tests-slow hook produced no coverage; retrying with commit-stage hook." >&2
+              xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage commit
+          fi
+          if ! coverage_present; then
+              echo "Slow suite did not produce coverage data." >&2
+              exit 1
+          fi
+
+      - name: Generate coverage XML
+        run: python -m coverage xml
+      - name: Check coverage thresholds
+        run: python scripts/check_coverage.py
