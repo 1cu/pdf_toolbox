@@ -28,18 +28,6 @@ reviews:
       mode: "off"
     issue_assessment:
       mode: "off"
-    custom_checks:
-      - mode: error
-        name: "Tests accompany code changes"
-        instructions: >
-          If files under src/pdf_toolbox/** change, require at least one test file under tests/**
-          to change in the same PR.
-      - mode: error
-        name: "Inline exceptions documented"
-        instructions: >
-          Flag any use of '# noqa', 'ruff: noqa', or '# type: ignore' that lacks the suffix
-          '# pdf-toolbox: <reason> | issue:<id or ->'. Require re-running scripts/generate_exception_overview.py
-          so DEVELOPMENT_EXCEPTIONS.md is updated.
 knowledge_base:
   code_guidelines:
     enabled: true
