@@ -17,7 +17,8 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)  # actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
-      - name: Install Qt system dependencies (headless)
+      - &install-qt-headless
+        name: Install Qt system dependencies (headless)
         run: ./scripts/ci/install-qt-headless.sh
       - name: Install dependencies
         run: |
@@ -28,26 +29,7 @@ jobs:
           SKIP: pytest,pytest-slow
         run: pre-commit run --all-files --hook-stage manual
       - name: Pre-commit (tests fast)
-        run: |
-          set -euo pipefail
-          if python -c "import sys, yaml; from pathlib import Path; config = yaml.safe_load(Path('.pre-commit-config.yaml').read_text()); sys.exit(0 if any(h.get('id') == 'pytest' and 'manual' in h.get('stages', []) for repo in config.get('repos', []) for h in repo.get('hooks', [])) else 1)"; then
-            echo "Manual-stage fast tests hook detected; running via alias."
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files --hook-stage manual
-          else
-            echo "Manual-stage fast tests hook not present; running manual sweep without slow hooks." >&2
-            SKIP=tests-slow xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
-          fi
-
-          if ! compgen -G '.coverage*' >/dev/null; then
-            echo "No coverage produced by manual-stage runs; invoking default-stage tests hook." >&2
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests --all-files
-          fi
-
-          if ! compgen -G '.coverage*' >/dev/null; then
-            echo "Coverage files are still missing after pre-commit test runs." >&2
-            exit 1
-          fi
-
+        run: xvfb-run -s "-screen 0 1920x1080x24" pre-commit run pytest --all-files
       - name: Upload coverage data
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
@@ -67,8 +49,7 @@ jobs:
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)  # actions/setup-python@v6.0.0 (2025-09-04)
         with:
           python-version: '3.13'
-      - name: Install Qt system dependencies (headless)
-        run: ./scripts/ci/install-qt-headless.sh
+      - *install-qt-headless
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -80,14 +61,9 @@ jobs:
           name: coverage-data
           path: .
       - name: Pre-commit (tests slow)
-        run: |
-          set -euo pipefail
-          echo "Attempting manual-stage tests-slow hook."
-          if xvfb-run -s "-screen 0 1920x1080x24" pre-commit run tests-slow --all-files --hook-stage manual; then
-            echo "Manual-stage tests-slow hook completed."
-          else
-            echo "tests-slow hook unavailable; running full manual-stage sweep." >&2
-            xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files --hook-stage manual
-          fi
+        run: xvfb-run -s "-screen 0 1920x1080x24" pre-commit run pytest-slow --all-files --hook-stage manual
+
+      - name: Generate coverage XML
+        run: python -m coverage xml
       - name: Check coverage thresholds
         run: python scripts/check_coverage.py
