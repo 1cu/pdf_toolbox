@@ -233,9 +233,7 @@ class MainWindow(QMainWindow):
             cat_item.addChild(item)
         self.tree.expandAll()
 
-    def on_item_clicked(
-        self, item: QTreeWidgetItem
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    def on_item_clicked(self, item: QTreeWidgetItem) -> None:
         """Respond to tree item clicks by showing the action form."""
         act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.UserRole | issue:-
         if act:
@@ -538,7 +536,7 @@ class MainWindow(QMainWindow):
             self.cfg["last_export_profile"] = profile_value
             save_config(self.cfg)
 
-    def on_info(self) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    def on_info(self) -> None:
         """Display help text for the currently selected action."""
         if not self.current_action:
             return
@@ -555,7 +553,7 @@ class MainWindow(QMainWindow):
         msg.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         msg.exec()
 
-    def on_run(self) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    def on_run(self) -> None:
         """Execute the current action or cancel the running worker."""
         if not self.current_action:
             return
@@ -601,9 +599,7 @@ class MainWindow(QMainWindow):
         self.worker.start()
         self.run_btn.setText(tr("stop") + " ❌")
 
-    def on_finished(
-        self, result: object
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    def on_finished(self, result: object) -> None:
         """Handle completion of the worker thread."""
         save_config(self.cfg)
         self.progress.setRange(0, 1)
@@ -628,9 +624,7 @@ class MainWindow(QMainWindow):
                 self.log.setPlainText(text)
         self.worker = None
 
-    def on_error(
-        self, error: object
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    def on_error(self, error: object) -> None:
         """Handle errors emitted by the worker thread."""
         message = self._format_error_message(error)
         self.log.setVisible(True)
@@ -677,7 +671,7 @@ class MainWindow(QMainWindow):
     def closeEvent(  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
         self, event: QCloseEvent
     ) -> None:
-        """Cancel running workers before closing the window."""  # pragma: no cover  # pdf-toolbox: ensure worker shutdown on close | issue:-
+        """Cancel running workers before closing the window."""
         if self.worker and self.worker.isRunning():
             self.worker.cancel()
             self.worker.wait(1000)
@@ -685,7 +679,7 @@ class MainWindow(QMainWindow):
 
     def toggle_log(
         self,
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    ) -> None:
         """Show or hide the log widget."""
         if self.log.isVisible():
             self.log.setVisible(False)
@@ -700,7 +694,7 @@ class MainWindow(QMainWindow):
 
     def on_author(
         self,
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    ) -> None:
         """Edit author and email information in the configuration."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("author_email"))
@@ -720,7 +714,7 @@ class MainWindow(QMainWindow):
 
     def on_log_level(
         self,
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    ) -> None:
         """Allow the user to adjust the logging level."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("log_level"))
@@ -741,7 +735,7 @@ class MainWindow(QMainWindow):
 
     def on_language(
         self,
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    ) -> None:
         """Allow the user to change the interface language."""
         dlg = QDialog(self)
         dlg.setWindowTitle(tr("language"))
@@ -780,7 +774,7 @@ class MainWindow(QMainWindow):
 
     def on_pptx_renderer(
         self,
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    ) -> None:
         """Configure PPTX renderer and show config path."""
         cfg = self.cfg
         dlg = QDialog(self)
@@ -820,7 +814,7 @@ class MainWindow(QMainWindow):
 
     def on_about(
         self,
-    ) -> None:  # pragma: no cover  # pdf-toolbox: GUI handler | issue:-
+    ) -> None:
         """Show about dialog with version and link."""
         ver = metadata.version("pdf-toolbox")
         msg = QMessageBox(self)

@@ -12,9 +12,7 @@ from pdf_toolbox.config import save_config
 from pdf_toolbox.i18n import tr
 
 
-class QtLogHandler(
-    QObject, logging.Handler
-):  # pragma: no cover  # pdf-toolbox: GUI helper | issue:-
+class QtLogHandler(QObject, logging.Handler):
     """Send log records to a ``QPlainTextEdit`` widget."""
 
     message = Signal(str)
@@ -35,12 +33,12 @@ class QtLogHandler(
         )
         self.on_update()
 
-    def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]  # pragma: no cover  # pdf-toolbox: override signal emitter with broader type; GUI-only | issue:-
+    def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]  # pdf-toolbox: QObject method signature differs from logging.Handler.emit | issue:-
         """Forward a log record to the GUI thread."""
         self.message.emit(self.format(record))
 
 
-class FileEdit(QLineEdit):  # pragma: no cover  # pdf-toolbox: GUI widget | issue:-
+class FileEdit(QLineEdit):
     """Widget for selecting files or directories."""
 
     def __init__(self, cfg: dict, directory: bool = False, multi: bool = False):
@@ -93,7 +91,7 @@ class FileEdit(QLineEdit):  # pragma: no cover  # pdf-toolbox: GUI widget | issu
         save_config(self.cfg)
 
 
-class ClickableLabel(QLabel):  # pragma: no cover  # pdf-toolbox: GUI widget | issue:-
+class ClickableLabel(QLabel):
     """Label that emits a ``clicked`` signal when pressed."""
 
     clicked = Signal()
