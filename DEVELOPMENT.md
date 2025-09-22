@@ -141,6 +141,27 @@ Bandit runs in hooks and CI to catch insecure logging or file handling.
   the xcb support libraries using `scripts/ci/install-qt-headless.sh` so the Qt
   plugin can load on Ubuntu runners.
 
+### Raising GUI coverage
+
+The GUI modules are the last files exempted from the per-file coverage gate.
+Expand the focused GUI suite before removing the `omit` entries in
+`pyproject.toml`:
+
+- Extend `tests/gui/conftest_qt.py` with reusable stubs for message boxes,
+  dialogs, and worker threads so tests stay synchronous and deterministic.
+- Cover the `MainWindow` life cycle: status updates, log toggles, PPTX banner
+  refresh, profile persistence, and the success/error paths of `on_run`,
+  `on_finished`, and `on_error`.
+- Add targeted tests for the supporting widgets (`FileEdit`, `ClickableLabel`,
+  `QtLogHandler`) to remove the remaining `# pragma: no cover` markers.
+- Exercise `pdf_toolbox.gui.worker.Worker` with synchronous callables that hit
+  the success, failure, and cancellation paths without spinning a real thread.
+- Add a smoke test for `pdf_toolbox.gui.main` that patches `QApplication` and
+  `MainWindow` to confirm the entry point is exercised once Qt is available.
+
+Track progress with `pytest -q -m gui --cov=pdf_toolbox.gui` and reinstate the
+default coverage gate once each branch is covered.
+
 ### Troubleshooting Qt on Linux containers
 
 - Missing libraries often manifest as `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, "This application failed to start because no Qt
