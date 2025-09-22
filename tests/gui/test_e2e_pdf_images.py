@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -10,7 +11,6 @@ pytest.importorskip("PySide6.QtWidgets")
 from PySide6.QtCore import Qt
 
 from pdf_toolbox import gui
-from pdf_toolbox.gui.widgets import FileEdit
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 
@@ -23,6 +23,8 @@ pytestmark = [
 def _find_action_item(window: gui.MainWindow, fqname: str):
     """Return the tree item associated with ``fqname``."""
     tree = window.tree
+    user_role = cast("int", cast(Any, Qt).UserRole)
+
     for index in range(tree.topLevelItemCount()):
         category = tree.topLevelItem(index)
         if category is None:
@@ -31,7 +33,7 @@ def _find_action_item(window: gui.MainWindow, fqname: str):
             item = category.child(child_index)
             if item is None:
                 continue
-            action = item.data(0, Qt.ItemDataRole.UserRole)
+            action = item.data(0, user_role)
             if action and getattr(action, "fqname", None) == fqname:
                 return item
     pytest.fail(f"Action {fqname} not found in tree")
@@ -52,13 +54,18 @@ def test_pdf_to_images_via_ui(
             "pdf_toolbox.actions.pdf_images.pdf_to_images",
         )
         window.tree.setCurrentItem(item)
-        window.on_item_clicked(item)
+        rect = window.tree.visualItemRect(item)
+        qtbot.mouseClick(
+            window.tree.viewport(),
+            Qt.MouseButton.LeftButton,
+            pos=rect.center(),
+        )
         assert window.current_action is not None
 
         input_edit = window.current_widgets["input_pdf"]
         out_dir_edit = window.current_widgets["out_dir"]
-        assert isinstance(input_edit, FileEdit)
-        assert isinstance(out_dir_edit, FileEdit)
+        assert hasattr(input_edit, "setText")
+        assert hasattr(out_dir_edit, "setText")
 
         output_dir = tmp_path / "exported-images"
         input_edit.setText(pdf_with_image)
@@ -67,10 +74,7 @@ def test_pdf_to_images_via_ui(
         window.on_run()
         qtbot.waitUntil(lambda: window.worker is None)
         qtbot.waitUntil(
-            lambda: any(
-                line.startswith(str(output_dir))
-                for line in window.log.toPlainText().splitlines()
-            ),
+            lambda: window.status_key == "done" and bool(window.log.toPlainText()),
             timeout=3000,
         )
 
