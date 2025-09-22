@@ -8,7 +8,7 @@ from threading import Event
 from PySide6.QtCore import QThread, Signal
 
 
-class Worker(QThread):  # pragma: no cover  # pdf-toolbox: thread/GUI | issue:-
+class Worker(QThread):
     """Run an action in a background thread with cooperative cancellation."""
 
     finished = Signal(object)

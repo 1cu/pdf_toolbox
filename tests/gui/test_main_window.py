@@ -9,7 +9,15 @@ from typing import Literal
 import pytest
 
 pytest.importorskip("PySide6.QtWidgets")
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialogButtonBox,
+    QLabel,
+    QLineEdit,
+    QSpinBox,
+)
 
 from pdf_toolbox import actions, gui
 
@@ -163,6 +171,98 @@ def test_build_form_hides_cancel(monkeypatch: pytest.MonkeyPatch, qtbot) -> None
         window.close()
 
 
+def test_build_form_resets_form_between_actions(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Subsequent form builds clear previously added rows."""
+
+    def action_one(path: str) -> None:
+        del path
+
+    def action_two(name: str) -> None:
+        del name
+
+    act_one = actions.build_action(action_one, name="One")
+    act_two = actions.build_action(action_two, name="Two")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act_one, act_two])
+    window = _make_window(qtbot)
+    try:
+        window.build_form(act_one)
+        assert "path" in window.current_widgets
+        window.build_form(act_two)
+        assert "path" not in window.current_widgets
+        assert "name" in window.current_widgets
+    finally:
+        window.close()
+
+
+def test_build_form_unknown_saved_profile_defaults_to_standard(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Invalid saved profile values fall back to the standard option."""
+    import pdf_toolbox.gui.main_window as mw
+    from pdf_toolbox.actions.miro import miro_export
+
+    act = actions.build_action(miro_export, name="miro_export")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    monkeypatch.setattr(mw, "load_config", lambda: {"last_export_profile": "mystery"})
+    monkeypatch.setattr(mw, "save_config", lambda _cfg: None)
+
+    window = _make_window(qtbot)
+    try:
+        top_item = window.tree.topLevelItem(0)
+        assert top_item is not None
+        item = top_item.child(0)
+        assert item is not None
+        window.on_item_clicked(item)
+        combo = window.profile_combo
+        assert combo is not None
+        assert combo.currentData() == "standard"
+    finally:
+        window.close()
+
+
+def test_build_form_union_without_literal(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Union parameters without literals fall back to a spin box."""
+
+    def sample(level: int | float = 2.5) -> None:
+        del level
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.build_form(act)
+        widget = window.current_widgets["level"]
+        assert isinstance(widget, QSpinBox)
+        assert widget.minimum() == 0
+    finally:
+        window.close()
+
+
+def test_build_form_creates_multi_file_field(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Parameters named ``paths`` enable the multi-file widget."""
+    import pdf_toolbox.gui.main_window as mw
+
+    def sample(paths: list[str] | None = None) -> None:
+        del paths
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.build_form(act)
+        widget = window.current_widgets["paths"]
+        assert isinstance(widget, mw.FileEdit)
+        assert widget.multi is True
+    finally:
+        window.close()
+
+
 def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Selecting the Miro profile hides fields and shows help text."""
     import pdf_toolbox.gui.main_window as mw
@@ -188,6 +288,7 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
             widget = window.field_rows.get(name)
             assert widget is not None
             assert widget.isVisible()
+        assert saved == {}
         combo.setCurrentIndex(combo.findData("miro"))
         QApplication.processEvents()
         assert combo.currentData() == "miro"
@@ -312,5 +413,676 @@ def test_select_pptx_provider_handles_truthy_non_string(
         provider = window._select_pptx_provider()
         assert provider is None
         assert calls == ["True"]
+    finally:
+        window.close()
+
+
+def test_set_row_visible_ignores_missing_field(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Calling ``_set_row_visible`` on unknown keys is a no-op."""
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+    window = _make_window(qtbot)
+    try:
+        window._set_row_visible("missing", False)
+    finally:
+        window.close()
+
+
+def test_on_info_without_action_shows_nothing(
+    monkeypatch: pytest.MonkeyPatch, qtbot, messagebox_stubs
+) -> None:
+    """Info dialog is skipped when no action is selected."""
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = None
+        window.on_info()
+        assert not messagebox_stubs.calls["instances"]
+    finally:
+        window.close()
+
+
+def test_on_run_without_action(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
+    """Attempting to run without an action leaves the UI unchanged."""
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = None
+        window.on_run()
+        assert window.worker is None
+    finally:
+        window.close()
+
+
+def test_on_run_cancel_wait_timeout(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
+    """Workers that fail to stop cleanly are terminated."""
+    from pdf_toolbox.i18n import tr
+
+    def sample(path: str) -> None:
+        del path
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        window.current_widgets["path"].setText("file.pdf")
+
+        class BlockingWorker:
+            def __init__(self) -> None:
+                self.cancelled = False
+                self.wait_calls: list[object] = []
+                self.terminated = False
+
+            def isRunning(self) -> bool:  # noqa: N802  # pdf-toolbox: mimic Qt worker API naming | issue:-
+                return True
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+            def wait(self, timeout: int | None = None) -> bool:
+                self.wait_calls.append(timeout)
+                return timeout is None
+
+            def terminate(self) -> None:
+                self.terminated = True
+
+        worker = BlockingWorker()
+        window.worker = worker  # type: ignore[assignment]  # pdf-toolbox: stub worker lacks QObject base class | issue:-
+        window.on_run()
+        assert worker.cancelled is True
+        assert worker.wait_calls == [100, None]
+        assert worker.terminated is True
+        assert window.run_btn.text() == tr("start")
+        assert window.status_key == "cancelled"
+    finally:
+        window.close()
+
+
+def test_update_status_reflects_log_state(qtbot) -> None:
+    """Status text reflects whether the log widget is visible."""
+    window = _make_window(qtbot)
+    try:
+        window.log.setVisible(True)
+        window.update_status("Working", "working")
+        assert window.status.text().endswith("▼")
+        window.log.setVisible(False)
+        window.update_status("Idle")
+        assert window.status.text().endswith("▶")
+        assert window.status_key == "Idle"
+    finally:
+        window.close()
+
+
+def test_collect_args_handles_composite_widgets(
+    monkeypatch: pytest.MonkeyPatch, qtbot, tmp_path: Path
+) -> None:
+    """Collecting arguments normalises values from complex widgets."""
+
+    def sample(
+        dpi: int | Literal["Low", "High"] = "High",
+        paths: list[str] | None = None,
+        max_size_mb: float | None = None,
+        mode: Literal["A", "B"] = "A",
+        count: int | None = None,
+    ) -> None:
+        del dpi, paths, max_size_mb, mode, count
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        assert "dpi" in window.current_widgets
+        combo, spin = window.current_widgets["dpi"]
+        combo.setCurrentText("Custom")
+        spin.setValue(300)
+        file_one = tmp_path / "a.pdf"
+        file_two = tmp_path / "b.pdf"
+        file_one.write_text("dummy")
+        file_two.write_text("dummy")
+        file_edit = window.current_widgets["paths"]
+        file_edit.setText(f"{file_one};{file_two}")
+        double_spin = window.current_widgets["max_size_mb"]
+        double_spin.setValue(0)
+        mode_combo = window.current_widgets["mode"]
+        mode_combo.setCurrentText("B")
+        count_spin = window.current_widgets["count"]
+        count_spin.setValue(0)
+        result = window.collect_args()
+        assert result["dpi"] == 300
+        assert result["paths"] == [str(file_one), str(file_two)]
+        assert result["max_size_mb"] is None
+        assert result["mode"] == "B"
+        assert result["count"] is None
+    finally:
+        window.close()
+
+
+def test_collect_args_multi_file_requires_value(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Empty multi-file inputs raise a validation error."""
+
+    def sample(paths: list[str]) -> None:
+        del paths
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        file_edit = window.current_widgets["paths"]
+        file_edit.setText("")
+        with pytest.raises(ValueError, match="cannot be empty"):
+            window.collect_args()
+    finally:
+        window.close()
+
+
+def test_on_language_preserves_stop_text_when_running(
+    monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
+) -> None:
+    """Changing language keeps the stop label when a worker is active."""
+    from pdf_toolbox.i18n import tr
+
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+    window = _make_window(qtbot)
+    try:
+
+        class ActiveWorker:
+            def __init__(self) -> None:
+                self.cancelled = False
+
+            def isRunning(self) -> bool:  # noqa: N802  # pdf-toolbox: mimic Qt worker API naming | issue:-
+                return True
+
+            def cancel(self) -> None:
+                self.cancelled = True
+
+            def wait(self, timeout: int | None = None) -> bool:
+                self.waited = timeout
+                return True
+
+        window.worker = ActiveWorker()  # type: ignore[assignment]  # pdf-toolbox: stub worker lacks QObject base class | issue:-
+
+        def configure(dialog) -> None:
+            combo = dialog.findChildren(QComboBox)[0]
+            combo.setCurrentText(tr("english"))
+
+        dialog_exec_stub.set_callback(configure)
+        window.on_language()
+        assert window.run_btn.text() == tr("stop") + " ❌"
+    finally:
+        window.close()
+
+
+def test_on_pptx_renderer_reports_renderer_name(
+    monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
+) -> None:
+    """The renderer dialog shows the effective renderer name when available."""
+
+    class DummyRenderer:
+        pass
+
+    monkeypatch.setattr(gui, "list_actions", lambda: [])
+    window = _make_window(qtbot)
+    try:
+        monkeypatch.setattr(window, "_select_pptx_provider", lambda: DummyRenderer())
+
+        def accept(dialog) -> None:
+            dialog.findChildren(QDialogButtonBox)[0].accepted.emit()
+
+        dialog_exec_stub.set_callback(accept)
+        window.on_pptx_renderer()
+        dialog = dialog_exec_stub.calls[-1]
+        labels = [lbl.text() for lbl in dialog.findChildren(QLabel)]
+        assert "DummyRenderer" in labels
+    finally:
+        window.close()
+
+
+def test_set_row_visible_toggles_label_visibility(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Toggling a row hides both the widget and its label."""
+
+    def sample(path: str) -> None:
+        del path
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.build_form(act)
+        widget = window.field_rows["path"]
+        label = window.form_layout.labelForField(widget)
+        assert label is not None
+        window._set_row_visible("path", False)
+        assert not widget.isVisible()
+        assert not label.isVisible()
+        window._set_row_visible("path", True)
+        QApplication.processEvents()
+        assert widget.isVisible()
+        assert label.isVisible()
+    finally:
+        window.close()
+
+
+def test_update_pptx_banner_hides_with_provider(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """The PPTX banner disappears once a provider is available."""
+
+    def sample(input_pptx: str) -> None:
+        del input_pptx
+
+    act = actions.build_action(sample, name="Sample", requires_pptx_renderer=True)
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+
+        class DummyProvider(BasePptxRenderer):
+            name = "dummy"
+
+            def to_images(self, *args, **kwargs) -> str:  # type: ignore[override]  # pdf-toolbox: stub implements abstract renderer for tests | issue:-
+                del args, kwargs
+                return "images"
+
+            def to_pdf(self, *args, **kwargs) -> str:  # type: ignore[override]  # pdf-toolbox: stub implements abstract renderer for tests | issue:-
+                del args, kwargs
+                return "pdf"
+
+        window.current_action = act
+        window._update_pptx_banner(None)
+        assert window.banner.isVisible()
+        window._update_pptx_banner(DummyProvider())
+        assert not window.banner.isVisible()
+    finally:
+        window.close()
+
+
+def test_info_dialog_renders_help_html(
+    monkeypatch: pytest.MonkeyPatch, qtbot, messagebox_stubs
+) -> None:
+    """The help dialog formats descriptions as rich text."""
+
+    def sample() -> None:
+        """Line1."""
+
+    sample.__doc__ = "Line1\nLine2."
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.on_info()
+        instance = messagebox_stubs.calls["instances"][-1]
+        assert "Line1" in instance.text
+        assert "<br>" in instance.text
+        assert instance.text_format is not None
+    finally:
+        window.close()
+
+
+def test_on_run_collects_validation_errors(
+    monkeypatch: pytest.MonkeyPatch, qtbot, messagebox_stubs
+) -> None:
+    """Validation failures surface via a critical message box."""
+
+    def sample(path: str) -> None:
+        del path
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        widget = window.current_widgets["path"]
+        widget.clear()
+        window.on_run()
+        assert messagebox_stubs.calls["critical"]
+        _parent, title, text = messagebox_stubs.calls["critical"][-1]
+        assert title == "Error"
+        assert "cannot" in text.lower()
+        assert window.worker is None
+    finally:
+        window.close()
+
+
+def test_on_run_success_triggers_worker_lifecycle(
+    monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker
+) -> None:
+    """Successful runs update progress, status, and the log view."""
+
+    def sample(input_pdf: str) -> str:
+        return input_pdf.upper()
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        window.current_widgets["input_pdf"].setText("report.pdf")
+        window.on_run()
+        qtbot.waitUntil(lambda: window.worker is None)
+        assert stub_worker.starts
+        assert window.worker is None
+        assert window.progress.maximum() == 1
+        assert window.progress.value() == 1
+        assert window.status_key == "done"
+        assert window.log.isVisible()
+        assert "REPORT.PDF" in window.log.toPlainText()
+    finally:
+        window.close()
+
+
+def test_on_run_handles_worker_error(
+    monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker
+) -> None:
+    """Worker exceptions populate the log and reset the UI."""
+
+    def sample() -> None:
+        raise RuntimeError("boom")
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        window.on_run()
+        assert window.status_key == "error"
+        assert window.log.isVisible()
+        assert "boom" in window.log.toPlainText()
+        assert stub_worker.starts
+    finally:
+        window.close()
+
+
+def test_on_run_cancel_running_worker(
+    monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker
+) -> None:
+    """Cancelling a running worker resets progress and status."""
+    from pdf_toolbox.i18n import tr
+
+    def sample(path: str) -> None:
+        del path
+
+    act = actions.build_action(sample, name="Sample")
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+        window.build_form(act)
+        window.current_widgets["path"].setText("file.pdf")
+        running = stub_worker.cls(sample, {"path": "file.pdf"})
+        running._running = True
+        window.worker = running
+        window.on_run()
+        assert stub_worker.cancels
+        assert stub_worker.waits
+        assert stub_worker.waits[-1] == 100
+        assert window.worker is None
+        assert window.status_key == "cancelled"
+        assert window.progress.value() == 0
+        assert window.run_btn.text() == tr("start")
+    finally:
+        window.close()
+
+
+def test_on_finished_handles_iterable_results(qtbot) -> None:
+    """Lists are rendered line-by-line in the log panel."""
+    window = _make_window(qtbot)
+    try:
+        window.log.clear()
+        window.on_finished(["one", "two"])
+        assert "one\ntwo" in window.log.toPlainText()
+        assert window.status_key == "done"
+    finally:
+        window.close()
+
+
+def test_on_finished_appends_existing_log(qtbot) -> None:
+    """Existing log text is preserved when new results arrive."""
+    window = _make_window(qtbot)
+    try:
+        window.log.setPlainText("baseline")
+        window.on_finished("extra")
+        assert "baseline" in window.log.toPlainText()
+        assert "extra" in window.log.toPlainText()
+    finally:
+        window.close()
+
+
+def test_on_error_appends_existing_log(qtbot) -> None:
+    """Error messages append when log output already exists."""
+    window = _make_window(qtbot)
+    try:
+        window.log.setPlainText("baseline")
+        window.on_error("failure")
+        assert window.log.isVisible()
+        assert window.log.toPlainText().endswith("baseline\nfailure")
+    finally:
+        window.close()
+
+
+def test_toggle_log_updates_status_arrow(qtbot) -> None:
+    """The log toggle keeps status arrows in sync."""
+    window = _make_window(qtbot)
+    try:
+        window.log.setVisible(False)
+        window.update_status("Ready", "ready")
+        window.toggle_log()
+        assert window.log.isVisible()
+        assert window.status.text().endswith("▼")
+        window.toggle_log()
+        assert not window.log.isVisible()
+        assert window.status.text().endswith("▶")
+    finally:
+        window.close()
+
+
+def test_on_author_saves_new_values(
+    monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
+) -> None:
+    """Accepted author edits persist to the configuration file."""
+    import pdf_toolbox.gui.main_window as mw
+
+    saved: list[dict[str, str]] = []
+    monkeypatch.setattr(mw, "save_config", lambda cfg: saved.append(cfg.copy()))
+
+    def fill(dialog) -> None:
+        edits = dialog.findChildren(QLineEdit)
+        assert len(edits) == 2
+        edits[0].setText("Alice")
+        edits[1].setText("alice@example.com")
+
+    dialog_exec_stub.set_callback(fill)
+    window = _make_window(qtbot)
+    try:
+        window.on_author()
+        assert window.cfg["author"] == "Alice"
+        assert window.cfg["email"] == "alice@example.com"
+        assert saved
+        assert saved[-1]["author"] == "Alice"
+    finally:
+        window.close()
+
+
+def test_on_log_level_updates_configuration(
+    monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
+) -> None:
+    """Changing the log level stores the choice and reconfigures logging."""
+    import pdf_toolbox.gui.main_window as mw
+
+    saved: list[dict[str, str]] = []
+    monkeypatch.setattr(mw, "save_config", lambda cfg: saved.append(cfg.copy()))
+    reconfigured: list[tuple[str, object]] = []
+    monkeypatch.setattr(
+        mw,
+        "configure_logging",
+        lambda level, handler: reconfigured.append((level, handler)),
+    )
+
+    def fill(dialog) -> None:
+        combo = dialog.findChildren(QComboBox)[0]
+        combo.setCurrentText("DEBUG")
+
+    dialog_exec_stub.set_callback(fill)
+    window = _make_window(qtbot)
+    try:
+        window.on_log_level()
+        assert window.cfg["log_level"] == "DEBUG"
+        assert saved
+        assert saved[-1]["log_level"] == "DEBUG"
+        assert reconfigured
+        assert reconfigured[-1][0] == "DEBUG"
+    finally:
+        window.close()
+
+
+def test_on_language_updates_configuration(
+    monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
+) -> None:
+    """Language changes persist and refresh visible translations."""
+    import pdf_toolbox.gui.main_window as mw
+    from pdf_toolbox.i18n import tr
+
+    saved: list[dict[str, str]] = []
+    monkeypatch.setattr(mw, "save_config", lambda cfg: saved.append(cfg.copy()))
+    chosen: list[str | None] = []
+    monkeypatch.setattr(mw, "set_language", lambda lang: chosen.append(lang))
+
+    def fill(dialog) -> None:
+        combo = dialog.findChildren(QComboBox)[0]
+        combo.setCurrentText(tr("german"))
+
+    dialog_exec_stub.set_callback(fill)
+    window = _make_window(qtbot)
+    try:
+        window.on_language()
+        assert window.cfg["language"] == "de"
+        assert saved
+        assert saved[-1]["language"] == "de"
+        assert chosen
+        assert chosen[-1] == "de"
+        assert window.lbl_actions.text() == tr("actions")
+    finally:
+        window.close()
+
+
+def test_on_pptx_renderer_updates_configuration(
+    monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
+) -> None:
+    """Selecting a PPTX renderer stores the choice."""
+    import pdf_toolbox.gui.main_window as mw
+
+    saved: list[dict[str, str]] = []
+    monkeypatch.setattr(mw, "save_config", lambda cfg: saved.append(cfg.copy()))
+
+    def fill(dialog) -> None:
+        combo = dialog.findChildren(QComboBox)[0]
+        index = combo.findData("http_office")
+        combo.setCurrentIndex(index)
+
+    dialog_exec_stub.set_callback(fill)
+    window = _make_window(qtbot)
+    try:
+        window.on_pptx_renderer()
+        assert window.cfg["pptx_renderer"] == "http_office"
+        assert saved
+        assert saved[-1]["pptx_renderer"] == "http_office"
+    finally:
+        window.close()
+
+
+def test_on_about_displays_version(
+    monkeypatch: pytest.MonkeyPatch, qtbot, messagebox_stubs
+) -> None:
+    """About dialog shows the package version."""
+    import pdf_toolbox.gui.main_window as mw
+
+    monkeypatch.setattr(mw.metadata, "version", lambda _pkg: "1.2.3")
+    window = _make_window(qtbot)
+    try:
+        window.on_about()
+        instance = messagebox_stubs.calls["instances"][-1]
+        assert "1.2.3" in instance.text
+        assert messagebox_stubs.calls["exec"][-1] is instance
+    finally:
+        window.close()
+
+
+def test_format_exception_message_deduplicates_details(qtbot) -> None:
+    """Renderer errors include detail without duplication."""
+    from pdf_toolbox.i18n import tr
+    from pdf_toolbox.renderers.pptx import PptxRenderingError
+
+    window = _make_window(qtbot)
+    try:
+        err = PptxRenderingError("Extra info", code="invalid_range", detail="Detail")
+        message = window._format_exception_message(err)
+        lines = message.splitlines()
+        assert lines[0] == tr("pptx_invalid_range")
+        assert "Detail" in lines[1]
+        assert lines[2] == "Extra info: Detail"
+    finally:
+        window.close()
+
+
+def test_format_error_message_plain_string(qtbot) -> None:
+    """Plain objects are stringified when formatting errors."""
+    window = _make_window(qtbot)
+    try:
+        window.on_error("plain failure")
+        assert window.log.toPlainText().strip().endswith("plain failure")
+    finally:
+        window.close()
+
+
+def test_close_event_waits_for_worker(qtbot, stub_worker) -> None:
+    """Closing the window cancels and waits for running workers."""
+    window = _make_window(qtbot)
+    try:
+
+        def noop(cancel):  # type: ignore[no-untyped-def]  # pdf-toolbox: Worker injects Event parameter dynamically | issue:-
+            cancel.is_set()
+
+        worker = stub_worker.cls(noop, {})
+        worker._running = True
+        window.worker = worker
+        window.closeEvent(QCloseEvent())
+        assert stub_worker.cancels
+        assert stub_worker.waits
+        assert stub_worker.waits[-1] == 1000
+    finally:
+        window.close()
+
+
+def test_check_author_prompts_when_missing(
+    monkeypatch: pytest.MonkeyPatch, qtbot, messagebox_stubs
+) -> None:
+    """Missing author metadata triggers a warning and dialog."""
+    import pdf_toolbox.gui.main_window as mw
+
+    monkeypatch.setattr(
+        mw, "_load_author_info", lambda: (_ for _ in ()).throw(RuntimeError())
+    )
+    window = _make_window(qtbot)
+    try:
+        invoked: list[str] = []
+        monkeypatch.setattr(window, "on_author", lambda: invoked.append("on_author"))
+        mw.MainWindow._original_check_author(window)  # type: ignore[attr-defined]  # pdf-toolbox: fixture injects helper on MainWindow for tests | issue:-
+        assert messagebox_stubs.calls["warning"]
+        assert invoked == ["on_author"]
     finally:
         window.close()

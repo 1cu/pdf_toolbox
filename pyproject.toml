@@ -93,15 +93,7 @@ exclude = ["build/"]
 
 [tool.coverage.run]
 source = ["pdf_toolbox"]
-omit = [
-  # Exclude GUI-only modules but keep headless helpers covered
-  "*/pdf_toolbox/gui/main_window.py",
-  "*/pdf_toolbox/gui/widgets.py",
-  "*/pdf_toolbox/gui/worker.py",
-  "*/pdf_toolbox/gui/dialogs.py",
-  "*/pdf_toolbox/gui/__init__.py",
-  "*/pdf_toolbox/gui/__main__.py",
-]
+omit = []
 
 [tool.coverage.report]
 show_missing = true
