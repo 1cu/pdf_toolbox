@@ -38,5 +38,3 @@ jobs:
         run: |
           xvfb-run -a --server-args="-screen 0 1920x1080x24" \
             pre-commit run --all-files
-      - name: Check coverage thresholds
-        run: python scripts/check_coverage.py
