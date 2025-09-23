@@ -17,7 +17,6 @@ from pdf_toolbox.actions.unlock import unlock_pdf
 
 def test_extract_range_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """`extract_range` writes the expected subset with metadata."""
-
     output = Path(extract_range(sample_pdf, "1-2", out_dir=str(tmp_path)))
 
     assert output.exists()
@@ -31,7 +30,6 @@ def test_extract_range_e2e(sample_pdf: str, tmp_path: Path) -> None:
 
 def test_split_pdf_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """`split_pdf` emits sequential chunks with the right page counts."""
-
     outputs = [Path(path) for path in split_pdf(sample_pdf, 2, out_dir=str(tmp_path))]
 
     assert [path.exists() for path in outputs] == [True, True]
@@ -49,7 +47,6 @@ def test_split_pdf_e2e(sample_pdf: str, tmp_path: Path) -> None:
 
 def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """`pdf_to_images` renders real pages at the requested resolution."""
-
     outputs = pdf_to_images(
         sample_pdf,
         pages="2",
@@ -65,7 +62,8 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
     with Image.open(image_path) as img:
         width_px, height_px = img.size
         assert img.format == "PNG"
-        assert width_px > 0 and height_px > 0
+        assert width_px > 0
+        assert height_px > 0
 
     with fitz.open(sample_pdf) as doc:
         page = doc.load_page(1)
@@ -78,7 +76,6 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
 
 def test_unlock_pdf_e2e(tmp_path: Path) -> None:
     """`unlock_pdf` removes encryption and preserves content."""
-
     protected = tmp_path / "protected.pdf"
     doc = fitz.open()
     try:
@@ -116,7 +113,6 @@ def test_unlock_pdf_e2e(tmp_path: Path) -> None:
 
 def test_miro_export_standard_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """Standard Miro export delegates to the image renderer."""
-
     out_dir = tmp_path / "standard"
     outputs = [
         Path(path)
@@ -136,12 +132,13 @@ def test_miro_export_standard_profile_e2e(sample_pdf: str, tmp_path: Path) -> No
         assert path.exists()
         with Image.open(path) as img:
             assert img.format == "JPEG"
-            assert img.size[0] > 0 and img.size[1] > 0
+            width_px, height_px = img.size
+            assert width_px > 0
+            assert height_px > 0
 
 
 def test_miro_export_miro_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """The Miro profile generates a manifest alongside exported pages."""
-
     out_dir = tmp_path / "miro"
     outputs = [
         Path(path)
@@ -163,7 +160,7 @@ def test_miro_export_miro_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert [entry["page"] for entry in manifest] == [1, 2]
-    for entry, path in zip(manifest, outputs):
+    for entry, path in zip(manifest, outputs, strict=False):
         fmt = entry.get("format")
         if fmt:
             assert path.suffix.lower() == f".{fmt.lower()}"
