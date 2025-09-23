@@ -127,6 +127,7 @@
 | tests/test_actions.py:99                         | pragma: no cover              | stub action body unused during registry import                        | -        |
 | tests/test_actions.py:101                        | type: ignore[attr-defined]    | mark stub action for registry import                                  | -        |
 | tests/test_actions.py:103                        | type: ignore[attr-defined]    | register stub action on module for import test                        | -        |
+| tests/test_actions_e2e.py:9                      | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_converters.py:3                       | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_images.py:6                           | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_miro.py:215                           | pragma: no cover              | ensure dummy renderer keeps simple coverage                           | -        |
