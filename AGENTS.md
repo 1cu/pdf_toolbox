@@ -28,9 +28,9 @@ Read the primary docs before making changes:
 - Run `pre-commit run --all-files` before committing. Hooks format code, lint,
   type-check, run tests, enforce coverage, scan with bandit, and refresh the
   exception overview.
-- CI executes `pre-commit run --all-files --hook-stage manual` so only the lint,
-  format, security, and metadata hooks run remotely. Keep the fast pytest hook
-  green locally; the slow suite lives in the manual `pytest-slow` hook.
+- CI runs `pre-commit run --all-files` under Xvfb, so the same lint, format,
+  security, metadata, and test hooks run in CI. Keep the pytest hook green
+  locally.
 - Use the shorter aliases when iterating (`pre-commit run format|lint|tests`).
 - Workflows pin third-party actions to immutable commit SHAs and periodically
   update to the latest stable release.
@@ -45,8 +45,9 @@ Read the primary docs before making changes:
   test that crosses the threshold.
 - PRs may not introduce unmarked slow tests. Optimise them or mark them with
   `@pytest.mark.slow` before requesting review.
-- Run `pre-commit run pytest-slow --hook-stage manual` before pushing when you
-  touch code covered by slow tests.
+- Run `pre-commit run --all-files` before pushing when you touch code covered
+  by the historical slow tests so that the regular test hook catches
+  regressions.
 - Prefer clear naming and small, testable units. Factor logic out of GUI modules
   when possible.
 - Use the shared logging utilities; do not introduce `print` statements for
