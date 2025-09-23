@@ -276,10 +276,6 @@ class MainWindow(QMainWindow):
                     userData="miro",
                 )
                 saved = self.cfg.get("last_export_profile", "miro")
-                if saved == "standard":
-                    saved = "custom"
-                    self.cfg["last_export_profile"] = saved
-                    save_config(self.cfg)
                 if saved not in {"custom", "miro"}:
                     saved = "miro"
                 index = combo_box.findData(saved)

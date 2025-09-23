@@ -19,7 +19,7 @@ from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import require_pptx_renderer
 from pdf_toolbox.utils import logger, sane_output_dir
 
-ProfileChoice = Literal["custom", "miro", "standard"]
+ProfileChoice = Literal["custom", "miro"]
 ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
 
@@ -40,8 +40,6 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
         input_path: PDF or PPTX file to export.
         pages: Optional page specification string (``"1-3,5"`` style).
         export_profile: Export profile to use (``"custom"`` or ``"miro"``).
-            ``"standard"`` is accepted as an alias for ``"custom"`` for
-            backwards compatibility with persisted configurations.
         image_format: Output image format when using the custom profile.
         dpi: DPI or preset for the custom profile.
         quality: Quality preset/value for lossy formats in the custom profile.
@@ -57,13 +55,11 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
         msg = f"Unsupported input type: {suffix}"
         raise ValueError(msg)
 
-    profile = "custom" if export_profile == "standard" else export_profile
-
-    logger.info("Exporting %s using profile %s", source, profile)
+    logger.info("Exporting %s using profile %s", source, export_profile)
 
     def export_pdf_path(pdf_path: Path, override_out_dir: str | None) -> list[str]:
         """Export *pdf_path* using the configured profile."""
-        if profile == "custom":
+        if export_profile == "custom":
             fmt, quality_val, dpi_val = resolve_image_settings(
                 image_format,
                 quality,

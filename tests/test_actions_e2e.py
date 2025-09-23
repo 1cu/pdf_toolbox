@@ -7,7 +7,6 @@ import math
 from pathlib import Path
 
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
-import pytest
 from PIL import Image
 
 from pdf_toolbox.actions.extract import extract_range, split_pdf
@@ -149,22 +148,15 @@ def test_unlock_pdf_e2e(tmp_path: Path) -> None:
         assert metadata.get("subject", "").endswith("unlocked")
 
 
-@pytest.mark.parametrize(
-    "profile",
-    ["custom", "standard"],
-    ids=["custom", "legacy-standard"],
-)
-def test_miro_export_custom_profile_e2e(
-    sample_pdf: str, tmp_path: Path, profile: str
-) -> None:
-    """Custom and legacy "standard" exports delegate to the image renderer."""
-    out_dir = tmp_path / profile
+def test_miro_export_custom_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
+    """Custom exports delegate to the image renderer."""
+    out_dir = tmp_path / "custom"
     outputs = [
         Path(path)
         for path in miro_export(
             sample_pdf,
             out_dir=str(out_dir),
-            export_profile=profile,
+            export_profile="custom",
             image_format="JPEG",
             dpi="Medium (150 dpi)",
             quality="Medium (85)",
