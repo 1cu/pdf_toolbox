@@ -101,8 +101,8 @@
 | tests/gui/test_main_window.py:634                | type: ignore[assignment]      | stub worker lacks QObject base class                                  | -        |
 | tests/gui/test_main_window.py:716                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
 | tests/gui/test_main_window.py:720                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:1081               | type: ignore[no-untyped-def]  | Worker injects Event parameter dynamically                            | -        |
-| tests/gui/test_main_window.py:1108               | type: ignore[attr-defined]    | fixture injects helper on MainWindow for tests                        | -        |
+| tests/gui/test_main_window.py:1082               | type: ignore[no-untyped-def]  | Worker injects Event parameter dynamically                            | -        |
+| tests/gui/test_main_window.py:1109               | type: ignore[attr-defined]    | fixture injects helper on MainWindow for tests                        | -        |
 | tests/gui/test_widgets.py:124                    | N802                          | stub mirrors Qt URL API                                               | -        |
 | tests/gui/test_widgets.py:131                    | N802                          | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:142                    | N802                          | stub mirrors Qt event API                                             | -        |

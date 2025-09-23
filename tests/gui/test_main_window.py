@@ -1004,6 +1004,7 @@ def test_on_language_updates_configuration(
         window.close()
 
 
+@pytest.mark.slow
 def test_on_pptx_renderer_updates_configuration(
     monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
 ) -> None:
