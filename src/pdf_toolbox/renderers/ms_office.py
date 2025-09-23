@@ -270,7 +270,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         out.mkdir(parents=True, exist_ok=True)
 
         ext_map = {"JPEG": "JPEG", "PNG": "PNG", "TIFF": "TIFF"}
-        fmt = opts.image_format.upper()
+        fmt = (opts.image_format or "").upper()
         try:
             ext = ext_map[fmt]
         except KeyError as exc:
