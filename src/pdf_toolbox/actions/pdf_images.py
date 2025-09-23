@@ -8,9 +8,9 @@ from pathlib import Path
 from threading import Event
 from typing import Literal
 
+import fitz
 from PIL import Image
 
-import fitz
 from pdf_toolbox.actions import action
 from pdf_toolbox.image_utils import (
     encode_jpeg,

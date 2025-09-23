@@ -10,9 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event
 
+import fitz
 from PIL import Image
 
-import fitz
 from pdf_toolbox.image_utils import (
     apply_unsharp_mask,
     encode_jpeg,

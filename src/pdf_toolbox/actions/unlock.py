@@ -6,6 +6,7 @@ from pathlib import Path
 from threading import Event
 
 import fitz
+
 from pdf_toolbox.actions import action
 from pdf_toolbox.utils import (
     logger,

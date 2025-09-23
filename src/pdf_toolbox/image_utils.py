@@ -5,9 +5,8 @@ from __future__ import annotations
 import io
 from typing import Any
 
-from PIL import Image, ImageFilter
-
 import fitz
+from PIL import Image, ImageFilter
 
 
 def render_page_image(

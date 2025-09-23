@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from typing import IO
+from typing import IO, cast
 
-try:  # pragma: no cover  # pdf-toolbox: optional dependency import guard exercised via unit tests | issue:-
-    import requests  # type: ignore[import-untyped]  # pdf-toolbox: requests library does not ship type information | issue:-
-except Exception:  # pragma: no cover  # pdf-toolbox: gracefully handle missing optional dependency | issue:-
-    requests = None  # type: ignore[assignment]  # pdf-toolbox: sentinel assignment when dependency unavailable | issue:-
+from pdf_toolbox.renderers._requests import RequestsModule, requests
 
 _CHUNK_SIZE = 65536
 
@@ -27,7 +24,8 @@ def _post_stream_file(
         msg = "The 'requests' dependency is required for HTTP PPTX rendering."
         raise RuntimeError(msg)
 
-    response = requests.post(  # type: ignore[no-untyped-call]  # pdf-toolbox: requests call lacks typing information | issue:-
+    req = cast(RequestsModule, requests)
+    response = req.post(
         endpoint,
         files=files,
         headers=dict(headers) if headers else None,
