@@ -8,7 +8,7 @@ import typing as t
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import cache
-from weakref import WeakKeyDictionary
+from threading import RLock
 
 from pdf_toolbox.i18n import tr
 
@@ -53,14 +53,23 @@ class _ActionDefinition:
     visible: bool
 
 
-_registry: dict[str, Action] = {}
-if "_definitions" not in globals():
-    _definitions: WeakKeyDictionary[t.Callable[..., t.Any], _ActionDefinition]
-    _definitions = WeakKeyDictionary()
+if "_registry" not in globals():
+    _registry: dict[str, Action]
+    _registry = {}
 else:
-    _definitions = t.cast(
-        WeakKeyDictionary[t.Callable[..., t.Any], _ActionDefinition], _definitions
-    )
+    _registry = t.cast(dict[str, Action], _registry)
+
+if "_definitions" not in globals():
+    _definitions: dict[str, _ActionDefinition]
+    _definitions = {}
+else:
+    _definitions = t.cast(dict[str, _ActionDefinition], _definitions)
+
+_LOCK: RLock = t.cast(RLock, globals().get("_LOCK") or RLock())
+
+
+def _definition_key(fn: t.Callable[..., t.Any]) -> str:
+    return f"{fn.__module__}.{fn.__qualname__}"
 
 
 def _format_name(func_name: str) -> str:
@@ -97,12 +106,14 @@ def _remember_definition(
     requires_pptx_renderer: bool,
 ) -> None:
     """Store metadata for *fn* so discovery can rebuild the registry."""
-    _definitions[fn] = _ActionDefinition(
+    definition = _ActionDefinition(
         name=name,
         category=category,
         requires_pptx_renderer=requires_pptx_renderer,
         visible=visible,
     )
+    with _LOCK:
+        _definitions[_definition_key(fn)] = definition
 
 
 def action(
@@ -134,7 +145,7 @@ def action(
             requires_pptx_renderer=requires_pptx_renderer,
             visible=visible,
         )
-        _registry[act.fqname] = act
+        _register_action(act)
         return fn
 
     return deco
@@ -143,7 +154,22 @@ def action(
 def _definition_for(
     fn: t.Callable[..., t.Any],
 ) -> _ActionDefinition | None:
-    return _definitions.get(fn)
+    with _LOCK:
+        return _definitions.get(_definition_key(fn))
+
+
+def _register_action(act: Action, *, replace: bool = True) -> None:
+    with _LOCK:
+        if not replace and act.fqname in _registry:
+            return
+        _registry[act.fqname] = act
+
+
+_T = t.TypeVar("_T")
+
+
+def _resolve_attr(explicit: _T | None, default: _T) -> _T:
+    return explicit if explicit is not None else default
 
 
 def build_action(
@@ -168,25 +194,17 @@ def build_action(
             )
         )
     definition = _definition_for(fn)
-    resolved_name = (
-        name if name is not None else definition.name if definition else None
+    resolved_name = _resolve_attr(name, definition.name if definition else None)
+    resolved_category = _resolve_attr(
+        category, definition.category if definition else None
     )
-    resolved_category = (
-        category
-        if category is not None
-        else definition.category
-        if definition
-        else None
+    resolved_requires = _resolve_attr(
+        requires_pptx_renderer,
+        definition.requires_pptx_renderer if definition else False,
     )
-    resolved_requires = (
-        requires_pptx_renderer
-        if requires_pptx_renderer is not None
-        else definition.requires_pptx_renderer
-        if definition
-        else False
-    )
-    resolved_visible = (
-        visible if visible is not None else definition.visible if definition else True
+    resolved_visible = _resolve_attr(
+        visible,
+        definition.visible if definition else True,
     )
     module_name = fn.__module__
     return Action(
@@ -225,7 +243,7 @@ def _register_module(mod_name: str) -> None:
         if _definition_for(obj) is None:
             continue
         act = build_action(obj)
-        _registry.setdefault(act.fqname, act)
+        _register_action(act, replace=False)
 
 
 ACTION_MODULES = [
@@ -247,7 +265,8 @@ def _auto_discover() -> None:
 def list_actions() -> list[Action]:
     """Return all discovered actions."""
     _auto_discover()
-    return [act for act in _registry.values() if act.visible]
+    with _LOCK:
+        return [act for act in _registry.values() if act.visible]
 
 
 for _mod in ACTION_MODULES:

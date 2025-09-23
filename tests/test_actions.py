@@ -1,5 +1,4 @@
 import sys
-import typing as t
 
 import pytest
 
@@ -92,7 +91,7 @@ def test_actions_import_registers_actions(monkeypatch: pytest.MonkeyPatch) -> No
 
     for name in actions.ACTION_MODULES:
         fullname = f"pdf_toolbox.actions.{name}"
-        stub = t.cast(t.Any, types.ModuleType(fullname))
+        stub = types.ModuleType(fullname)
         if name == "pdf_images":
 
             def fake_action() -> None:
@@ -100,7 +99,7 @@ def test_actions_import_registers_actions(monkeypatch: pytest.MonkeyPatch) -> No
                 pass
 
             fake_action.__module__ = fullname
-            stub.fake_action = actions.action()(fake_action)
+            stub.__dict__["fake_action"] = actions.action()(fake_action)
         monkeypatch.setitem(sys.modules, fullname, stub)
 
     actions._registry.clear()
