@@ -219,10 +219,10 @@ def test_build_form_resets_form_between_actions(
         window.close()
 
 
-def test_build_form_unknown_saved_profile_defaults_to_standard(
+def test_build_form_unknown_saved_profile_defaults_to_miro(
     monkeypatch: pytest.MonkeyPatch, qtbot
 ) -> None:
-    """Invalid saved profile values fall back to the standard option."""
+    """Invalid saved profile values fall back to the default Miro option."""
     import pdf_toolbox.gui.main_window as mw
     from pdf_toolbox.actions.miro import miro_export
 
@@ -240,7 +240,7 @@ def test_build_form_unknown_saved_profile_defaults_to_standard(
         window.on_item_clicked(item)
         combo = window.profile_combo
         assert combo is not None
-        assert combo.currentData() == "standard"
+        assert combo.currentData() == "miro"
     finally:
         window.close()
 
@@ -293,7 +293,7 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
 
     act = actions.build_action(miro_export, name="miro_export")
     monkeypatch.setattr(gui, "list_actions", lambda: [act])
-    monkeypatch.setattr(mw, "load_config", lambda: {"last_export_profile": "standard"})
+    monkeypatch.setattr(mw, "load_config", lambda: {"last_export_profile": "custom"})
     saved: dict[str, object] = {}
     monkeypatch.setattr(mw, "save_config", lambda cfg: saved.update(cfg))
 
@@ -306,7 +306,7 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
         window.on_item_clicked(item)
         combo = window.profile_combo
         assert combo is not None
-        assert combo.currentData() == "standard"
+        assert combo.currentData() == "custom"
         for name in ("image_format", "dpi", "quality"):
             widget = window.field_rows.get(name)
             assert widget is not None

@@ -19,7 +19,7 @@ from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import require_pptx_renderer
 from pdf_toolbox.utils import logger, sane_output_dir
 
-ProfileChoice = Literal["standard", "miro"]
+ProfileChoice = Literal["custom", "miro"]
 ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
 
@@ -27,22 +27,22 @@ ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI form | issue:-
     input_path: str,
     pages: str | None = None,
-    export_profile: ProfileChoice = "standard",
+    export_profile: ProfileChoice = "miro",
     image_format: ImageFormatChoice = "PNG",
     dpi: int | DpiChoice = "High (300 dpi)",
     quality: int | QualityChoice = "High (95)",
     out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:
-    """Export slides using either the standard or Miro profile.
+    """Export slides using either the custom or Miro profile.
 
     Args:
         input_path: PDF or PPTX file to export.
         pages: Optional page specification string (``"1-3,5"`` style).
-        export_profile: Export profile to use (``"standard"`` or ``"miro"``).
-        image_format: Output image format when using the standard profile.
-        dpi: DPI or preset for the standard profile.
-        quality: Quality preset/value for lossy formats in the standard profile.
+        export_profile: Export profile to use (``"custom"`` or ``"miro"``).
+        image_format: Output image format when using the custom profile.
+        dpi: DPI or preset for the custom profile.
+        quality: Quality preset/value for lossy formats in the custom profile.
         out_dir: Optional target directory for exported files.
         cancel: Optional cancellation event.
 
@@ -59,7 +59,7 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
 
     def export_pdf_path(pdf_path: Path, override_out_dir: str | None) -> list[str]:
         """Export *pdf_path* using the configured profile."""
-        if export_profile == "standard":
+        if export_profile == "custom":
             fmt, quality_val, dpi_val = resolve_image_settings(
                 image_format,
                 quality,

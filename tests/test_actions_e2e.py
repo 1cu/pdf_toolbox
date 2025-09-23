@@ -148,15 +148,15 @@ def test_unlock_pdf_e2e(tmp_path: Path) -> None:
         assert metadata.get("subject", "").endswith("unlocked")
 
 
-def test_miro_export_standard_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
-    """Standard Miro export delegates to the image renderer."""
-    out_dir = tmp_path / "standard"
+def test_miro_export_custom_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
+    """Custom exports delegate to the image renderer."""
+    out_dir = tmp_path / "custom"
     outputs = [
         Path(path)
         for path in miro_export(
             sample_pdf,
             out_dir=str(out_dir),
-            export_profile="standard",
+            export_profile="custom",
             image_format="JPEG",
             dpi="Medium (150 dpi)",
             quality="Medium (85)",
