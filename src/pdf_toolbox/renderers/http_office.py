@@ -236,7 +236,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 code="unavailable",
             )
         if requests is None:
-            msg = "Install the 'pptx_http' extra to enable the HTTP renderer."
+            msg = tr("pptx.http.missing_dependency")
             raise PptxRenderingError(msg, code="unavailable")
         req = cast(RequestsModule, requests)
         mode = self._selected_mode()

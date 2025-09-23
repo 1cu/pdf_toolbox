@@ -25,7 +25,7 @@ class RequestsModule(Protocol):
     ConnectionError: type[Exception]
     RequestException: type[Exception]
 
-    def post(
+    def post(  # noqa: PLR0913  # pdf-toolbox: mirror requests.post signature for accuracy | issue:-
         self,
         url: str,
         *,

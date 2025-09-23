@@ -27,6 +27,7 @@
     "pptx.http.connection_failed": "Verbindung zum HTTP-PPTX-Renderer fehlgeschlagen.",
     "pptx.http.endpoint_missing": "HTTP-PPTX-Renderer-Endpunkt ist nicht konfiguriert.",
     "pptx.http.invalid_response": "HTTP-PPTX-Renderer lieferte eine ungültige PDF-Datei.",
+    "pptx.http.missing_dependency": "Installiere das Zusatzpaket 'pptx_http', um den HTTP-Renderer zu aktivieren.",
     "pptx.http.timeout": "HTTP-PPTX-Renderer hat das Zeitlimit überschritten.",
     "pptx.no_provider": "Kein PPTX-Provider konfiguriert.",
     "pptx_backend_crashed": "Der PPTX-Provider ist beim Rendern abgestürzt.",
