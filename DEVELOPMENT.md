@@ -270,6 +270,7 @@ fail_on_unmarked_slow = "true"
    and attaches them to the GitHub release while pruning older artifacts. The
    macOS artifact remains an app bundle (`.app`) zip, while the Windows upload
    now contains the entire PyInstaller directory bundle so users can extract
-   and run the packaged `pdf_toolbox.exe` alongside its dependencies.
+   and run the packaged executable (`pdf_toolbox-<version>.exe`) alongside its
+   dependencies.
 1. Workflows pin third-party actions to immutable commit SHAs and periodically
    update to the latest stable release.
