@@ -66,6 +66,7 @@
     "output_dir": "Ausgabeverzeichnis",
     "output_path": "Ausgabepfad",
     "pages": "Seiten",
-    "range_spec": "Bereichsspezifikation"
+    "range_spec": "Bereichsspezifikation",
+    "write_manifest": "Manifest schreiben (Debug)"
   }
 }
