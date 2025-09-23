@@ -268,16 +268,20 @@ class MainWindow(QMainWindow):
             if param.name == "export_profile":
                 combo_box = QComboBox()
                 combo_box.addItem(
-                    tr("gui_export_profile_standard"),
-                    userData="standard",
+                    tr("gui_export_profile_custom"),
+                    userData="custom",
                 )
                 combo_box.addItem(
                     tr("gui_export_profile_miro"),
                     userData="miro",
                 )
-                saved = self.cfg.get("last_export_profile", "standard")
-                if saved not in {"standard", "miro"}:
-                    saved = "standard"
+                saved = self.cfg.get("last_export_profile", "miro")
+                if saved == "standard":
+                    saved = "custom"
+                    self.cfg["last_export_profile"] = saved
+                    save_config(self.cfg)
+                if saved not in {"custom", "miro"}:
+                    saved = "miro"
                 index = combo_box.findData(saved)
                 combo_box.setCurrentIndex(max(index, 0))
                 combo_box.currentIndexChanged.connect(

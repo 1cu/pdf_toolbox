@@ -20,21 +20,21 @@
 | src/pdf_toolbox/gui/main_window.py:232           | type: ignore[attr-defined]    | PySide6 stubs miss Qt.UserRole                                        | -        |
 | src/pdf_toolbox/gui/main_window.py:238           | type: ignore[attr-defined]    | PySide6 stubs miss Qt.UserRole                                        | -        |
 | src/pdf_toolbox/gui/main_window.py:244           | PLR0912, PLR0915              | dynamic form builder is inherently complex                            | -        |
-| src/pdf_toolbox/gui/main_window.py:302           | type: ignore[attr-defined]    | `types.UnionType` absent from stubs                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:402           | type: ignore[arg-type]        | PySide6 stubs reject tuple variant                                    | -        |
-| src/pdf_toolbox/gui/main_window.py:403           | type: ignore[assignment]      | tuple already handled                                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:412           | PLR0912                       | argument collection involves many branches                            | -        |
-| src/pdf_toolbox/gui/main_window.py:427           | type: ignore[attr-defined]    | PySide6 stubs miss Qt enum                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:490           | pragma: no cover              | opens external documentation                                          | -        |
-| src/pdf_toolbox/gui/main_window.py:671           | N802                          | Qt requires camelCase event name                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:706           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:710           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:726           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:730           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:750           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:754           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
-| src/pdf_toolbox/gui/main_window.py:806           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
-| src/pdf_toolbox/gui/main_window.py:810           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:306           | type: ignore[attr-defined]    | `types.UnionType` absent from stubs                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:406           | type: ignore[arg-type]        | PySide6 stubs reject tuple variant                                    | -        |
+| src/pdf_toolbox/gui/main_window.py:407           | type: ignore[assignment]      | tuple already handled                                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:416           | PLR0912                       | argument collection involves many branches                            | -        |
+| src/pdf_toolbox/gui/main_window.py:431           | type: ignore[attr-defined]    | PySide6 stubs miss Qt enum                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:494           | pragma: no cover              | opens external documentation                                          | -        |
+| src/pdf_toolbox/gui/main_window.py:675           | N802                          | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:710           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:714           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:730           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:734           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:754           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:758           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
+| src/pdf_toolbox/gui/main_window.py:810           | type: ignore[attr-defined]    | PySide6 stubs miss dialog button enum                                 | -        |
+| src/pdf_toolbox/gui/main_window.py:814           | type: ignore[attr-defined]    | PySide6 stubs miss dialog attribute                                   | -        |
 | src/pdf_toolbox/gui/widgets.py:36                | type: ignore[override]        | QObject method signature differs from logging.Handler.emit            | -        |
 | src/pdf_toolbox/gui/widgets.py:76                | N802                          | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:81                | N802                          | Qt requires camelCase event name                                      | -        |
@@ -95,14 +95,14 @@
 | tests/gui/conftest_qt.py:132                     | N802, type: ignore[override]  | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:172                     | type: ignore[attr-defined]    | PySide6 stubs miss QDialog.Accepted                                   | -        |
 | tests/gui/conftest_qt.py:216                     | N802, pragma: no cover        | method name follows Qt worker API                                     | -        |
-| tests/gui/test_main_window.py:479                | N802                          | mimic Qt worker API naming                                            | -        |
-| tests/gui/test_main_window.py:493                | type: ignore[assignment]      | stub worker lacks QObject base class                                  | -        |
-| tests/gui/test_main_window.py:601                | N802                          | mimic Qt worker API naming                                            | -        |
-| tests/gui/test_main_window.py:611                | type: ignore[assignment]      | stub worker lacks QObject base class                                  | -        |
-| tests/gui/test_main_window.py:693                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:697                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:1058               | type: ignore[no-untyped-def]  | Worker injects Event parameter dynamically                            | -        |
-| tests/gui/test_main_window.py:1085               | type: ignore[attr-defined]    | fixture injects helper on MainWindow for tests                        | -        |
+| tests/gui/test_main_window.py:508                | N802                          | mimic Qt worker API naming                                            | -        |
+| tests/gui/test_main_window.py:522                | type: ignore[assignment]      | stub worker lacks QObject base class                                  | -        |
+| tests/gui/test_main_window.py:630                | N802                          | mimic Qt worker API naming                                            | -        |
+| tests/gui/test_main_window.py:640                | type: ignore[assignment]      | stub worker lacks QObject base class                                  | -        |
+| tests/gui/test_main_window.py:722                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
+| tests/gui/test_main_window.py:726                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
+| tests/gui/test_main_window.py:1087               | type: ignore[no-untyped-def]  | Worker injects Event parameter dynamically                            | -        |
+| tests/gui/test_main_window.py:1114               | type: ignore[attr-defined]    | fixture injects helper on MainWindow for tests                        | -        |
 | tests/gui/test_widgets.py:124                    | N802                          | stub mirrors Qt URL API                                               | -        |
 | tests/gui/test_widgets.py:131                    | N802                          | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:142                    | N802                          | stub mirrors Qt event API                                             | -        |

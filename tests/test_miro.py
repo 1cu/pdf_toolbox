@@ -173,11 +173,11 @@ def test_export_pdf_for_miro_integration(sample_pdf, pdf_with_image, tmp_path):
     assert Path(raster_outcome.files[0]).exists()
 
 
-def test_miro_export_standard_pdf(sample_pdf, tmp_path):
+def test_miro_export_custom_pdf(sample_pdf, tmp_path):
     outputs = miro_export(
         sample_pdf,
         out_dir=str(tmp_path),
-        export_profile="standard",
+        export_profile="custom",
         image_format="PNG",
         dpi="High (300 dpi)",
     )
