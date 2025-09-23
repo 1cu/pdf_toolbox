@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 import pytest
 
 from pdf_toolbox.actions import pdf_images as images_mod

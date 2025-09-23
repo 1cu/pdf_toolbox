@@ -6,7 +6,7 @@ import json
 import math
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 from PIL import Image
 
 from pdf_toolbox.actions.extract import extract_range, split_pdf

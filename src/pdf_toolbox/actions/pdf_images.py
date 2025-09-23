@@ -8,7 +8,7 @@ from pathlib import Path
 from threading import Event
 from typing import Literal
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 from PIL import Image
 
 from pdf_toolbox.actions import action

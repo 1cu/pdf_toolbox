@@ -27,6 +27,7 @@
     "pptx.http.connection_failed": "Failed to connect to the HTTP PPTX renderer.",
     "pptx.http.endpoint_missing": "HTTP PPTX renderer endpoint is not configured.",
     "pptx.http.invalid_response": "HTTP PPTX renderer returned an invalid PDF.",
+    "pptx.http.missing_dependency": "Install the 'pptx_http' extra to enable the HTTP renderer.",
     "pptx.http.timeout": "HTTP PPTX renderer timed out.",
     "pptx.no_provider": "No PPTX provider configured.",
     "pptx_backend_crashed": "The PPTX provider crashed while rendering.",

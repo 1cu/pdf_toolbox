@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 from platformdirs import user_config_dir
 
 from pdf_toolbox.paths import PathValidationError, validate_path

@@ -3,7 +3,7 @@ import math
 import warnings
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 import pytest
 from PIL import Image
 

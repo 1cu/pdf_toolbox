@@ -19,6 +19,8 @@ from pdf_toolbox.renderers.http_office import (
 )
 from pdf_toolbox.renderers.pptx import PptxRenderingError, UnsupportedOptionError
 
+requests_mod = pytest.importorskip("requests")
+
 _BASE_SECTION = HttpOfficeSection()
 HttpFiles = Mapping[str, tuple[str, IO[bytes], str]]
 PostResult = tuple[int, Iterable[bytes]]
@@ -216,8 +218,6 @@ def test_to_pdf_raises_on_empty_response(tmp_path, monkeypatch):
 
 
 def test_to_pdf_maps_timeout(tmp_path, monkeypatch):
-    import requests  # type: ignore[import-untyped]  # pdf-toolbox: requests library does not ship type information | issue:-
-
     def fake_post(
         endpoint: str,
         files: HttpFiles,
@@ -226,7 +226,7 @@ def test_to_pdf_maps_timeout(tmp_path, monkeypatch):
         verify: bool,
     ) -> PostResult:
         del endpoint, files, headers, timeout, verify
-        raise requests.Timeout("boom")
+        raise requests_mod.Timeout("boom")
 
     monkeypatch.setattr(
         "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
@@ -243,8 +243,6 @@ def test_to_pdf_maps_timeout(tmp_path, monkeypatch):
 
 
 def test_to_pdf_maps_connection_error(tmp_path, monkeypatch):
-    import requests  # type: ignore[import-untyped]  # pdf-toolbox: requests library does not ship type information | issue:-
-
     def fake_post(
         endpoint: str,
         files: HttpFiles,
@@ -253,7 +251,7 @@ def test_to_pdf_maps_connection_error(tmp_path, monkeypatch):
         verify: bool,
     ) -> PostResult:
         del endpoint, files, headers, timeout, verify
-        raise requests.ConnectionError("boom")
+        raise requests_mod.ConnectionError("boom")
 
     monkeypatch.setattr(
         "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
@@ -378,7 +376,6 @@ def test_to_pdf_requires_requests(monkeypatch, tmp_path):
     pptx.write_bytes(b"deck")
 
     monkeypatch.setattr(http_office_module, "requests", None)
-    monkeypatch.setattr(http_office_module, "requests_module", None)
 
     with pytest.raises(PptxRenderingError) as exc:
         renderer.to_pdf(str(pptx), str(tmp_path / "out.pdf"))
@@ -477,8 +474,6 @@ def test_post_stream_file_requires_requests(monkeypatch, tmp_path):
 
 
 def test_to_pdf_maps_request_exception(tmp_path, monkeypatch):
-    import requests  # type: ignore[import-untyped]  # pdf-toolbox: requests library does not ship type information | issue:-
-
     def fake_post(
         endpoint: str,
         files: HttpFiles,
@@ -487,7 +482,7 @@ def test_to_pdf_maps_request_exception(tmp_path, monkeypatch):
         verify: bool,
     ) -> PostResult:
         del endpoint, files, headers, timeout, verify
-        raise requests.RequestException("boom")
+        raise requests_mod.RequestException("boom")
 
     monkeypatch.setattr(http_office_module, "_post_stream_file", fake_post)
 

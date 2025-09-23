@@ -6,12 +6,13 @@ import contextlib
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, ClassVar, Literal, cast
+from typing import ClassVar, Literal, cast
 from urllib.parse import urlparse
 
 from pdf_toolbox.config import load_config
 from pdf_toolbox.i18n import tr
 from pdf_toolbox.renderers._http_util import _post_stream_file
+from pdf_toolbox.renderers._requests import RequestsModule, requests
 from pdf_toolbox.renderers.pptx import (
     PptxRenderingError,
     UnsupportedOptionError,
@@ -19,18 +20,6 @@ from pdf_toolbox.renderers.pptx import (
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.renderers.registry import register
 from pdf_toolbox.utils import logger
-
-try:  # pragma: no cover  # pdf-toolbox: optional dependency import guard exercised via unit tests | issue:-
-    import requests  # type: ignore[import-untyped]  # pdf-toolbox: requests library does not ship type information | issue:-
-except Exception:  # pragma: no cover  # pdf-toolbox: gracefully handle missing optional dependency | issue:-
-    requests = None  # type: ignore[assignment]  # pdf-toolbox: sentinel assignment when dependency unavailable | issue:-
-
-if (
-    requests is None
-):  # pragma: no cover  # pdf-toolbox: branch only aids type checking when dependency missing | issue:-
-    requests_module: Any = None
-else:
-    requests_module = requests
 
 Mode = Literal["auto", "stirling", "gotenberg"]
 
@@ -151,6 +140,7 @@ class _HttpRequestContext:
     timeout_s: float | None
     verify_tls: bool
     mode: Literal["stirling", "gotenberg"]
+    requests: RequestsModule
 
 
 class PptxHttpOfficeRenderer(BasePptxRenderer):
@@ -246,8 +236,9 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 code="unavailable",
             )
         if requests is None:
-            msg = "Install the 'pptx_http' extra to enable the HTTP renderer."
+            msg = tr("pptx.http.missing_dependency")
             raise PptxRenderingError(msg, code="unavailable")
+        req = cast(RequestsModule, requests)
         mode = self._selected_mode()
         field = "files" if mode == "gotenberg" else "file"
         self._cached_context = _HttpRequestContext(
@@ -257,6 +248,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             timeout_s=self._cfg.http_office.timeout_s,
             verify_tls=self._cfg.http_office.verify_tls,
             mode=mode,
+            requests=req,
         )
         return self._cached_context
 
@@ -282,7 +274,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             },
         )
 
-        req = cast(Any, requests_module)
+        req = context.requests
 
         try:
             with source.open("rb") as handle:

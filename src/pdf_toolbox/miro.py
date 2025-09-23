@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 from PIL import Image
 
 from pdf_toolbox.image_utils import (
