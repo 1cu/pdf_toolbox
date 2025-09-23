@@ -6,8 +6,8 @@ and the enforcement rules in [AGENTS](AGENTS.md).
 
 ## Read this first
 
-- Python 3.13 is the only supported runtime. Ensure your local environment
-  matches CI.
+- Python 3.13 or newer is supported. Ensure your local environment matches the
+  version exercised in CI (currently Python 3.13).
 - Work inside the `src/pdf_toolbox` package; tests live under `tests` and helper
   scripts under `scripts`.
 - Scripts are usually thin wrappers. `scripts/pin_actions.py` is the deliberate

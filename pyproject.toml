@@ -35,7 +35,7 @@ dev = [
   "bandit>=1.8.6",
 ]
 pptx_http = ["requests>=2.32.5"]
-pptx-render = ["pywin32>=311"]
+pptx-render = ["pywin32>=311; sys_platform == 'win32'"]
 
 [project.entry-points."pdf_toolbox.pptx_renderers"]
 http_office = "pdf_toolbox.renderers.http_office:PptxHttpOfficeRenderer"
@@ -105,8 +105,8 @@ markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
   "gui: marks GUI tests (run with '-m gui')",
 ]
-slow_threshold = "0.75"
-fail_on_unmarked_slow = "true"
+slow_threshold = 0.75
+fail_on_unmarked_slow = true
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004", "D103", "D100", "PLC0415", "S106"]

@@ -18,9 +18,9 @@ pip install -e '.[dev]'
 pre-commit install
 ```
 
-Use Python 3.13. Run Qt with a native display on desktops; in containers rely
-on the environment (`QT_QPA_PLATFORM=xcb` with `xvfb-run`) instead of forcing
-offscreen plugins.
+Use Python 3.13 or newer. Run Qt with a native display on desktops; in
+containers rely on the environment (`QT_QPA_PLATFORM=xcb` with `xvfb-run`)
+instead of forcing offscreen plugins.
 
 Launch the GUI from source to verify changes:
 
