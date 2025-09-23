@@ -46,8 +46,8 @@ def test_split_pdf_e2e(sample_pdf: str, tmp_path: Path) -> None:
 
 
 def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
-    """`pdf_to_images` renders real pages at the requested resolution."""
-    outputs = pdf_to_images(
+    """`pdf_to_images` renders with DPI and dimension/size overrides."""
+    dpi_outputs = pdf_to_images(
         sample_pdf,
         pages="2",
         image_format="PNG",
@@ -55,15 +55,15 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
         out_dir=str(tmp_path),
     )
 
-    assert len(outputs) == 1
-    image_path = Path(outputs[0])
-    assert image_path.exists()
+    assert len(dpi_outputs) == 1
+    dpi_image_path = Path(dpi_outputs[0])
+    assert dpi_image_path.exists()
 
-    with Image.open(image_path) as img:
-        width_px, height_px = img.size
+    with Image.open(dpi_image_path) as img:
+        dpi_width_px, dpi_height_px = img.size
         assert img.format == "PNG"
-        assert width_px > 0
-        assert height_px > 0
+        assert dpi_width_px > 0
+        assert dpi_height_px > 0
 
     with fitz.open(sample_pdf) as doc:
         page = doc.load_page(1)
@@ -71,7 +71,44 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
         expected_width = math.ceil(rect.width / 72 * DPI_PRESETS["High (300 dpi)"])
         expected_height = math.ceil(rect.height / 72 * DPI_PRESETS["High (300 dpi)"])
 
-    assert (width_px, height_px) == (expected_width, expected_height)
+    assert (dpi_width_px, dpi_height_px) == (expected_width, expected_height)
+
+    dimension_dir = tmp_path / "dimensions"
+    max_size_mb = 1.0
+    dimension_outputs = pdf_to_images(
+        sample_pdf,
+        pages="1-2",
+        image_format="JPEG",
+        width=640,
+        height=480,
+        quality="Medium (85)",
+        max_size_mb=max_size_mb,
+        out_dir=str(dimension_dir),
+    )
+
+    assert len(dimension_outputs) == 2
+    max_bytes = int(max_size_mb * 1024 * 1024)
+    with fitz.open(sample_pdf) as doc:
+        first = doc.load_page(0)
+        rect = first.rect
+        w_in = rect.width / 72
+        h_in = rect.height / 72
+        expected_dpi = round(max(640 / w_in, 480 / h_in))
+        expected_dim_width = math.ceil(rect.width / 72 * expected_dpi)
+        expected_dim_height = math.ceil(rect.height / 72 * expected_dpi)
+
+    for output in dimension_outputs:
+        path = Path(output)
+        assert path.exists()
+        assert path.suffix.lower() == ".jpeg"
+        assert path.stat().st_size <= max_bytes
+        with Image.open(path) as img:
+            width_px, height_px = img.size
+            assert img.format == "JPEG"
+            assert (width_px, height_px) == (
+                expected_dim_width,
+                expected_dim_height,
+            )
 
 
 def test_unlock_pdf_e2e(tmp_path: Path) -> None:

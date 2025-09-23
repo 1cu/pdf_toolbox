@@ -136,8 +136,8 @@
 | tests/test_pptx.py:262                           | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx.py:335                           | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx.py:406                           | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_pptx_e2e.py:8                         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| tests/test_pptx_e2e.py:54                        | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx_e2e.py:9                         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
+| tests/test_pptx_e2e.py:76                        | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:21         | N802                          | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:25         | N802                          | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:46         | N802                          | COM style method name                                                 | -        |

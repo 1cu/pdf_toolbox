@@ -18,25 +18,25 @@ from pdf_toolbox.renderers.registry import convert_pptx_to_pdf
 @action(category="PPTX", requires_pptx_renderer=True)
 def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires many parameters | issue:-
     input_pptx: str,
-    out_dir: str | None = None,
-    max_size_mb: float | None = None,
+    pages: str | None = None,
     image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
     quality: int | QualityChoice = "High (95)",
     width: int | None = None,
     height: int | None = None,
-    pages: str | None = None,
+    max_size_mb: float | None = None,
+    out_dir: str | None = None,
 ) -> str:
     """Render a PPTX file to images using the configured provider.
 
     Args:
         input_pptx: Presentation to render.
+        pages: Optional slide selection using the same syntax as PDF exports.
         out_dir: Destination directory for exported images.
         max_size_mb: Optional size limit per image in megabytes.
         image_format: Output image format (``"JPEG"``, ``"PNG"``, or ``"TIFF"``).
         quality: JPEG/WebP quality (ignored for other formats).
         width: Optional pixel width; requires ``height``.
         height: Optional pixel height; requires ``width``.
-        pages: Optional slide selection using the same syntax as PDF exports.
 
     Returns:
         Path to the directory containing the images.
@@ -68,7 +68,7 @@ def pptx_to_images(  # noqa: PLR0913  # pdf-toolbox: action interface requires m
 
 @action(category="PPTX", requires_pptx_renderer=True)
 def pptx_to_pdf(
-    input_pptx: str, output_path: str | None = None, pages: str | None = None
+    input_pptx: str, pages: str | None = None, output_path: str | None = None
 ) -> str:
     """Render a PPTX file to PDF using the configured provider."""
     renderer = require_pptx_renderer()

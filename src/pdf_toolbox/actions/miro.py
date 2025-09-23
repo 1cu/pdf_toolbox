@@ -26,24 +26,24 @@ ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 @action(name="miro_export", category="Export")
 def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI form | issue:-
     input_path: str,
-    out_dir: str | None = None,
+    pages: str | None = None,
     export_profile: ProfileChoice = "standard",
     image_format: ImageFormatChoice = "PNG",
     dpi: int | DpiChoice = "High (300 dpi)",
     quality: int | QualityChoice = "High (95)",
-    pages: str | None = None,
+    out_dir: str | None = None,
     cancel: Event | None = None,
 ) -> list[str]:
     """Export slides using either the standard or Miro profile.
 
     Args:
         input_path: PDF or PPTX file to export.
-        out_dir: Optional target directory for exported files.
+        pages: Optional page specification string (``"1-3,5"`` style).
         export_profile: Export profile to use (``"standard"`` or ``"miro"``).
         image_format: Output image format when using the standard profile.
         dpi: DPI or preset for the standard profile.
         quality: Quality preset/value for lossy formats in the standard profile.
-        pages: Optional page specification string (``"1-3,5"`` style).
+        out_dir: Optional target directory for exported files.
         cancel: Optional cancellation event.
 
     Returns:
