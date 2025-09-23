@@ -9,7 +9,7 @@
 | src/pdf_toolbox/actions/extract.py:8             | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/actions/miro.py:27               | PLR0913                       | action signature mirrors GUI form                                     | -        |
 | src/pdf_toolbox/actions/pdf_images.py:11         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| src/pdf_toolbox/actions/pdf_images.py:127        | PLR0913, PLR0912, PLR0915     | rendering pages needs many parameters and branches                    | -        |
+| src/pdf_toolbox/actions/pdf_images.py:127        | PLR0912, PLR0913, PLR0915     | rendering pages needs many parameters and branches                    | -        |
 | src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                       | conversion helper requires many parameters                            | -        |
 | src/pdf_toolbox/actions/pptx.py:19               | PLR0913                       | action interface requires many parameters                             | -        |
 | src/pdf_toolbox/actions/unlock.py:8              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
