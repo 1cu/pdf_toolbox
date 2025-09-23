@@ -8,34 +8,34 @@ version = "0.7.2"
 description = "Utilities for PDF operations"
 requires-python = ">=3.13"
 dependencies = [
-  "PySide6>=6.7",
-  "pillow",
-  "pymupdf>=1.24",
-  "python-pptx",
-  "platformdirs",
+  "PySide6>=6.9.2",
+  "pillow>=11.3.0",
+  "pymupdf>=1.26.4",
+  "python-pptx>=1.0.2",
+  "platformdirs>=4.4.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8",
-  "pytest-cov",
-  "pytest-qt",
-  "pytest-xdist>=3",
-  "pytest-timeout>=2.3",
-  "pytest-json-report>=1.5",
-  "ruff",
-  "mypy",
-  "pre-commit",
-  "mdformat",
-  "mdformat-gfm",
-  "language-formatters-pre-commit-hooks",
-  "build",
-  "coverage",
-  "coverage-badge",
-  "bandit",
+  "pytest>=8.4.1",
+  "pytest-cov>=7.0.0",
+  "pytest-qt>=4.5.0",
+  "pytest-xdist>=3.8.0",
+  "pytest-timeout>=2.4.0",
+  "pytest-json-report>=1.5.0",
+  "ruff>=0.12.11",
+  "mypy>=1.17.1",
+  "pre-commit>=4.3.0",
+  "mdformat>=0.7.22",
+  "mdformat-gfm>=0.4.1",
+  "language-formatters-pre-commit-hooks>=2.15.0",
+  "build>=1.3.0",
+  "coverage>=7.10.7",
+  "coverage-badge>=1.1.2",
+  "bandit>=1.8.6",
 ]
-pptx_http = ["requests>=2.32"]
-pptx-render = ["pywin32>=306"]
+pptx_http = ["requests>=2.32.5"]
+pptx-render = ["pywin32>=311"]
 
 [project.entry-points."pdf_toolbox.pptx_renderers"]
 http_office = "pdf_toolbox.renderers.http_office:PptxHttpOfficeRenderer"
