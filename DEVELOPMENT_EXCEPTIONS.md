@@ -38,11 +38,12 @@
 | src/pdf_toolbox/gui/widgets.py:76                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:81                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:99                | N802                         | Qt requires camelCase event name                                          | -        |
-| src/pdf_toolbox/miro.py:245                      | pragma: no cover             | guard against environment-specific WebP encoder issues                    | -        |
-| src/pdf_toolbox/miro.py:260                      | pragma: no cover             | Pillow sometimes lacks WebP support                                       | -        |
-| src/pdf_toolbox/miro.py:280                      | pragma: no cover             | PNG encoder failure varies by platform                                    | -        |
-| src/pdf_toolbox/miro.py:300                      | pragma: no cover             | JPEG encoder may be unavailable                                           | -        |
-| src/pdf_toolbox/miro.py:693                      | pragma: no cover             | keep GUI responsive despite renderer crashes                              | -        |
+| src/pdf_toolbox/miro.py:247                      | pragma: no cover             | guard against environment-specific WebP encoder issues                    | -        |
+| src/pdf_toolbox/miro.py:262                      | pragma: no cover             | Pillow sometimes lacks WebP support                                       | -        |
+| src/pdf_toolbox/miro.py:282                      | pragma: no cover             | PNG encoder failure varies by platform                                    | -        |
+| src/pdf_toolbox/miro.py:302                      | pragma: no cover             | JPEG encoder may be unavailable                                           | -        |
+| src/pdf_toolbox/miro.py:695                      | pragma: no cover             | keep GUI responsive despite renderer crashes                              | -        |
+| src/pdf_toolbox/miro.py:715                      | PLR0913                      | export pipeline exposes optional tuning knobs                             | -        |
 | src/pdf_toolbox/renderers/\_http_util.py:23      | pragma: no cover             | renderer checks dependency availability before calling helper             | -        |
 | src/pdf_toolbox/renderers/\_requests.py:12       | pragma: no cover             | optional dependency import guard exercised via unit tests                 | -        |
 | src/pdf_toolbox/renderers/\_requests.py:17       | pragma: no cover             | optional dependency missing                                               | -        |
@@ -101,7 +102,7 @@
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                                 | -        |
 | tests/gui/test_widgets.py:222                    | type: ignore[attr-defined]   | PySide6 stubs miss Qt.LeftButton                                          | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
-| tests/test_miro.py:215                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
+| tests/test_miro.py:241                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
 | tests/test_pptx.py:86                            | PLR0913                      | renderer API requires many parameters                                     | -        |
 | tests/test_pptx.py:174                           | PLR0913                      | renderer API requires many parameters                                     | -        |
 | tests/test_pptx.py:262                           | PLR0913                      | renderer API requires many parameters                                     | -        |
