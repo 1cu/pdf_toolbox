@@ -37,6 +37,9 @@ dev = [
 pptx_http = ["requests>=2.32"]
 pptx-render = ["pywin32>=306"]
 
+[project.scripts]
+pdf-toolbox = "pdf_toolbox.cli:main"
+
 [project.entry-points."pdf_toolbox.pptx_renderers"]
 http_office = "pdf_toolbox.renderers.http_office:PptxHttpOfficeRenderer"
 ms_office = "pdf_toolbox.renderers.ms_office:PptxMsOfficeRenderer"

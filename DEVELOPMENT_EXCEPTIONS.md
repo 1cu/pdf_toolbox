@@ -13,6 +13,10 @@
 | src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                       | conversion helper requires many parameters                            | -        |
 | src/pdf_toolbox/actions/pptx.py:19               | PLR0913                       | action interface requires many parameters                             | -        |
 | src/pdf_toolbox/actions/unlock.py:8              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
+| src/pdf_toolbox/cli.py:26                        | pragma: no cover              | delegate help/usage exit codes to argparse                            | -        |
+| src/pdf_toolbox/cli.py:48                        | pragma: no cover              | runtime errors bubble up to stderr for CLI users                      | -        |
+| src/pdf_toolbox/cli.py:255                       | pragma: no cover              | preserve conversion error text for numeric parameters                 | -        |
+| src/pdf_toolbox/cli.py:272                       | pragma: no cover              | surface constructor failures from custom annotations                  | -        |
 | src/pdf_toolbox/gui/\_\_init\_\_.py:44           | pragma: no cover              | environment dependent                                                 | -        |
 | src/pdf_toolbox/gui/main_window.py:87            | PLR0915                       | constructor sets up many widgets                                      | -        |
 | src/pdf_toolbox/gui/main_window.py:165           | type: ignore[attr-defined]    | PySide6 stubs miss form layout policy enum                            | -        |
