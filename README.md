@@ -158,6 +158,10 @@ writes `miro_export.json` with per-page metadata and warnings.
     libgl1
   ```
 
+## License
+
+PDF Toolbox is distributed under the terms of the [MIT License](LICENSE).
+
 - After installing the libraries, rerun
   `xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files`.
 
