@@ -3,13 +3,16 @@
 
 from __future__ import annotations
 
-import logging
 import tomllib
 from fnmatch import fnmatch
 from pathlib import Path
 
 from coverage import Coverage
 from coverage.exceptions import NoSource
+
+from pdf_toolbox.utils import logger as _project_logger
+
+logger = _project_logger.getChild("scripts.check_coverage")
 
 
 def load_settings() -> tuple[float, list[str]]:
@@ -21,19 +24,21 @@ def load_settings() -> tuple[float, list[str]]:
     report_cfg = cov_cfg.get("report", {})
     run_cfg = cov_cfg.get("run", {})
     threshold = float(report_cfg.get("fail_under", 0)) / 100.0
-    omit = [str(p) for p in run_cfg.get("omit", [])]
+    report_omit = [str(p) for p in report_cfg.get("omit", [])]
+    run_omit = [str(p) for p in run_cfg.get("omit", [])]
+    # Preserve order, remove duplicates
+    omit = list(dict.fromkeys([*report_omit, *run_omit]))
     if threshold <= 0:
-        logging.error("fail_under not configured in pyproject.toml")
+        logger.error("fail_under not configured in pyproject.toml")
         raise SystemExit(1)
     return threshold, omit
 
 
 def main() -> int:
     """Return 0 on success, 1 if coverage falls below thresholds."""
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
     data_file = Path(".coverage")
     if not data_file.exists():
-        logging.error(".coverage not found. Run tests first.")
+        logger.error(".coverage not found. Run tests first.")
         return 1
 
     threshold, omit_patterns = load_settings()
@@ -53,7 +58,7 @@ def main() -> int:
         try:
             _, statements, _, missing, _ = coverage.analysis2(filename)
         except NoSource:
-            logging.debug("Skipping %s because the source is unavailable", filename)
+            logger.debug("Skipping %s because the source is unavailable", filename)
             continue
 
         statement_count = len(statements)
@@ -72,7 +77,7 @@ def main() -> int:
 
     total_rate = (total_covered / total_statements) if total_statements else 1.0
     if total_rate < threshold:
-        logging.error(
+        logger.error(
             "Total coverage %.2f%% is below %.0f%%",
             total_rate * 100,
             threshold * 100,
@@ -80,7 +85,7 @@ def main() -> int:
         return 1
     if failures:
         for fn, rate in failures:
-            logging.error(
+            logger.error(
                 "%s has %.2f%% coverage, below %.0f%%", fn, rate * 100, threshold * 100
             )
         return 1
@@ -90,7 +95,8 @@ def main() -> int:
 def _as_posix_relative(path: Path) -> str:
     """Return ``path`` relative to the repository root in POSIX form."""
     try:
-        relative = path.resolve().relative_to(Path.cwd())
+        repo_root = Path.cwd().resolve()
+        relative = path.resolve().relative_to(repo_root)
     except ValueError:
         relative = path
     return relative.as_posix()
