@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import re
 import tokenize
+from collections.abc import Iterator
 from pathlib import Path
 from typing import NotRequired, TypedDict
 
@@ -50,7 +51,7 @@ NOSEC_RE = re.compile(r"# nosec\s+(?P<codes>[A-Z0-9, ]+)")
 PRAGMA_NOCOVER_RE = re.compile(r"# pragma: no cover")
 
 
-def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:  # noqa: PLR0912  # pdf-toolbox: parsing requires several branches | issue:-
+def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:
     """Return exception records and a list of validation errors."""
     records: list[tuple[str, str, str, str]] = []
     errors: list[str] = []
@@ -59,53 +60,76 @@ def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:  # noqa: PLR0
             continue
         for path in base.rglob("*.py"):
             rel = path.relative_to(ROOT).as_posix()
-            with tokenize.open(path) as fh:
-                for tok_type, tok_string, (lineno, _), _, _ in tokenize.generate_tokens(
-                    fh.readline
-                ):
-                    if tok_type != tokenize.COMMENT:
-                        continue
-                    comment = tok_string
-                    codes: list[str] = []
-                    if m := NOQA_RE.search(comment):
-                        codes.extend(c.strip() for c in m.group("codes").split(","))
-                    if m := TYPE_IGNORE_RE.search(comment):
-                        codes.append("type: ignore" + (m.group("brack") or ""))
-                    if m := NOSEC_RE.search(comment):
-                        codes.extend(c.strip() for c in m.group("codes").split(","))
-                    if PRAGMA_NOCOVER_RE.search(comment):
-                        codes.append("pragma: no cover")
-                    has_pdf = "pdf-toolbox:" in comment
-                    if codes and not has_pdf:
-                        errors.append(
-                            f"{rel}:{lineno}: missing '# pdf-toolbox: <reason> | issue:<id>'"
-                        )
-                        continue
-                    if has_pdf and not codes:
-                        errors.append(
-                            f"{rel}:{lineno}: pdf-toolbox comment without marker"
-                        )
-                        continue
-                    if not codes and not has_pdf:
-                        continue
-                    reason_issue = comment.split("pdf-toolbox:", 1)[1]
-                    if "| issue:" not in reason_issue:
-                        errors.append(f"{rel}:{lineno}: missing '| issue:'")
-                        continue
-                    reason, issue = reason_issue.split("| issue:", 1)
-                    reason = reason.strip()
-                    issue = issue.split("#", 1)[0].strip()
-                    if not reason:
-                        errors.append(f"{rel}:{lineno}: empty reason")
-                    if not issue:
-                        errors.append(f"{rel}:{lineno}: empty issue")
-                    records.append((f"{rel}:{lineno}", ", ".join(codes), reason, issue))
+            for lineno, comment in _iter_comments(path):
+                record, comment_errors = _parse_exception_comment(rel, lineno, comment)
+                errors.extend(comment_errors)
+                if record:
+                    records.append(record)
 
-    def sort_key(rec: tuple[str, str, str, str]) -> tuple[str, int]:
-        path, line = rec[0].rsplit(":", 1)
-        return path, int(line)
+    return sorted(records, key=_sort_key), errors
 
-    return sorted(records, key=sort_key), errors
+
+def _iter_comments(path: Path) -> Iterator[tuple[int, str]]:
+    """Yield ``(lineno, comment)`` pairs from *path*."""
+    with tokenize.open(path) as fh:
+        for tok_type, tok_string, (lineno, _), _, _ in tokenize.generate_tokens(
+            fh.readline
+        ):
+            if tok_type == tokenize.COMMENT:
+                yield lineno, tok_string
+
+
+def _parse_exception_comment(
+    rel: str, lineno: int, comment: str
+) -> tuple[tuple[str, str, str, str] | None, list[str]]:
+    """Parse a single comment and return a record with validation errors."""
+    errors: list[str] = []
+    codes = _collect_codes(comment)
+    has_pdf = "pdf-toolbox:" in comment
+    if codes and not has_pdf:
+        errors.append(f"{rel}:{lineno}: missing '# pdf-toolbox: <reason> | issue:<id>'")
+        return None, errors
+    if has_pdf and not codes:
+        errors.append(f"{rel}:{lineno}: pdf-toolbox comment without marker")
+        return None, errors
+    if not codes:
+        return None, errors
+
+    reason_issue = comment.split("pdf-toolbox:", 1)[1]
+    if "| issue:" not in reason_issue:
+        errors.append(f"{rel}:{lineno}: missing '| issue:'")
+        return None, errors
+
+    reason, issue = reason_issue.split("| issue:", 1)
+    reason = reason.strip()
+    issue = issue.split("#", 1)[0].strip()
+    if not reason:
+        errors.append(f"{rel}:{lineno}: empty reason")
+    if not issue:
+        errors.append(f"{rel}:{lineno}: empty issue")
+
+    record = (f"{rel}:{lineno}", ", ".join(codes), reason, issue)
+    return record, errors
+
+
+def _collect_codes(comment: str) -> list[str]:
+    """Extract all disable codes from *comment*."""
+    codes: list[str] = []
+    if m := NOQA_RE.search(comment):
+        codes.extend(c.strip() for c in m.group("codes").split(","))
+    if m := TYPE_IGNORE_RE.search(comment):
+        codes.append("type: ignore" + (m.group("brack") or ""))
+    if m := NOSEC_RE.search(comment):
+        codes.extend(c.strip() for c in m.group("codes").split(","))
+    if PRAGMA_NOCOVER_RE.search(comment):
+        codes.append("pragma: no cover")
+    return codes
+
+
+def _sort_key(rec: tuple[str, str, str, str]) -> tuple[str, int]:
+    """Return a stable sort key for exception records."""
+    path, line = rec[0].rsplit(":", 1)
+    return path, int(line)
 
 
 def render_table(headers: list[str], rows: list[list[str]]) -> str:
