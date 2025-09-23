@@ -30,6 +30,17 @@ python -m pdf_toolbox.gui          # launch the Qt GUI
 pre-commit run tests --all-files   # run pytest with coverage on a desktop session
 ```
 
+## Run actions from the CLI
+
+The `pdf-toolbox` console script (or `python -m pdf_toolbox.cli`) discovers the
+same registry of `@action` callables used by the GUI:
+
+```bash
+pdf-toolbox list                       # show available actions
+pdf-toolbox describe extract_range     # inspect parameters
+pdf-toolbox run extract_range --input-pdf in.pdf --pages 1-3
+```
+
 ## Run an action from Python
 
 Any registered action is available from the CLI or your own scripts:
