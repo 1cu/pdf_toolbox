@@ -1,8 +1,10 @@
 import json
+from pathlib import Path
 
 import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
+from pptx import Presentation
 
 from pdf_toolbox import utils
 
@@ -49,3 +51,14 @@ def author_config(tmp_path, monkeypatch):
     config = tmp_path / "pdf_toolbox_config.json"
     config.write_text(json.dumps({"author": "Tester", "email": "tester@example.com"}))
     monkeypatch.setattr(utils, "CONFIG_FILE", config)
+
+
+@pytest.fixture
+def simple_pptx(tmp_path: Path) -> str:
+    prs = Presentation()
+    for idx in range(5):
+        slide = prs.slides.add_slide(prs.slide_layouts[5])
+        slide.shapes.title.text = f"Slide {idx + 1}"
+    path = tmp_path / "simple.pptx"
+    prs.save(str(path))
+    return str(path)

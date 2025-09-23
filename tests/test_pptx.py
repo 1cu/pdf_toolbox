@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 
 import pytest
-from pptx import Presentation
 
 from pdf_toolbox import config
 from pdf_toolbox.actions import pptx as pptx_actions
@@ -18,17 +17,6 @@ from pdf_toolbox.renderers.pptx import (
     PptxProviderUnavailableError,
     get_pptx_renderer,
 )
-
-
-@pytest.fixture
-def simple_pptx(tmp_path) -> str:
-    prs = Presentation()
-    for idx in range(5):
-        slide = prs.slides.add_slide(prs.slide_layouts[5])
-        slide.shapes.title.text = f"Slide {idx + 1}"
-    path = tmp_path / "simple.pptx"
-    prs.save(path)
-    return str(path)
 
 
 def test_rendering_actions_raise(simple_pptx):

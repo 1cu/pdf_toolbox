@@ -891,6 +891,7 @@ def test_toggle_log_updates_status_arrow(qtbot) -> None:
         window.close()
 
 
+@pytest.mark.slow
 def test_on_author_saves_new_values(
     monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
 ) -> None:

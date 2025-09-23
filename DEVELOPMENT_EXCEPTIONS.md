@@ -95,7 +95,7 @@
 | src/pdf_toolbox/renderers/registry.py:247        | BLE001, RUF100                | plugin can_handle implementations may fail; treat as unavailable      | -        |
 | src/pdf_toolbox/renderers/registry.py:265        | BLE001, RUF100                | plugin can_handle implementations may fail; treat as unavailable      | -        |
 | src/pdf_toolbox/utils.py:13                      | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| tests/conftest.py:3                              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
+| tests/conftest.py:4                              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/gui/conftest_qt.py:117                     | N802                          | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:120                     | N802, type: ignore[override]  | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:123                     | N802                          | stub preserves Qt camelCase API                                       | -        |
@@ -110,8 +110,8 @@
 | tests/gui/test_main_window.py:611                | type: ignore[assignment]      | stub worker lacks QObject base class                                  | -        |
 | tests/gui/test_main_window.py:693                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
 | tests/gui/test_main_window.py:697                | type: ignore[override]        | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:1057               | type: ignore[no-untyped-def]  | Worker injects Event parameter dynamically                            | -        |
-| tests/gui/test_main_window.py:1084               | type: ignore[attr-defined]    | fixture injects helper on MainWindow for tests                        | -        |
+| tests/gui/test_main_window.py:1058               | type: ignore[no-untyped-def]  | Worker injects Event parameter dynamically                            | -        |
+| tests/gui/test_main_window.py:1085               | type: ignore[attr-defined]    | fixture injects helper on MainWindow for tests                        | -        |
 | tests/gui/test_widgets.py:124                    | N802                          | stub mirrors Qt URL API                                               | -        |
 | tests/gui/test_widgets.py:131                    | N802                          | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:142                    | N802                          | stub mirrors Qt event API                                             | -        |
@@ -127,14 +127,17 @@
 | tests/test_actions.py:99                         | pragma: no cover              | stub action body unused during registry import                        | -        |
 | tests/test_actions.py:101                        | type: ignore[attr-defined]    | mark stub action for registry import                                  | -        |
 | tests/test_actions.py:103                        | type: ignore[attr-defined]    | register stub action on module for import test                        | -        |
+| tests/test_actions_e2e.py:9                      | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_converters.py:3                       | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_images.py:6                           | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_miro.py:215                           | pragma: no cover              | ensure dummy renderer keeps simple coverage                           | -        |
-| tests/test_pptx.py:98                            | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_pptx.py:186                           | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_pptx.py:274                           | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_pptx.py:347                           | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_pptx.py:418                           | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx.py:86                            | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx.py:174                           | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx.py:262                           | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx.py:335                           | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx.py:406                           | PLR0913                       | renderer API requires many parameters                                 | -        |
+| tests/test_pptx_e2e.py:9                         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
+| tests/test_pptx_e2e.py:76                        | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:21         | N802                          | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:25         | N802                          | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:46         | N802                          | COM style method name                                                 | -        |
