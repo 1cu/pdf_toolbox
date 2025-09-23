@@ -4,8 +4,6 @@
 
 | File                                             | Rule                          | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------- | -------- |
-| scripts/check_coverage.py:8                      | B405                          | stdlib XML parser on trusted coverage file                            | -        |
-| scripts/check_coverage.py:38                     | B314                          | parsing trusted coverage report                                       | -        |
 | scripts/pin_actions.py:150                       | S310                          | validated HTTPS request to GitHub API                                 | -        |
 | scripts/pin_actions.py:154                       | S310, B310                    | GitHub API requests rely on urllib with pinned CA bundle              | -        |
 | scripts/pin_actions.py:159                       | pragma: no cover              | log and rethrow network errors for diagnostics                        | -        |

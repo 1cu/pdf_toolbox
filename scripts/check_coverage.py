@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import logging
 import tomllib
-import xml.etree.ElementTree as ET  # nosec B405  # pdf-toolbox: stdlib XML parser on trusted coverage file | issue:-
 from fnmatch import fnmatch
 from pathlib import Path
+
+from coverage import Coverage
+from coverage.exceptions import NoSource
 
 
 def load_settings() -> tuple[float, list[str]]:
@@ -29,28 +31,46 @@ def load_settings() -> tuple[float, list[str]]:
 def main() -> int:
     """Return 0 on success, 1 if coverage falls below thresholds."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    xml_file = Path("coverage.xml")
-    if not xml_file.exists():
-        logging.error("coverage.xml not found. Run tests first.")
+    data_file = Path(".coverage")
+    if not data_file.exists():
+        logging.error(".coverage not found. Run tests first.")
         return 1
 
     threshold, omit_patterns = load_settings()
-    tree = ET.parse(xml_file)  # nosec B314  # pdf-toolbox: parsing trusted coverage report | issue:-
-    root = tree.getroot()
+    coverage = Coverage(data_file=str(data_file))
+    coverage.load()
+    data = coverage.get_data()
 
-    total_rate = float(root.get("line-rate", "0"))
+    total_statements = 0
+    total_covered = 0
     failures: list[tuple[str, float]] = []
-    for cls in root.findall(".//class"):
-        filename = cls.get("filename")
-        if not filename:
-            continue
-        filename = Path(filename).as_posix()
-        if any(fnmatch(filename, pat) for pat in omit_patterns):
-            continue
-        rate = float(cls.get("line-rate", "0"))
-        if rate < threshold:
-            failures.append((filename, rate))
 
+    for filename in data.measured_files():
+        rel_path = _as_posix_relative(Path(filename))
+        if any(fnmatch(rel_path, pat) for pat in omit_patterns):
+            continue
+
+        try:
+            _, statements, _, missing, _ = coverage.analysis2(filename)
+        except NoSource:
+            logging.debug("Skipping %s because the source is unavailable", filename)
+            continue
+
+        statement_count = len(statements)
+        if statement_count == 0:
+            continue
+
+        missing_count = len(missing)
+        covered = statement_count - missing_count
+        rate = covered / statement_count
+
+        total_statements += statement_count
+        total_covered += covered
+
+        if rate < threshold:
+            failures.append((rel_path, rate))
+
+    total_rate = (total_covered / total_statements) if total_statements else 1.0
     if total_rate < threshold:
         logging.error(
             "Total coverage %.2f%% is below %.0f%%",
@@ -65,6 +85,15 @@ def main() -> int:
             )
         return 1
     return 0
+
+
+def _as_posix_relative(path: Path) -> str:
+    """Return ``path`` relative to the repository root in POSIX form."""
+    try:
+        relative = path.resolve().relative_to(Path.cwd())
+    except ValueError:
+        relative = path
+    return relative.as_posix()
 
 
 if __name__ == "__main__":
