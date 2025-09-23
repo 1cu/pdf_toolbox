@@ -97,9 +97,10 @@ threads, and action registry together.
 
 ## Log with the shared logger
 
-Use the utilities in `pdf_toolbox.utils.logging` (imported via convenience
-wrappers) for diagnostics. Avoid `print` and avoid inventing new logging setups;
-Bandit runs in hooks and CI to catch insecure logging or file handling.
+Use the shared helpers exported from `pdf_toolbox.utils`, notably the global
+`logger` instance and the `configure_logging()` helper for adjusting levels or
+handlers. Avoid `print` and avoid inventing new logging setups; Bandit runs in
+hooks and CI to catch insecure logging or file handling.
 
 ## Test effectively
 
