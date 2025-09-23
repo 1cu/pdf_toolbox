@@ -27,13 +27,13 @@ def _param(
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def fake_actions(monkeypatch: pytest.MonkeyPatch) -> list[Action]:
     """Provide deterministic actions for CLI tests."""
 
     def sample_action(
         foo: int,
-        mode: t.Union[int, t.Literal["low", "high"]] = "low",
+        mode: int | t.Literal["low", "high"] = "low",
         flag: bool = False,
     ) -> dict[str, t.Any]:
         return {"foo": foo, "mode": mode, "flag": flag}
@@ -54,7 +54,7 @@ def fake_actions(monkeypatch: pytest.MonkeyPatch) -> list[Action]:
             func=sample_action,
             params=[
                 _param("foo", int),
-                _param("mode", t.Union[int, t.Literal["low", "high"]], "low"),
+                _param("mode", int | t.Literal["low", "high"], "low"),
                 _param("flag", bool, False),
             ],
             help="Sample action used in CLI tests.\nAdditional detail is ignored.",
@@ -90,7 +90,8 @@ def fake_actions(monkeypatch: pytest.MonkeyPatch) -> list[Action]:
     return actions
 
 
-def test_list_actions_outputs_summary(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_list_actions_outputs_summary(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["list"])
     assert code == 0
     out = capsys.readouterr().out
@@ -98,28 +99,32 @@ def test_list_actions_outputs_summary(fake_actions: list[Action], capsys: pytest
     assert "Sample action used in CLI tests." in out
 
 
-def test_list_actions_can_include_fqname(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_list_actions_can_include_fqname(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["list", "--fqname"])
     assert code == 0
     out = capsys.readouterr().out
     assert ":: tests.cli.sample_action" in out
 
 
-def test_list_rejects_extra_arguments(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_list_rejects_extra_arguments(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["list", "--category", "Tests", "--extra"])
     assert code == 2
     err = capsys.readouterr().err
     assert "unrecognized arguments" in err
 
 
-def test_list_actions_filters_by_category(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_list_actions_filters_by_category(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["list", "--category", "Unknown"])
     assert code == 2
     err = capsys.readouterr().err
     assert "no actions found" in err
 
 
-def test_describe_action_shows_parameters(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_describe_action_shows_parameters(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["describe", "sample_action"])
     assert code == 0
     out = capsys.readouterr().out
@@ -129,78 +134,100 @@ def test_describe_action_shows_parameters(fake_actions: list[Action], capsys: py
     assert "default='low'" in out
 
 
-def test_describe_action_without_parameters(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_describe_action_without_parameters(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["describe", "Plain"])
     assert code == 0
     out = capsys.readouterr().out
     assert "Parameters: none" in out
 
 
-def test_describe_unknown_action(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_describe_unknown_action(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["describe", "missing"])
     assert code == 2
     err = capsys.readouterr().err
     assert "unknown action" in err
 
 
-def test_describe_rejects_extra_arguments(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_describe_rejects_extra_arguments(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["describe", "sample_action", "--extra"])
     assert code == 2
     err = capsys.readouterr().err
     assert "unrecognized arguments" in err
 
 
-def test_run_action_converts_values(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
-    code = cli.main(["run", "sample_action", "--foo", "5", "--mode", "high", "--flag", "yes"])
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_converts_values(capsys: pytest.CaptureFixture[str]) -> None:
+    code = cli.main(
+        ["run", "sample_action", "--foo", "5", "--mode", "high", "--flag", "yes"]
+    )
     assert code == 0
     captured = capsys.readouterr()
     result = json.loads(captured.out)
     assert result == {"foo": 5, "mode": "high", "flag": True}
 
 
-def test_run_action_reports_missing_required_argument(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_reports_missing_required_argument(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     code = cli.main(["run", "sample_action"])
     assert code == 2
     err = capsys.readouterr().err
     assert "missing required parameters" in err
 
 
-def test_run_action_rejects_unknown_parameter(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_rejects_unknown_parameter(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     code = cli.main(["run", "sample_action", "--foo", "3", "--extra", "value"])
     assert code == 2
     err = capsys.readouterr().err
     assert "unknown parameter" in err
 
 
-def test_run_action_reports_invalid_literal(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_reports_invalid_literal(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["run", "sample_action", "--foo", "3", "--mode", "invalid"])
     assert code == 2
     err = capsys.readouterr().err
     assert "expected one of" in err
 
 
-def test_run_action_reports_invalid_boolean(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_reports_invalid_boolean(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["run", "sample_action", "--foo", "3", "--flag", "maybe"])
     assert code == 2
     err = capsys.readouterr().err
     assert "invalid boolean value" in err
 
 
-def test_run_action_accepts_dash_dash_separator(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_accepts_dash_dash_separator(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     code = cli.main(["run", "sample_action", "--", "--foo", "4", "--mode", "2"])
     assert code == 0
     result = json.loads(capsys.readouterr().out)
     assert result == {"foo": 4, "mode": 2, "flag": False}
 
 
-def test_run_action_handles_path_output(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
-    code = cli.main(["run", "echo_action", "--path", "/tmp/example.txt"])
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_handles_path_output(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    destination = tmp_path / "example.txt"
+    code = cli.main(["run", "echo_action", "--path", str(destination)])
     assert code == 0
     out = capsys.readouterr().out.strip()
-    assert out.endswith("/tmp/example.txt")
+    assert out == str(destination)
 
 
-def test_run_action_surfaces_runtime_errors(fake_actions: list[Action], capsys: pytest.CaptureFixture[str]) -> None:
+@pytest.mark.usefixtures("fake_actions")
+def test_run_action_surfaces_runtime_errors(capsys: pytest.CaptureFixture[str]) -> None:
     code = cli.main(["run", "failing_action"])
     assert code == 1
     err = capsys.readouterr().err
@@ -214,9 +241,11 @@ def test_main_returns_parse_exit_code(capsys: pytest.CaptureFixture[str]) -> Non
     assert "usage" in err.lower()
 
 
-def test_main_reports_unknown_command(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_reports_unknown_command(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     class DummyParser:
-        def parse_known_args(self, argv: list[str] | None = None):
+        def parse_known_args(self, _argv: list[str] | None = None):
             return argparse.Namespace(command="bogus"), []
 
     monkeypatch.setattr(cli, "_create_parser", DummyParser)
@@ -227,7 +256,9 @@ def test_main_reports_unknown_command(monkeypatch: pytest.MonkeyPatch, capsys: p
 
 
 def test_describe_action_detects_ambiguous_name(
-    fake_actions: list[Action], monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    fake_actions: list[Action],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     duplicate = Action(
         fqname="tests.cli.sample_action_alias",
@@ -237,7 +268,7 @@ def test_describe_action_detects_ambiguous_name(
         help="",
         category=None,
     )
-    monkeypatch.setattr(cli, "list_actions", lambda: list(fake_actions) + [duplicate])
+    monkeypatch.setattr(cli, "list_actions", lambda: [*fake_actions, duplicate])
     code = cli.main(["describe", "Sample action"])
     assert code == 2
     err = capsys.readouterr().err
@@ -296,7 +327,7 @@ def test_build_call_arguments_rejects_unsupported_kind() -> None:
     action = Action(
         fqname="tests.cli.varargs",
         key="varargs",
-        func=lambda *args: None,
+        func=_varargs_placeholder,
         params=[
             Param(
                 name="args",
@@ -312,6 +343,10 @@ def test_build_call_arguments_rejects_unsupported_kind() -> None:
         cli._build_call_arguments(action, {})
 
 
+def _varargs_placeholder(*args: t.Any) -> None:
+    _ = args
+
+
 def test_convert_value_handles_empty_annotation() -> None:
     assert cli._convert_value("text", inspect._empty) == "text"
 
@@ -322,9 +357,9 @@ def test_convert_value_handles_float_and_errors() -> None:
         cli._convert_value("oops", float)
 
 
-def test_convert_value_handles_path_subclass() -> None:
+def test_convert_value_handles_path_subclass(tmp_path: Path) -> None:
     posix_path = type(Path("/"))
-    result = cli._convert_value("/tmp", posix_path)
+    result = cli._convert_value(str(tmp_path), posix_path)
     assert isinstance(result, posix_path)
 
 
@@ -356,6 +391,8 @@ def test_render_result_handles_none(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr().out == ""
 
 
-def test_render_result_handles_numeric_output(capsys: pytest.CaptureFixture[str]) -> None:
+def test_render_result_handles_numeric_output(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     cli._render_result(7)
     assert capsys.readouterr().out.strip() == "7"
