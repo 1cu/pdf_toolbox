@@ -5,35 +5,83 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/1cu/pdf_toolbox?utm_source=oss&utm_medium=github&utm_campaign=1cu%2Fpdf_toolbox&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
-PDF Toolbox is a Python 3.13+ toolkit for PDF and PPTX automation. A Qt GUI
-(entry point `src/pdf_toolbox/gui/__main__.py`) discovers functions registered
-with the `@action` decorator and builds forms from their signatures. You can run
-those same actions from the command line or import them in scripts.
+**PDF Toolbox** is a Python 3.13+ application for turning everyday PDF and PPTX housekeeping into a repeatable workflow. Launch the Qt-powered GUI to work interactively, call the same actions from the `pdf-toolbox` command, or automate them from your own scripts.
 
-## Learn what it does
+## Why use PDF Toolbox?
 
-- Manage PDFs: merge, split, rasterise, and export assets.
-- Operate on PPTX files: render with an optional provider.
-- Use the Miro export profile to create slide images that respect Miro’s size
-  limits while keeping vector pages crisp.
-- Extend the GUI by adding new `@action`-decorated callables in
-  `pdf_toolbox.actions`. The GUI updates automatically.
+- **Do more with PDFs:** merge, split, rasterise, and extract assets in bulk.
+- **Bring PPTX decks along:** render slides to images with pluggable renderers and export helper metadata.
+- **Work visually or headless:** the GUI discovers registered actions and builds forms on the fly, while the CLI exposes the same registry for automation.
+- **Stay within Miro limits:** ship-ready exports keep vectors sharp while respecting Miro’s 30 MB / 32 MP / 8192×4096 requirements.
+- **Extend without forking:** register a new `@action` callable under `pdf_toolbox.actions` and it appears instantly in the GUI, CLI, and Python API.
 
-## Start quickly
+## Installation
+
+PDF Toolbox is not available on PyPI. Grab a release build from the
+[GitHub releases page](https://github.com/1cu/pdf_toolbox/releases) and choose
+the option that matches how you plan to run the tool.
+
+### Download a desktop bundle
+
+- **Windows:** download `pdf_toolbox-<version>-windows.zip`, extract it, and run
+  `pdf_toolbox-<version>.exe`. The bundle contains everything the GUI needs,
+  including the Qt libraries.
+- **macOS:** download `pdf_toolbox-<version>-macos.zip`, unzip it, and drag the
+  `pdf_toolbox-<version>.app` bundle into `/Applications` (or any other folder
+  you prefer). Launch it like any other unsigned app—macOS may prompt you to
+  confirm the first run.
+
+### Install the Python package
+
+Download the `pdf_toolbox-<version>-py3-none-any.whl` wheel from the same
+release and install it into a virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev]'
-pre-commit install
-python -m pdf_toolbox.gui          # launch the Qt GUI
-pre-commit run tests --all-files   # run pytest with coverage on a desktop session
+pip install /path/to/pdf_toolbox-<version>-py3-none-any.whl
 ```
 
-## Run actions from the CLI
+Use this path when you want to script actions, run the CLI, or embed the
+library into your own automation.
 
-The `pdf-toolbox` console script (or `python -m pdf_toolbox.cli`) discovers the
-same registry of `@action` callables used by the GUI:
+### Develop from source
+
+```bash
+git clone https://github.com/1cu/pdf_toolbox.git
+cd pdf_toolbox
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+Install the development extras as well (`pip install -e '.[dev]'`) if you plan
+to run the project’s test and lint tooling locally.
+
+### Optional renderer dependencies
+
+Install the supporting libraries that each PPTX renderer requires:
+
+- **Microsoft PowerPoint automation (`ms_office`):**
+  `pip install pywin32` (Windows only, requires Microsoft PowerPoint).
+- **HTTP bridge (`http_office`):** `pip install requests`.
+
+When working from the source tree you can install these dependencies via the
+extras: `pip install '.[pptx-render]'` and `pip install '.[pptx_http]'`.
+
+## Quick start
+
+### Launch the GUI
+
+```bash
+python -m pdf_toolbox.gui
+```
+
+The window lists every available action, groups them by category, and builds a form from each action’s type hints and default values. Configure options, click **Run**, and monitor progress straight from the log panel.
+
+### Automate from the command line
+
+The `pdf-toolbox` console script exposes the same registry:
 
 ```bash
 pdf-toolbox list                       # show available actions
@@ -41,20 +89,19 @@ pdf-toolbox describe extract_range     # inspect parameters
 pdf-toolbox run extract_range --input-pdf in.pdf --pages 1-3
 ```
 
-## Run an action from Python
+### Call actions from Python
 
-Any registered action is available from the CLI or your own scripts:
+```python
+from pdf_toolbox.actions.pdf_images import pdf_to_images
 
-```bash
-python -c "from pdf_toolbox.actions.pdf_images import pdf_to_images; pdf_to_images('doc.pdf', max_size_mb=20)"
+pdf_to_images("slides.pdf", max_size_mb=20)
 ```
 
-## Configure the app
+Every registered `@action` is importable, so you can wire the building blocks into scheduled jobs or bespoke automation without touching the GUI.
 
-Configuration lives in `pdf_toolbox_config.json` inside the platform-specific
-config directory returned by `platformdirs` (for example `~/.config/pdf_toolbox/`
-on Linux or `%APPDATA%\pdf_toolbox\` on Windows). Create the file manually to
-set author metadata and optionally choose a PPTX renderer:
+## Configure defaults
+
+PDF Toolbox stores user preferences in `pdf_toolbox_config.json` inside the platform-specific directory returned by `platformdirs` (for example `~/.config/pdf_toolbox/` on Linux or `%APPDATA%\pdf_toolbox\` on Windows). Create the file manually or via the GUI to set your author metadata and pick a PPTX renderer:
 
 ```json
 {
@@ -64,123 +111,61 @@ set author metadata and optionally choose a PPTX renderer:
 }
 ```
 
-Set `pptx_renderer` to control how PPTX files render:
+The GUI highlights missing metadata at startup and lets you update the file on the fly.
 
-- `auto` (default): prefer local providers, fall back to registered plugins.
-- `none`: disable rendering and surface the helper banner in the GUI.
-- `ms_office`: automate Microsoft PowerPoint via COM on Windows.
-- `http_office`: delegate rendering to an HTTP-capable Office deployment such as
-  Stirling or Gotenberg.
-- `lightweight`: use the built-in stub provider for smoke tests.
+## Choose a PPTX renderer
 
-The Qt GUI surfaces missing metadata at startup and lets you update the config.
+Renderer plugins register under the `pdf_toolbox.pptx_renderers` entry point group. Select one by setting `pptx_renderer` in `pdf_toolbox_config.json`:
 
-## Select a PPTX renderer
+- `auto` (default) prefers local providers and falls back to installed plugins.
+- `none` disables rendering and shows guidance in the GUI.
+- `ms_office` uses Microsoft PowerPoint via COM on Windows (requires the `pptx-render` extra).
+- `http_office` sends work to an HTTP-capable Office renderer such as Stirling or Gotenberg (requires the `pptx_http` extra).
+- `lightweight` activates the built-in stub renderer for smoke testing.
 
-The renderer plugin system loads implementations registered under the
-`pdf_toolbox.pptx_renderers` entry point group. The default `NullRenderer`
-explains that rendering is unavailable. On Windows, the optional
-`ms_office` provider automates Microsoft PowerPoint via COM once you install the
-`pptx-render` extra and set `"pptx_renderer": "ms_office"` in the config file.
-Future providers plug into the same interface.
+## Export profiles and Miro support
 
-## Internationalise the UI
+Select the **Miro (optimised for Miro/Boards)** export profile to produce one image per slide while staying inside Miro’s upload limits. Vector slides render as crisp SVG with fonts converted to paths; raster-heavy slides use an adaptive pipeline that balances DPI against file size. Enable the debug manifest option to generate `miro_export.json` with per-page metadata and warnings.
 
-Locale files in `src/pdf_toolbox/locales/{en,de}.json` map JSON keys such as
-`actions`, `select_file`, `field_cannot_be_empty`, `input_pdf`, `out_dir`, and
-`max_size_mb` to translated strings. Use the helper API:
+## Localise the interface
+
+PDF Toolbox ships with English and German locales stored in `src/pdf_toolbox/locales/en.json` and `de.json`. The application auto-detects the system language, and the helper API lets scripts override it:
 
 ```python
 from pdf_toolbox.i18n import label, set_language, tr
 
-set_language("de")          # override auto-detected language during tests
-label("actions")            # look up a label by key
+set_language("de")
+label("actions")
 tr("field_cannot_be_empty", field="Password")
 ```
 
-Add keys to both locale files when you introduce new user-facing strings and
-wire them through the GUI instead of hard-coding text.
-
-## Understand the action framework
-
-Register new callables with `@action(category="PDF")`. The decorator captures
-metadata, exposes the function under `pdf_toolbox.actions`, and makes it
-available in the GUI. The GUI inspects the function signature to build widgets
-for typed parameters and handles validation.
-
-## Export for Miro
-
-Choose the “Miro (optimised for Miro/Boards)” profile in the GUI to create
-per-page exports that respect Miro’s 30 MB / 32 MP / 8192×4096 limits. Vector
-pages render as SVG with fonts converted to paths; raster-heavy slides use an
-adaptive pipeline that keeps DPI high while staying within limits. Enable the
-debug manifest option to write `miro_export.json` with per-page metadata and
-warnings.
-
-## Development quick facts
-
-- Target Python 3.13 or newer; CI and tooling currently run on 3.13.
-- Install dependencies with `pip install -e '.[dev]'` and enable hooks via
-  `pre-commit install`.
-- Pre-commit runs ruff format (Black-compatible formatting), ruff linting,
-  mypy, bandit, locale checks, pytest with coverage, and per-file coverage
-  enforcement.
-- Maintain ≥95% coverage overall **and per file**. Exceptions must be justified
-  inline and appear in `DEVELOPMENT_EXCEPTIONS.md` via
-  `scripts/generate_exception_overview.py`.
-- Use the shared logger utilities for diagnostics; do not use `print` for
-  logging.
-
-## GUI test policy
-
-- **Desktop developers (Linux, macOS, Windows):** run Qt with a real display.
-  Execute the fast suite with `pre-commit run tests --all-files` and avoid
-  `xvfb-run` or other headless flags.
-
-- **CI jobs and coding agents/containers (Linux):** install the X11/EGL
-  libraries that the Qt xcb plugin requires, export `QT_QPA_PLATFORM=xcb`, and
-  drive the suite through a virtual display:
-
-  ```bash
-  xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files
-  ```
-
-- **Tests and fixtures must stay display-agnostic.** Do not set
-  `QT_QPA_PLATFORM`, force offscreen plugins, or add headless-only flags inside
-  the code base. Rely on the surrounding environment instead.
+Add new keys to both locale files when extending the UI so every string stays translatable.
 
 ## Troubleshooting Qt on Linux containers
 
-- Symptoms of missing libraries include: `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, "This application failed to start because no Qt
-  platform plugin could be initialized", or loader errors such as
-  `libEGL.so.1: cannot open shared object file`.
+Missing Qt dependencies usually surface as `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, `This application failed to start because no Qt platform plugin could be initialized`, or loader errors such as `libEGL.so.1: cannot open shared object file`. Install the CI dependency bundle and rerun the command under Xvfb:
 
-- Install the same dependencies used in CI, then retry with `QT_QPA_PLATFORM=xcb`
-  and `xvfb-run`:
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  xvfb \
+  libxkbcommon-x11-0 \
+  libxcb-cursor0 \
+  libxcb-icccm4 \
+  libxcb-keysyms1 \
+  libxcb-shape0 \
+  libegl1 \
+  libgl1
 
-  ```bash
-  sudo apt-get update
-  sudo apt-get install -y \
-    xvfb \
-    libxkbcommon-x11-0 \
-    libxcb-cursor0 \
-    libxcb-icccm4 \
-    libxcb-keysyms1 \
-    libxcb-shape0 \
-    libegl1 \
-    libgl1
-  ```
+QT_QPA_PLATFORM=xcb xvfb-run -s "-screen 0 1920x1080x24" pdf-toolbox list
+```
 
 ## License
 
 PDF Toolbox is distributed under the terms of the [MIT License](LICENSE).
 
-- After installing the libraries, rerun
-  `xvfb-run -s "-screen 0 1920x1080x24" pre-commit run --all-files`.
+## Continue exploring
 
-## Read next
-
-- [CONTRIBUTING](CONTRIBUTING.md) — contributor workflow and review checklist.
-- [DEVELOPMENT](DEVELOPMENT.md) — maintainer notes, architecture, and testing
-  guidance.
-- [AGENTS](AGENTS.md) — enforcement rules for Codex agents and reviewers.
+- [CONTRIBUTING](CONTRIBUTING.md) — learn how to propose changes.
+- [DEVELOPMENT](DEVELOPMENT.md) — dive into architecture and maintainer notes.
+- [AGENTS](AGENTS.md) — review the automation and policy rules for this repository.

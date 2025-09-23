@@ -57,6 +57,14 @@ python -m pdf_toolbox.gui
 The module `src/pdf_toolbox/gui/__main__.py` wires the window, background worker
 threads, and action registry together.
 
+The CLI entry point mirrors the GUI registry and lives at
+`pdf_toolbox.cli:main`:
+
+```bash
+python -m pdf_toolbox.cli list
+pdf-toolbox run extract_range --input-pdf in.pdf --pages 1-3
+```
+
 ## Understand the action framework
 
 - Register new functionality with `@action` in `pdf_toolbox.actions`. The
@@ -74,8 +82,9 @@ threads, and action registry together.
   returned by `platformdirs` (for example `~/.config/pdf_toolbox/`). Keys:
   - `author` and `email` populate document metadata and GUI prompts.
   - `pptx_renderer` chooses a renderer: omit or `null` for the default
-    `NullRenderer`, `"ms_office"` for the COM-based renderer on Windows, and
-    future plugin identifiers for additional providers.
+    `NullRenderer`, `"ms_office"` for the COM-based renderer on Windows (requires
+    the `pptx-render` extra), `"http_office"` for the HTTP bridge (requires the
+    `pptx_http` extra), and future plugin identifiers for additional providers.
 - Renderer plugins implement `BasePptxRenderer` in
   `pdf_toolbox.renderers.pptx`. They register under the
   `pdf_toolbox.pptx_renderers` entry point group and expose
