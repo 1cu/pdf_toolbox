@@ -34,7 +34,7 @@ jobs:
         run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w src/pdf_toolbox/gui/__main__.py
       - name: Build executable (Windows)
         if: runner.os == 'Windows'
-        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -F -w --collect-all PySide6 src/pdf_toolbox/gui/__main__.py
+        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w --collect-all PySide6 src/pdf_toolbox/gui/__main__.py
       - name: Package executable (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -43,7 +43,7 @@ jobs:
       - name: Package executable (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path dist\pdf_toolbox-${{ steps.version.outputs.version }}.exe -DestinationPath pdf_toolbox-${{ steps.version.outputs.version }}-windows.zip
+        run: Compress-Archive -Path dist\pdf_toolbox-${{ steps.version.outputs.version }} -DestinationPath pdf_toolbox-${{ steps.version.outputs.version }}-windows.zip
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)  # actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
           name: pdf_toolbox-${{ steps.version.outputs.version }}-${{ runner.os }}

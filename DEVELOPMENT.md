@@ -267,6 +267,10 @@ fail_on_unmarked_slow = "true"
 1. Update `version` in `pyproject.toml`.
 1. Commit the change and create a tag matching `v*` (for example `v0.6.21`).
 1. Push the tag; the `release` workflow builds wheels and platform executables
-   and attaches them to the GitHub release while pruning older artifacts.
+   and attaches them to the GitHub release while pruning older artifacts. The
+   macOS artifact remains an app bundle (`.app`) zip, while the Windows upload
+   now contains the entire PyInstaller directory bundle so users can extract
+   and run the packaged executable (`pdf_toolbox-<version>.exe`) alongside its
+   dependencies.
 1. Workflows pin third-party actions to immutable commit SHAs and periodically
    update to the latest stable release.
