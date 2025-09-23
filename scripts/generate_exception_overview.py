@@ -45,7 +45,8 @@ RUNTIME_EXCEPTIONS: list[RuntimeExceptionEntry] = [
 ]
 
 ISSUE_SPLIT = re.compile(r"\s*\|\s*issue:")
-NOQA_RE = re.compile(r"# noqa: (?P<codes>[A-Z0-9_, ]+)")
+BARE_NOQA_RE = re.compile(r"#\s*noqa\b(?!:)")
+NOQA_RE = re.compile(r"# noqa:\s*(?P<codes>[A-Z0-9_, ]+)")
 TYPE_IGNORE_RE = re.compile(r"# type: ignore(?P<brack>\[[^\]]+\])?")
 NOSEC_RE = re.compile(r"# nosec\s+(?P<codes>[A-Z0-9, ]+)")
 PRAGMA_NOCOVER_RE = re.compile(r"# pragma: no cover")
@@ -66,7 +67,7 @@ def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:
                 if record:
                     records.append(record)
 
-    return sorted(records, key=_sort_key), errors
+    return sorted(records, key=_sort_key), sorted(errors)
 
 
 def _iter_comments(path: Path) -> Iterator[tuple[int, str]]:
@@ -84,13 +85,19 @@ def _parse_exception_comment(
 ) -> tuple[tuple[str, str, str, str] | None, list[str]]:
     """Parse a single comment and return a record with validation errors."""
     errors: list[str] = []
+    if BARE_NOQA_RE.search(comment):
+        errors.append(
+            f"{rel}:{lineno}: bare '# noqa' is not allowed; specify explicit codes"
+        )
     codes = _collect_codes(comment)
     has_pdf = "pdf-toolbox:" in comment
     if codes and not has_pdf:
         errors.append(f"{rel}:{lineno}: missing '# pdf-toolbox: <reason> | issue:<id>'")
         return None, errors
     if has_pdf and not codes:
-        errors.append(f"{rel}:{lineno}: pdf-toolbox comment without marker")
+        errors.append(
+            f"{rel}:{lineno}: pdf-toolbox comment without disable marker (# noqa/# type: ignore/# nosec/# pragma: no cover)"
+        )
         return None, errors
     if not codes:
         return None, errors
@@ -102,7 +109,9 @@ def _parse_exception_comment(
 
     reason, issue = reason_issue.split("| issue:", 1)
     reason = reason.strip()
-    issue = issue.split("#", 1)[0].strip()
+    issue = issue.strip()
+    if issue.startswith("#"):
+        issue = issue[1:].lstrip()
     if not reason:
         errors.append(f"{rel}:{lineno}: empty reason")
     if not issue:
