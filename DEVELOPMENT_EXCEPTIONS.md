@@ -4,21 +4,12 @@
 
 | File                                             | Rule                          | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------- | -------- |
-| scripts/check_coverage.py:8                      | B405                          | stdlib XML parser on trusted coverage file                            | -        |
-| scripts/check_coverage.py:38                     | B314                          | parsing trusted coverage report                                       | -        |
-| scripts/generate_exception_overview.py:53        | PLR0912                       | parsing requires several branches                                     | -        |
-| scripts/pin_actions.py:150                       | S310                          | validated HTTPS request to GitHub API                                 | -        |
-| scripts/pin_actions.py:154                       | S310, B310                    | GitHub API requests rely on urllib with pinned CA bundle              | -        |
-| scripts/pin_actions.py:159                       | pragma: no cover              | log and rethrow network errors for diagnostics                        | -        |
-| scripts/prune_releases.py:28                     | S310                          | urllib Request for GitHub API                                         | -        |
-| scripts/prune_releases.py:33                     | S310, B310                    | urllib urlopen for GitHub API                                         | -        |
-| scripts/prune_releases.py:60                     | type: ignore[arg-type]        | GitHub API returns untyped data                                       | -        |
 | src/pdf_toolbox/actions/\_\_init\_\_.py:87       | type: ignore[attr-defined]    | attach renderer flag for GUI                                          | -        |
 | src/pdf_toolbox/actions/\_\_init\_\_.py:94       | type: ignore[attr-defined]    | attach custom attribute for action registration                       | -        |
 | src/pdf_toolbox/actions/extract.py:8             | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/actions/miro.py:27               | PLR0913                       | action signature mirrors GUI form                                     | -        |
 | src/pdf_toolbox/actions/pdf_images.py:11         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| src/pdf_toolbox/actions/pdf_images.py:127        | PLR0913, PLR0912, PLR0915     | rendering pages needs many parameters and branches                    | -        |
+| src/pdf_toolbox/actions/pdf_images.py:127        | PLR0912, PLR0913, PLR0915     | rendering pages needs many parameters and branches                    | -        |
 | src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                       | conversion helper requires many parameters                            | -        |
 | src/pdf_toolbox/actions/pptx.py:19               | PLR0913                       | action interface requires many parameters                             | -        |
 | src/pdf_toolbox/actions/unlock.py:8              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |

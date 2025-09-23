@@ -5,17 +5,20 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import difflib
-import json
 import os
 import re
-import ssl
 import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from urllib import error, parse, request
+from typing import Any
+from urllib import parse
+
+if __package__ in {None, ""}:
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from pdf_toolbox.utils import logger as _project_logger
+from scripts.github_client import GitHubAPIError, GitHubClient
 
 logger = _project_logger.getChild("scripts.pin_actions")
 
@@ -25,9 +28,28 @@ USES_PATTERN = re.compile(
 )
 PIN_COMMENT_PREFIX = "# pinned:"
 MIN_REPO_SEGMENTS = 2
+# Timeout used for GitHub API requests
 REQUEST_TIMEOUT_SECONDS = 10
 PINNED_COMMENT_PATTERN = re.compile(r"(?i)^pinned:\s*")
 COMMENT_TOKEN_PATTERN = re.compile(r"#([^#]*)")
+
+JsonDict = dict[str, Any]
+
+
+def _ensure_dict(value: object, *, context: str) -> JsonDict:
+    """Return *value* if it is a mapping, otherwise raise."""
+    if not isinstance(value, dict):
+        message = f"Unexpected payload for {context}: {value!r}"
+        raise TypeError(message)
+    return value
+
+
+def _ensure_list(value: object, *, context: str) -> list[JsonDict]:
+    """Return *value* if it is a list of mappings, otherwise raise."""
+    if not isinstance(value, list):
+        message = f"Unexpected payload for {context}: {value!r}"
+        raise TypeError(message)
+    return [_ensure_dict(item, context=f"{context} entry") for item in value]
 
 
 def _deduplicate(tokens: Iterable[str]) -> list[str]:
@@ -110,56 +132,6 @@ def normalise_uses_line(
         comment_suffix = f"  {pinned_comment}"
 
     return f"{prefix}{quote}{action_path}@{commit_sha}{quote}{comment_suffix}"
-
-
-class GitHubAPI:
-    """Minimal helper for GitHub REST API requests."""
-
-    def __init__(self, token: str | None) -> None:
-        """Initialise the client with optional token-based authentication."""
-        self._base_url = "https://api.github.com"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "pdf-toolbox-action-pinner",
-        }
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        self._headers = headers
-        fallback_cafile = Path("/etc/ssl/certs/ca-certificates.crt")
-        if fallback_cafile.exists():
-            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-            context.check_hostname = True
-            context.verify_mode = ssl.CERT_REQUIRED
-            try:
-                context.load_verify_locations(cafile=str(fallback_cafile))
-            except ssl.SSLError:
-                context = ssl.create_default_context()
-        else:
-            context = ssl.create_default_context()
-        self._context = context
-
-    def get(self, path: str, *, params: dict[str, str] | None = None) -> dict:
-        """Execute a GET request and return the parsed JSON payload."""
-        url = f"{self._base_url}{path}"
-        if params:
-            url = f"{url}?{parse.urlencode(params)}"
-        scheme = parse.urlsplit(url).scheme
-        if scheme != "https":
-            message = f"Unsupported URL scheme for GitHub API: {scheme}"
-            raise ValueError(message)
-        req = request.Request(  # noqa: S310  # pdf-toolbox: validated HTTPS request to GitHub API | issue:-
-            url, headers=self._headers
-        )
-        try:
-            with request.urlopen(  # noqa: S310 - GitHub API client  # nosec B310  # pdf-toolbox: GitHub API requests rely on urllib with pinned CA bundle | issue:-
-                req, context=self._context, timeout=REQUEST_TIMEOUT_SECONDS
-            ) as resp:
-                payload = resp.read().decode("utf-8")
-                return json.loads(payload)
-        except error.HTTPError as exc:  # pragma: no cover - network failures are rare  # pdf-toolbox: log and rethrow network errors for diagnostics | issue:-
-            message = exc.read().decode("utf-8", errors="ignore")
-            error_message = f"GitHub API request failed for {url}: {exc}\n{message}"
-            raise RuntimeError(error_message) from exc
 
 
 @dataclass
@@ -260,35 +232,44 @@ def iso_date(date_str: str) -> str:
     return parsed.date().isoformat()
 
 
-def resolve_tag_to_commit(api: GitHubAPI, owner: str, repo: str, tag: str) -> str:
+def resolve_tag_to_commit(api: GitHubClient, owner: str, repo: str, tag: str) -> str:
     """Return the commit SHA for the given annotated or lightweight tag."""
     encoded_tag = parse.quote(tag, safe="")
     data = api.get(f"/repos/{owner}/{repo}/git/refs/tags/{encoded_tag}")
-    ref_obj: dict | None
+    ref_obj: JsonDict | None
     if isinstance(data, list):
+        refs = _ensure_list(data, context="git tag refs")
         ref_obj = next(
-            (item for item in data if item.get("ref") == f"refs/tags/{tag}"), None
+            (item for item in refs if item.get("ref") == f"refs/tags/{tag}"), None
         )
         if ref_obj is None:
             message = f"Unable to resolve tag {tag} for {owner}/{repo}"
             raise RuntimeError(message)
     else:
-        ref_obj = data
-    obj = ref_obj["object"]
+        ref_obj = _ensure_dict(data, context="git tag ref")
+    obj = _ensure_dict(ref_obj.get("object"), context="git tag object")
     if obj["type"] == "tag":
-        tag_data = api.get(f"/repos/{owner}/{repo}/git/tags/{obj['sha']}")
-        return tag_data["object"]["sha"]
+        tag_data = _ensure_dict(
+            api.get(f"/repos/{owner}/{repo}/git/tags/{obj['sha']}"),
+            context="git tag metadata",
+        )
+        return _ensure_dict(tag_data.get("object"), context="annotated tag")["sha"]
     if obj["type"] == "commit":
         return obj["sha"]
     message = f"Unsupported tag object type {obj['type']} for {owner}/{repo}"
     raise RuntimeError(message)
 
 
-def get_latest_release(api: GitHubAPI, owner: str, repo: str) -> dict | None:
+def get_latest_release(api: GitHubClient, owner: str, repo: str) -> dict | None:
     """Fetch the most recent non-prerelease GitHub release."""
-    releases = api.get(f"/repos/{owner}/{repo}/releases", params={"per_page": "100"})
+    releases_raw = _ensure_list(
+        api.get(f"/repos/{owner}/{repo}/releases", params={"per_page": "100"}),
+        context="releases",
+    )
     stable = [
-        rel for rel in releases if not rel.get("draft") and not rel.get("prerelease")
+        rel
+        for rel in releases_raw
+        if not rel.get("draft") and not rel.get("prerelease")
     ]
     if not stable:
         return None
@@ -299,13 +280,15 @@ def get_latest_release(api: GitHubAPI, owner: str, repo: str) -> dict | None:
     return stable[0]
 
 
-def get_repo_metadata(api: GitHubAPI, owner: str, repo: str) -> dict:
+def get_repo_metadata(api: GitHubClient, owner: str, repo: str) -> dict:
     """Return repository metadata required for release resolution."""
-    return api.get(f"/repos/{owner}/{repo}")
+    return _ensure_dict(
+        api.get(f"/repos/{owner}/{repo}"), context="repository metadata"
+    )
 
 
 def resolve_action(
-    api: GitHubAPI, repo: str, previous_refs: Sequence[str]
+    api: GitHubClient, repo: str, previous_refs: Sequence[str]
 ) -> ActionResolution:
     """Resolve the newest stable release (or default branch) for an action."""
     owner, name = repo.split("/", 1)
@@ -332,8 +315,11 @@ def resolve_action(
             release_url=release.get("html_url", metadata.get("html_url", "")),
         )
     default_branch = metadata.get("default_branch", "main")
-    commit = api.get(
-        f"/repos/{owner}/{name}/commits/{parse.quote(default_branch, safe='')}"
+    commit = _ensure_dict(
+        api.get(
+            f"/repos/{owner}/{name}/commits/{parse.quote(default_branch, safe='')}"
+        ),
+        context="default branch commit",
     )
     commit_sha = commit["sha"]
     date_str = commit["commit"]["committer"]["date"]
@@ -471,7 +457,7 @@ def build_summary_lines(resolutions: dict[str, ActionResolution]) -> list[str]:
 
 
 def resolve_all_actions(
-    api: GitHubAPI, occurrences: dict[str, list[ActionOccurrence]]
+    api: GitHubClient, occurrences: dict[str, list[ActionOccurrence]]
 ) -> tuple[dict[str, ActionResolution], list[str]]:
     """Resolve all discovered action references via the GitHub API.
 
@@ -488,7 +474,7 @@ def resolve_all_actions(
         previous_refs = [occ.previous_ref for occ in occs]
         try:
             resolutions[repo] = resolve_action(api, repo, previous_refs)
-        except RuntimeError as exc:
+        except (RuntimeError, GitHubAPIError) as exc:
             errors.append(str(exc))
     return resolutions, errors
 
@@ -530,7 +516,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     token = os.getenv("GITHUB_TOKEN")
-    api = GitHubAPI(token)
+    api = GitHubClient(token, timeout=REQUEST_TIMEOUT_SECONDS)
 
     resolutions, errors = resolve_all_actions(api, occurrences)
     if errors:
