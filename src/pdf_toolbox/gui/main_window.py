@@ -407,7 +407,10 @@ class MainWindow(QMainWindow):
         if profile_initial_value:
             self._apply_profile_ui(profile_initial_value, persist=False)
 
-        self._update_pptx_banner(self._select_pptx_provider())
+        provider: BasePptxRenderer | None = None
+        if self.current_action and self.current_action.requires_pptx_renderer:
+            provider = self._select_pptx_provider()
+        self._update_pptx_banner(provider)
 
     def collect_args(self) -> dict[str, Any]:  # noqa: PLR0912  # pdf-toolbox: argument collection involves many branches | issue:-
         """Gather user input from the form into keyword arguments."""

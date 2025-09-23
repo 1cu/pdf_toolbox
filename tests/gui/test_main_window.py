@@ -171,6 +171,29 @@ def test_build_form_hides_cancel(monkeypatch: pytest.MonkeyPatch, qtbot) -> None
         window.close()
 
 
+def test_build_form_skips_pptx_probe_for_unrelated_actions(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Actions without PPTX requirements avoid renderer probes."""
+
+    def sample(flag: bool = False) -> None:
+        del flag
+
+    act = actions.build_action(sample, name="Sample", requires_pptx_renderer=False)
+    monkeypatch.setattr(gui, "list_actions", lambda: [act])
+    window = _make_window(qtbot)
+    try:
+        window.current_action = act
+
+        def _fail() -> None:
+            pytest.fail("should not probe PPTX providers")
+
+        monkeypatch.setattr(window, "_select_pptx_provider", _fail)
+        window.build_form(act)
+    finally:
+        window.close()
+
+
 def test_build_form_resets_form_between_actions(
     monkeypatch: pytest.MonkeyPatch, qtbot
 ) -> None:
@@ -981,6 +1004,7 @@ def test_on_language_updates_configuration(
         window.close()
 
 
+@pytest.mark.slow
 def test_on_pptx_renderer_updates_configuration(
     monkeypatch: pytest.MonkeyPatch, qtbot, dialog_exec_stub
 ) -> None:
