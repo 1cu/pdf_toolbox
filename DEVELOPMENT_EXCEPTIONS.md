@@ -31,8 +31,6 @@
 | src/pdf_toolbox/renderers/\_requests.py:17       | pragma: no cover             | optional dependency missing                                               | -        |
 | src/pdf_toolbox/renderers/\_requests.py:19       | pragma: no cover             | environments may raise arbitrary errors during import; degrade gracefully | -        |
 | src/pdf_toolbox/renderers/\_requests_types.py:28 | PLR0913                      | mirror requests.post signature for accuracy                               | -        |
-| src/pdf_toolbox/renderers/http_office.py:338     | PLR0913                      | renderer API requires many parameters                                     | -        |
-| src/pdf_toolbox/renderers/lightweight_stub.py:27 | PLR0913                      | renderer API requires many parameters                                     | -        |
 | src/pdf_toolbox/renderers/ms_office.py:19        | pragma: no cover             | PowerPoint automation relies on pywin32                                   | -        |
 | src/pdf_toolbox/renderers/ms_office.py:20        | type: ignore                 | pywin32 is optional and lacks type hints                                  | -        |
 | src/pdf_toolbox/renderers/ms_office.py:22        | type: ignore                 | pywin32 is optional and lacks type hints                                  | -        |
@@ -48,10 +46,7 @@
 | src/pdf_toolbox/renderers/ms_office.py:161       | pragma: no cover             | propagate COM initialisation failure                                      | -        |
 | src/pdf_toolbox/renderers/ms_office.py:175       | pragma: no cover             | guard unexpected COM errors                                               | -        |
 | src/pdf_toolbox/renderers/ms_office.py:242       | pragma: no cover             | propagate COM export failure                                              | -        |
-| src/pdf_toolbox/renderers/ms_office.py:256       | PLR0913                      | renderer API requires many parameters                                     | -        |
-| src/pdf_toolbox/renderers/ms_office.py:312       | pragma: no cover             | propagate COM export failure                                              | -        |
-| src/pdf_toolbox/renderers/pptx.py:57             | PLR0913                      | renderer API requires many parameters                                     | -        |
-| src/pdf_toolbox/renderers/pptx_base.py:22        | PLR0913                      | renderer API requires many parameters                                     | -        |
+| src/pdf_toolbox/renderers/ms_office.py:311       | pragma: no cover             | propagate COM export failure                                              | -        |
 | src/pdf_toolbox/renderers/registry.py:83         | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins       | -        |
 | src/pdf_toolbox/renderers/registry.py:106        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning        | -        |
 | src/pdf_toolbox/renderers/registry.py:125        | BLE001, RUF100               | plugin modules may be missing or broken; degrade to warning               | -        |
@@ -82,23 +77,15 @@
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                                 | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
 | tests/test_miro.py:250                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
-| tests/test_pptx.py:86                            | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:177                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:267                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:340                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:411                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx_e2e.py:78                        | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:21         | N802                         | mirror COM method name                                                    | -        |
-| tests/test_pptx_ms_office_renderer.py:25         | N802                         | mirror COM method name                                                    | -        |
-| tests/test_pptx_ms_office_renderer.py:46         | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:71         | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:77         | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:90         | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:107        | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:120        | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_ms_office_renderer.py:125        | N802                         | COM style method name                                                     | -        |
-| tests/test_pptx_renderer.py:20                   | PLR0913                      | renderer stub matches renderer API signature                              | -        |
-| tests/test_renderer_registry.py:12               | PLR0913                      | renderer API requires many parameters                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                    | -        |
+| tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                    | -        |
+| tests/test_pptx_ms_office_renderer.py:47         | N802                         | COM style method name                                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:72         | N802                         | COM style method name                                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:78         | N802                         | COM style method name                                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:91         | N802                         | COM style method name                                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:108        | N802                         | COM style method name                                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:121        | N802                         | COM style method name                                                     | -        |
+| tests/test_pptx_ms_office_renderer.py:126        | N802                         | COM style method name                                                     | -        |
 
 <!-- mdformat on -->
 

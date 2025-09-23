@@ -11,7 +11,7 @@ from PIL import Image
 
 from pdf_toolbox.actions import pptx as pptx_actions
 from pdf_toolbox.actions.pptx import PptxExportOptions, pptx_to_images, pptx_to_pdf
-from pdf_toolbox.renderers.pptx import BasePptxRenderer
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 from pdf_toolbox.utils import parse_page_spec
 
 
@@ -75,26 +75,12 @@ def test_pptx_to_pdf_e2e(
     class DummyRenderer(BasePptxRenderer):
         name = "dummy"
 
-        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+        def to_images(
             self,
             _input_pptx: str,
-            out_dir: str | None = None,
-            max_size_mb: float | None = None,
-            image_format: str = "JPEG",
-            quality: int | None = None,
-            width: int | None = None,
-            height: int | None = None,
-            range_spec: str | None = None,
+            options: RenderOptions | None = None,
         ) -> str:
-            del (
-                out_dir,
-                max_size_mb,
-                image_format,
-                quality,
-                width,
-                height,
-                range_spec,
-            )
+            del options
             raise NotImplementedError
 
         def to_pdf(

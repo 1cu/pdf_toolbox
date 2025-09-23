@@ -8,6 +8,7 @@ import pytest
 from pdf_toolbox.renderers import ms_office
 from pdf_toolbox.renderers.ms_office import PptxMsOfficeRenderer, PptxRenderingError
 from pdf_toolbox.renderers.pptx import UnsupportedOptionError
+from pdf_toolbox.renderers.pptx_base import RenderOptions
 
 
 class DummyPythonCom:
@@ -389,10 +390,12 @@ def test_to_images_exports_all_slides(tmp_path, setup_com):
     result_dir = Path(
         renderer.to_images(
             str(src),
-            out_dir=str(out_dir),
-            image_format="PNG",
-            width=640,
-            height=480,
+            options=RenderOptions(
+                out_dir=str(out_dir),
+                image_format="PNG",
+                width=640,
+                height=480,
+            ),
         )
     )
 
@@ -416,7 +419,7 @@ def test_to_images_rejects_unsupported_format(tmp_path, setup_com):
     renderer = PptxMsOfficeRenderer()
 
     with pytest.raises(PptxRenderingError) as excinfo:
-        renderer.to_images(str(src), image_format="GIF")
+        renderer.to_images(str(src), options=RenderOptions(image_format="GIF"))
 
     assert excinfo.value.code == "unsupported_option"
 
@@ -441,7 +444,10 @@ def test_to_images_removes_existing_files_and_defaults_dimensions(tmp_path, setu
 
     renderer = PptxMsOfficeRenderer()
     result = Path(
-        renderer.to_images(str(src), out_dir=str(out_dir), image_format="JPEG")
+        renderer.to_images(
+            str(src),
+            options=RenderOptions(out_dir=str(out_dir), image_format="JPEG"),
+        )
     )
 
     files = sorted(result.glob("slide-*.jpeg"))
