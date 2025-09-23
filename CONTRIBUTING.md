@@ -44,6 +44,14 @@ python -m pdf_toolbox.gui
   GUI-only modules listed in `pyproject.toml`.
 - Add or update tests for every functional change, including negative paths.
 
+## Document your changes
+
+- Update [README](README.md) when behaviour that users depend on changes.
+- Capture maintainer-only details in [DEVELOPMENT](DEVELOPMENT.md) rather than
+  the README so end-user docs stay focused.
+- Follow the inline exception guidance in this file when disabling lint rules
+  or tests.
+
 ## Document exceptions correctly
 
 When a rule cannot be satisfied, add a single-line justification and capture it
