@@ -72,7 +72,6 @@ def test_dataclass_parameters_exposed():
         mode: str = "auto"
         limit: int | None = None
 
-    @actions.action()
     def sample(path: str, options: SampleOptions | None = None) -> None:
         del path, options
 

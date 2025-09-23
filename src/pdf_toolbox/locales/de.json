@@ -14,6 +14,7 @@
     "extract_range": "Bereich extrahieren",
     "field_cannot_be_empty": "Feld '{name}' darf nicht leer sein.",
     "german": "Deutsch",
+    "gui_custom": "Benutzerdefiniert",
     "gui_export_profile_custom": "Benutzerdefiniert",
     "gui_export_profile_label": "Exportprofil",
     "gui_export_profile_miro": "Miro (optimiert für Boards)",

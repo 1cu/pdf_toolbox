@@ -125,7 +125,8 @@ def test_build_form_handles_pep604_union(
         assert isinstance(widget, ComboBoxWithSpin)
         assert widget.combo_box.currentText() == "High"
         assert not widget.spin_box.isVisible()
-        widget.combo_box.setCurrentText("Custom")
+        idx = widget.combo_box.findData("__custom__")
+        widget.combo_box.setCurrentIndex(max(idx, 0))
         QApplication.processEvents()
         assert widget.spin_box.isVisible()
     finally:
@@ -147,7 +148,7 @@ def test_build_form_union_int_default(monkeypatch: pytest.MonkeyPatch, qtbot) ->
         QApplication.processEvents()
         widget = window.current_widgets["dpi"]
         assert isinstance(widget, ComboBoxWithSpin)
-        assert widget.combo_box.currentText() == "Custom"
+        assert widget.combo_box.currentData() == "__custom__"
         assert widget.spin_box.isVisible()
         assert widget.spin_box.value() == 150
     finally:
@@ -587,7 +588,8 @@ def test_collect_args_handles_composite_widgets(
         assert "dpi" in window.current_widgets
         widget = window.current_widgets["dpi"]
         assert isinstance(widget, ComboBoxWithSpin)
-        widget.combo_box.setCurrentText("Custom")
+        idx = widget.combo_box.findData("__custom__")
+        widget.combo_box.setCurrentIndex(max(idx, 0))
         widget.spin_box.setValue(300)
         file_one = tmp_path / "a.pdf"
         file_two = tmp_path / "b.pdf"

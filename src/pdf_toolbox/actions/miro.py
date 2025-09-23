@@ -63,6 +63,9 @@ def miro_export(
 
     logger.info("Exporting %s using profile %s", source, opts.export_profile)
 
+    target_dir = sane_output_dir(source, opts.out_dir)
+    target_dir_str = str(target_dir)
+
     def export_pdf_path(pdf_path: Path, override_out_dir: str | None) -> list[str]:
         """Export *pdf_path* using the configured profile."""
         if opts.export_profile == "custom":
@@ -95,13 +98,12 @@ def miro_export(
 
     if suffix == ".pptx":
         renderer = require_pptx_renderer()
-        target_dir = sane_output_dir(source, opts.out_dir)
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_pdf = Path(tmp_dir) / f"{source.stem}.pdf"
             pdf_path = Path(renderer.to_pdf(str(source), output_path=str(tmp_pdf)))
-            return export_pdf_path(pdf_path, str(target_dir))
+            return export_pdf_path(pdf_path, target_dir_str)
 
-    return export_pdf_path(source, opts.out_dir)
+    return export_pdf_path(source, target_dir_str)
 
 
 __all__ = ["MiroExportOptions", "miro_export"]

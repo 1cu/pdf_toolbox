@@ -81,6 +81,8 @@ _PPTX_ERROR_KEY_REFERENCES = (
     tr("pptx_unsupported_option"),
 )
 
+_CUSTOM_CHOICE_SENTINEL = "__custom__"
+
 
 @dataclass
 class ComboBoxWithSpin:
@@ -333,19 +335,25 @@ class MainWindow(QMainWindow):
                     spin_box.setMinimum(0)
                     spin_box.setMaximum(10_000)
                     choices = list(get_args(literal))
-                    combo_box.addItems([*choices, "Custom"])
+                    for ch in choices:
+                        combo_box.addItem(str(ch), ch)
+                    combo_box.addItem(tr("gui_custom"), _CUSTOM_CHOICE_SENTINEL)
                     if isinstance(param.default, str) and param.default in choices:
-                        combo_box.setCurrentText(param.default)
+                        idx = combo_box.findData(param.default)
+                        combo_box.setCurrentIndex(max(idx, 0))
                         spin_box.setVisible(False)
                     elif isinstance(param.default, int):
-                        combo_box.setCurrentText("Custom")
+                        idx = combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
+                        combo_box.setCurrentIndex(max(idx, 0))
                         spin_box.setValue(param.default)
                         spin_box.setVisible(True)
                     else:
-                        spin_box.setVisible(combo_box.currentText() == "Custom")
-                    combo_box.currentTextChanged.connect(
-                        lambda text_value, sb=spin_box: sb.setVisible(
-                            text_value == "Custom"
+                        spin_box.setVisible(
+                            combo_box.currentData() == _CUSTOM_CHOICE_SENTINEL
+                        )
+                    combo_box.currentIndexChanged.connect(
+                        lambda _i, cb=combo_box, sb=spin_box: sb.setVisible(
+                            cb.currentData() == _CUSTOM_CHOICE_SENTINEL
                         )
                     )
                     widget = ComboBoxWithSpin(combo_box=combo_box, spin_box=spin_box)
@@ -515,8 +523,10 @@ class MainWindow(QMainWindow):
         target_store[target_key] = value
 
     def _value_from_combo_with_spin(self, widget: ComboBoxWithSpin) -> Any:
-        choice = widget.combo_box.currentText()
-        return int(widget.spin_box.value()) if choice == "Custom" else choice
+        data = widget.combo_box.currentData()
+        if data == _CUSTOM_CHOICE_SENTINEL:
+            return int(widget.spin_box.value())
+        return data if data is not None else widget.combo_box.currentText()
 
     def _value_from_file_edit(
         self, widget: FileEdit, optional: bool, label_key: str
