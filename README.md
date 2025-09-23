@@ -5,7 +5,7 @@
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/1cu/pdf_toolbox?utm_source=oss&utm_medium=github&utm_campaign=1cu%2Fpdf_toolbox&labelColor=171717&color=FF570A&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 
-PDF Toolbox is a Python 3.13 toolkit for PDF and PPTX automation. A Qt GUI
+PDF Toolbox is a Python 3.13+ toolkit for PDF and PPTX automation. A Qt GUI
 (entry point `src/pdf_toolbox/gui/__main__.py`) discovers functions registered
 with the `@action` decorator and builds forms from their signatures. You can run
 those same actions from the command line or import them in scripts.
@@ -107,7 +107,7 @@ writes `miro_export.json` with per-page metadata and warnings.
 
 ## Development quick facts
 
-- Target Python 3.13; CI and tooling run only on 3.13.
+- Target Python 3.13 or newer; CI and tooling currently run on 3.13.
 - Install dependencies with `pip install -e '.[dev]'` and enable hooks via
   `pre-commit install`.
 - Pre-commit runs ruff format (Black-compatible formatting), ruff linting,
