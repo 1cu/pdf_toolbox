@@ -6,7 +6,12 @@ from typing import cast
 
 import pytest
 
-from pdf_toolbox.github import GitHubAPIError, GitHubClient, Transport, TransportResult
+from scripts.github_client import (
+    GitHubAPIError,
+    GitHubClient,
+    Transport,
+    TransportResult,
+)
 
 
 class FakeTransport:
@@ -137,7 +142,7 @@ def test_default_transport_invoked(monkeypatch: pytest.MonkeyPatch) -> None:
             captured["closed"] = True
 
     monkeypatch.setattr(
-        "src.pdf_toolbox.github.http.client.HTTPSConnection",
+        "scripts.github_client.http.client.HTTPSConnection",
         DummyConnection,
     )
     client = GitHubClient(None)
@@ -166,9 +171,9 @@ def test_ssl_context_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
         contexts.append(ctx)
         return ctx
 
-    monkeypatch.setattr("src.pdf_toolbox.github.Path.exists", lambda _path: True)
+    monkeypatch.setattr("scripts.github_client.Path.exists", lambda _path: True)
     monkeypatch.setattr(
-        "src.pdf_toolbox.github.ssl.create_default_context",
+        "scripts.github_client.ssl.create_default_context",
         fake_create_default_context,
     )
 
@@ -195,9 +200,9 @@ def test_ssl_context_success(monkeypatch: pytest.MonkeyPatch) -> None:
         contexts.append(ctx)
         return ctx
 
-    monkeypatch.setattr("src.pdf_toolbox.github.Path.exists", lambda _path: True)
+    monkeypatch.setattr("scripts.github_client.Path.exists", lambda _path: True)
     monkeypatch.setattr(
-        "src.pdf_toolbox.github.ssl.create_default_context",
+        "scripts.github_client.ssl.create_default_context",
         fake_create_default_context,
     )
 

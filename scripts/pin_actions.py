@@ -14,8 +14,11 @@ from pathlib import Path
 from typing import Any
 from urllib import parse
 
-from pdf_toolbox.github import GitHubAPIError, GitHubClient
+if __package__ in {None, ""}:
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from pdf_toolbox.utils import logger as _project_logger
+from scripts.github_client import GitHubAPIError, GitHubClient
 
 logger = _project_logger.getChild("scripts.pin_actions")
 

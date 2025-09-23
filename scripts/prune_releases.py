@@ -9,13 +9,18 @@ workflow. The number of releases to keep can be configured with the
 from __future__ import annotations
 
 import os
+import sys
 import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
+from pathlib import Path
 from urllib.parse import quote
 
-from pdf_toolbox.github import GitHubAPIError, GitHubClient
+if __package__ in {None, ""}:
+    sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from scripts.github_client import GitHubAPIError, GitHubClient
 
 API_PATH = "https://api.github.com"
 TIMEOUT = 10

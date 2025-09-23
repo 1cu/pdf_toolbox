@@ -4,8 +4,8 @@ from typing import cast
 
 import pytest
 
-from pdf_toolbox.github import GitHubAPIError, GitHubClient
 from scripts import prune_releases
+from scripts.github_client import GitHubAPIError, GitHubClient
 
 
 class DummyClient:
