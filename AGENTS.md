@@ -15,7 +15,10 @@ Read the primary docs before making changes:
 ## Set up the environment
 
 - Use Python 3.13 only.
-- Install dependencies with `pip install -e '.[dev]'`.
+- Before running `pre-commit`, install the system Qt libraries with
+  `./scripts/ci/install-qt-headless.sh` (run as root or via `sudo`) so the GUI
+  hooks have the dependencies they expect.
+- Install Python dependencies with `pip install -e '.[dev]'`.
 - Enable git hooks with `pre-commit install`.
 - Run Qt with a native display on desktop machines; do not override
   `QT_QPA_PLATFORM` locally.
