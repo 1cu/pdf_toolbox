@@ -170,13 +170,15 @@ class MiroExportOutcome:
 
     Attributes:
         files: Exported file paths.
-        manifest: Path to the generated manifest JSON file.
+        manifest: Path to the generated manifest JSON file when written.
+        manifest_data: Manifest entries kept in memory regardless of writing.
         page_results: Detailed per-page results.
         warnings: Combined warnings across all pages.
     """
 
     files: list[str]
-    manifest: Path
+    manifest: Path | None
+    manifest_data: list[dict[str, object]]
     page_results: list[PageExportResult]
     warnings: list[str]
 
@@ -710,13 +712,14 @@ def _export_page(
         return result
 
 
-def export_pdf_for_miro(
+def export_pdf_for_miro(  # noqa: PLR0913  # pdf-toolbox: export pipeline exposes optional tuning knobs | issue:-
     input_pdf: str,
     out_dir: str | None = None,
     *,
     pages: str | None = None,
     profile: ExportProfile = PROFILE_MIRO,
     cancel: Event | None = None,
+    write_manifest: bool = False,
 ) -> MiroExportOutcome:
     """Export ``input_pdf`` pages using ``PROFILE_MIRO`` constraints.
 
@@ -726,6 +729,7 @@ def export_pdf_for_miro(
         pages: Optional page specification string (``"1-3,5"`` style).
         profile: Export profile controlling rendering heuristics.
         cancel: Optional event used for cooperative cancellation.
+        write_manifest: When ``True`` dump the per-page manifest to disk.
 
     Returns:
         MiroExportOutcome: Result containing exported files and metadata.
@@ -738,7 +742,7 @@ def export_pdf_for_miro(
         else:
             page_numbers = list(range(1, doc.page_count + 1))
         out_base = sane_output_dir(input_pdf, out_dir)
-        manifest_path = out_base / "miro_export.json"
+        manifest_path: Path | None = None
         results: list[PageExportResult] = []
         files: list[str] = []
         warnings: list[str] = []
@@ -751,12 +755,18 @@ def export_pdf_for_miro(
                 files.append(str(res.output_path))
             warnings.extend(res.warnings)
         manifest_data = [entry.to_manifest_entry() for entry in results]
-        manifest_path.write_text(json.dumps(manifest_data, indent=2), encoding="utf-8")
+        if write_manifest:
+            manifest_path = out_base / "miro_export.json"
+            manifest_path.write_text(
+                json.dumps(manifest_data, indent=2),
+                encoding="utf-8",
+            )
         if warnings:
             logger.warning("Warnings during export: %s", "; ".join(warnings))
         return MiroExportOutcome(
             files=files,
             manifest=manifest_path,
+            manifest_data=manifest_data,
             page_results=results,
             warnings=warnings,
         )

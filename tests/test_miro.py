@@ -31,10 +31,15 @@ def test_export_pdf_prefers_svg(monkeypatch, sample_pdf, tmp_path):
     monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: True)
     monkeypatch.setattr(miro, "_export_page_as_svg", fake_export_page_as_svg)
 
-    outcome = export_pdf_for_miro(sample_pdf, out_dir=str(tmp_path))
+    outcome = export_pdf_for_miro(
+        sample_pdf,
+        out_dir=str(tmp_path),
+        write_manifest=True,
+    )
     assert outcome.files
     assert outcome.files[0].endswith(".svg")
-    manifest = json.loads((tmp_path / "miro_export.json").read_text())
+    assert outcome.manifest is not None
+    manifest = json.loads(outcome.manifest.read_text(encoding="utf-8"))
     assert manifest[0]["vector_export"] is True
 
 
@@ -53,11 +58,23 @@ def test_export_pdf_rasterises_images(monkeypatch, pdf_with_image, tmp_path):
     monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: False)
     monkeypatch.setattr(miro, "_rasterise_page", fake_rasterise_page)
 
-    outcome = export_pdf_for_miro(pdf_with_image, out_dir=str(tmp_path))
+    outcome = export_pdf_for_miro(
+        pdf_with_image,
+        out_dir=str(tmp_path),
+        write_manifest=True,
+    )
     assert outcome.files
     assert outcome.files[0].endswith(".webp")
-    manifest = json.loads((tmp_path / "miro_export.json").read_text())
+    assert outcome.manifest is not None
+    manifest = json.loads(outcome.manifest.read_text(encoding="utf-8"))
     assert manifest[0]["vector_export"] is False
+
+
+def test_export_pdf_skip_manifest_by_default(sample_pdf, tmp_path):
+    outcome = export_pdf_for_miro(sample_pdf, out_dir=str(tmp_path))
+    assert outcome.manifest is None
+    assert outcome.manifest_data
+    assert not (tmp_path / "miro_export.json").exists()
 
 
 def test_export_warns_when_limit_impossible(monkeypatch, pdf_with_image, tmp_path):
@@ -189,6 +206,15 @@ def test_miro_export_miro_pdf(sample_pdf, tmp_path):
     outputs = miro_export(sample_pdf, out_dir=str(tmp_path), export_profile="miro")
     assert outputs
     manifest = tmp_path / "miro_export.json"
+    assert not manifest.exists()
+
+    debug_outputs = miro_export(
+        sample_pdf,
+        out_dir=str(tmp_path),
+        export_profile="miro",
+        write_manifest=True,
+    )
+    assert debug_outputs
     assert manifest.exists()
     recorded = json.loads(manifest.read_text())
     assert recorded
@@ -233,11 +259,14 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     assert all(Path(path).exists() for path in outputs_default)
     assert all(Path(path).parent == tmp_path for path in outputs_default)
     default_manifest = tmp_path / "miro_export.json"
-    assert default_manifest.exists()
+    assert not default_manifest.exists()
 
     explicit_dir = tmp_path / "explicit"
     outputs = miro_export(
-        str(pptx_path), out_dir=str(explicit_dir), export_profile="miro"
+        str(pptx_path),
+        out_dir=str(explicit_dir),
+        export_profile="miro",
+        write_manifest=True,
     )
     assert outputs
     assert all(Path(path).exists() for path in outputs)
