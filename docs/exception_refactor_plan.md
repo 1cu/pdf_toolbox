@@ -4,6 +4,15 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 Note: `DEVELOPMENT_EXCEPTIONS.md` is generated. Do not edit it manually—run `scripts/generate_exception_overview.py` instead.
 
+## Progress
+
+- [x] Vendored minimal PyMuPDF type stubs in `typings/fitz/__init__.pyi` so action
+  modules and utilities no longer need blanket `type: ignore` comments when
+  importing `fitz`. (2025-03-17)
+- [x] Rebuilt the actions registry to persist metadata outside the decorated
+  callables, ensuring reloads keep definitions discoverable without mutating the
+  functions directly. (2025-03-17)
+
 ## Methodology
 
 - Group the inline exceptions by file to understand their shared causes (using the latest regenerated overview).
@@ -16,6 +25,15 @@ Prerequisite:
 - Regenerate `DEVELOPMENT_EXCEPTIONS.md` with `scripts/generate_exception_overview.py` before revising this document.
 
 ## Detailed Review
+
+### Typings package
+
+- **`typings/fitz` naming**: Evaluate whether the vendored stubs should remain under
+  the upstream module name or move behind a package-specific namespace (e.g.
+  `pdf_toolbox._vendor.fitz`) with explicit re-exports to avoid confusing end
+  users that the runtime library itself is bundled. Document whichever strategy
+  we keep so contributors understand the distinction between runtime and typing
+  shims.
 
 ### `src/pdf_toolbox/actions/__init__.py`
 
