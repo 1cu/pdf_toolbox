@@ -3,10 +3,10 @@ import math
 import warnings
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
 
+import fitz
 from pdf_toolbox.actions.pdf_images import DPI_PRESETS, _render_doc_pages, pdf_to_images
 
 

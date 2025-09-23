@@ -1,11 +1,11 @@
 import json
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 import pytest
 from PIL import Image
 from pptx import Presentation
 
+import fitz
 from pdf_toolbox import utils
 
 

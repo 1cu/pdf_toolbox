@@ -5,8 +5,9 @@ from __future__ import annotations
 import io
 from typing import Any
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image, ImageFilter
+
+import fitz
 
 
 def render_page_image(

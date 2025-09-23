@@ -4,13 +4,10 @@
 
 | File                                             | Rule                          | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------- | -------- |
-| src/pdf_toolbox/actions/extract.py:8             | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/actions/miro.py:27               | PLR0913                       | action signature mirrors GUI form                                     | -        |
-| src/pdf_toolbox/actions/pdf_images.py:11         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/actions/pdf_images.py:127        | PLR0912, PLR0913, PLR0915     | rendering pages needs many parameters and branches                    | -        |
 | src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                       | conversion helper requires many parameters                            | -        |
 | src/pdf_toolbox/actions/pptx.py:19               | PLR0913                       | action interface requires many parameters                             | -        |
-| src/pdf_toolbox/actions/unlock.py:8              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/cli.py:92                        | pragma: no cover              | delegate help/usage exit codes to argparse                            | -        |
 | src/pdf_toolbox/cli.py:102                       | pragma: no cover              | runtime errors bubble up to stderr for CLI users                      | -        |
 | src/pdf_toolbox/cli.py:376                       | pragma: no cover              | preserve conversion error text for numeric parameters                 | -        |
@@ -41,8 +38,6 @@
 | src/pdf_toolbox/gui/widgets.py:76                | N802                          | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:81                | N802                          | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:99                | N802                          | Qt requires camelCase event name                                      | -        |
-| src/pdf_toolbox/image_utils.py:8                 | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| src/pdf_toolbox/miro.py:13                       | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/miro.py:245                      | pragma: no cover              | guard against environment-specific WebP encoder issues                | -        |
 | src/pdf_toolbox/miro.py:260                      | pragma: no cover              | Pillow sometimes lacks WebP support                                   | -        |
 | src/pdf_toolbox/miro.py:280                      | pragma: no cover              | PNG encoder failure varies by platform                                | -        |
@@ -87,8 +82,6 @@
 | src/pdf_toolbox/renderers/registry.py:206        | BLE001, RUF100                | renderer constructors may fail arbitrarily; treat as unavailable      | -        |
 | src/pdf_toolbox/renderers/registry.py:247        | BLE001, RUF100                | plugin can_handle implementations may fail; treat as unavailable      | -        |
 | src/pdf_toolbox/renderers/registry.py:265        | BLE001, RUF100                | plugin can_handle implementations may fail; treat as unavailable      | -        |
-| src/pdf_toolbox/utils.py:13                      | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| tests/conftest.py:4                              | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/gui/conftest_qt.py:117                     | N802                          | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:120                     | N802, type: ignore[override]  | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:123                     | N802                          | stub preserves Qt camelCase API                                       | -        |
@@ -117,16 +110,12 @@
 | tests/renderers/test_http_office.py:219          | type: ignore[import-untyped]  | requests library does not ship type information                       | -        |
 | tests/renderers/test_http_office.py:246          | type: ignore[import-untyped]  | requests library does not ship type information                       | -        |
 | tests/renderers/test_http_office.py:480          | type: ignore[import-untyped]  | requests library does not ship type information                       | -        |
-| tests/test_actions_e2e.py:9                      | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| tests/test_converters.py:3                       | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
-| tests/test_images.py:6                           | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_miro.py:215                           | pragma: no cover              | ensure dummy renderer keeps simple coverage                           | -        |
 | tests/test_pptx.py:86                            | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx.py:174                           | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx.py:262                           | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx.py:335                           | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx.py:406                           | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_pptx_e2e.py:9                         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_pptx_e2e.py:76                        | PLR0913                       | renderer API requires many parameters                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:21         | N802                          | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:25         | N802                          | mirror COM method name                                                | -        |
@@ -139,7 +128,6 @@
 | tests/test_pptx_ms_office_renderer.py:125        | N802                          | COM style method name                                                 | -        |
 | tests/test_pptx_renderer.py:20                   | PLR0913                       | renderer stub matches renderer API signature                          | -        |
 | tests/test_renderer_registry.py:12               | PLR0913                       | renderer API requires many parameters                                 | -        |
-| tests/test_utils.py:5                            | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 
 <!-- mdformat on -->
 

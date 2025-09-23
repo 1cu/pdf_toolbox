@@ -54,9 +54,13 @@ class _ActionDefinition:
 
 
 _registry: dict[str, Action] = {}
-_definitions: WeakKeyDictionary[t.Callable[..., t.Any], _ActionDefinition] = (
-    WeakKeyDictionary()
-)
+if "_definitions" not in globals():
+    _definitions: WeakKeyDictionary[t.Callable[..., t.Any], _ActionDefinition]
+    _definitions = WeakKeyDictionary()
+else:
+    _definitions = t.cast(
+        WeakKeyDictionary[t.Callable[..., t.Any], _ActionDefinition], _definitions
+    )
 
 
 def _format_name(func_name: str) -> str:

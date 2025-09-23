@@ -6,9 +6,9 @@ import json
 import math
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image
 
+import fitz
 from pdf_toolbox.actions.extract import extract_range, split_pdf
 from pdf_toolbox.actions.miro import miro_export
 from pdf_toolbox.actions.pdf_images import DPI_PRESETS, pdf_to_images

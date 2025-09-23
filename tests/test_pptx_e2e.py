@@ -6,9 +6,9 @@ import math
 from contextlib import contextmanager
 from pathlib import Path
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
 from PIL import Image
 
+import fitz
 from pdf_toolbox.actions import pptx as pptx_actions
 from pdf_toolbox.actions.pptx import pptx_to_images, pptx_to_pdf
 from pdf_toolbox.renderers.pptx import BasePptxRenderer

@@ -57,6 +57,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "pdf_toolbox.locales" = ["*.json"]
+"" = ["fitz/__init__.pyi"]
 
 [tool.ruff]
 line-length = 88

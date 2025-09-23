@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from threading import Event
 
-import fitz  # type: ignore  # pdf-toolbox: PyMuPDF lacks type hints | issue:-
+import fitz
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
 import pytest
