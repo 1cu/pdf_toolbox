@@ -219,7 +219,7 @@ def test_clickable_label_emits_signal(qtbot) -> None:
     qtbot.addWidget(label)
 
     with qtbot.waitSignal(label.clicked):
-        QTest.mouseClick(label, Qt.LeftButton)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.LeftButton | issue:-
+        QTest.mouseClick(label, Qt.MouseButton.LeftButton)
 
 
 def test_qt_log_handler_appends_and_calls_update(qtbot) -> None:

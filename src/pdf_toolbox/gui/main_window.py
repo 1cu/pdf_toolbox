@@ -188,7 +188,9 @@ class MainWindow(QMainWindow):
 
         self.form_widget = QWidget()
         self.form_layout = QFormLayout(self.form_widget)
-        self.form_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss form layout policy enum | issue:-
+        self.form_layout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
+        )
         splitter.addWidget(self.form_widget)
         splitter.setSizes([250, 650])
 
@@ -224,7 +226,7 @@ class MainWindow(QMainWindow):
         self.action_about = settings_menu.addAction(tr("about"), self.on_about)
         self.settings_menu = settings_menu
         self.settings_btn.setMenu(settings_menu)
-        self.settings_btn.setPopupMode(QToolButton.InstantPopup)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss tool button enum | issue:-
+        self.settings_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         top_bar.addStretch()
         top_bar.addWidget(self.settings_btn)
 
@@ -255,13 +257,13 @@ class MainWindow(QMainWindow):
                 self.tree.addTopLevelItem(cat_item)
                 cats[cat_name] = cat_item
             item = QTreeWidgetItem([act.name])
-            item.setData(0, Qt.UserRole, act)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.UserRole | issue:-
+            item.setData(0, Qt.ItemDataRole.UserRole, act)
             cat_item.addChild(item)
         self.tree.expandAll()
 
     def on_item_clicked(self, item: QTreeWidgetItem) -> None:
         """Respond to tree item clicks by showing the action form."""
-        act = item.data(0, Qt.UserRole)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss Qt.UserRole | issue:-
+        act = item.data(0, Qt.ItemDataRole.UserRole)
         if act:
             self.current_action = act
             self.build_form(act)
@@ -803,11 +805,13 @@ class MainWindow(QMainWindow):
         email_edit = QLineEdit(self.cfg.get("email", ""))
         form.addRow(tr("author"), author_edit)
         form.addRow(tr("email"), email_edit)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             self.cfg["author"] = author_edit.text().strip()
             self.cfg["email"] = email_edit.text().strip()
             save_config(self.cfg)
@@ -823,11 +827,13 @@ class MainWindow(QMainWindow):
         combo.addItems(["ERROR", "WARNING", "INFO", "DEBUG"])
         combo.setCurrentText(self.cfg.get("log_level", "INFO"))
         form.addRow("Level", combo)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             level = combo.currentText()
             self.cfg["log_level"] = level
             save_config(self.cfg)
@@ -847,11 +853,13 @@ class MainWindow(QMainWindow):
         mapping = {"system": tr("system"), "en": tr("english"), "de": tr("german")}
         combo.setCurrentText(mapping.get(current, tr("system")))
         form.addRow(tr("language"), combo)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             inverse = {value: key for key, value in mapping.items()}
             choice = inverse.get(combo.currentText(), "system")
             self.cfg["language"] = choice
@@ -903,11 +911,13 @@ class MainWindow(QMainWindow):
         else:
             eff = QLabel(type(renderer).__name__)
         form.addRow("Effective renderer", eff)
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog button enum | issue:-
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         form.addWidget(buttons)
         buttons.accepted.connect(dlg.accept)
         buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.Accepted:  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss dialog attribute | issue:-
+        if dlg.exec() == QDialog.DialogCode.Accepted:
             value = combo.currentData()
             cfg["pptx_renderer"] = str(value) if value else "auto"
             save_config(cfg)

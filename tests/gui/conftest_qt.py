@@ -169,10 +169,12 @@ def messagebox_stubs(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
 def dialog_exec_stub(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
     """Stub ``QDialog.exec`` so tests can control dialog outcomes."""
     callbacks: list[Callable[[QDialog], None]] = []
-    results = {"return": QDialog.Accepted}  # type: ignore[attr-defined]  # pdf-toolbox: PySide6 stubs miss QDialog.Accepted | issue:-
+    results: dict[str, QDialog.DialogCode | int] = {
+        "return": QDialog.DialogCode.Accepted
+    }
     calls: list[QDialog] = []
 
-    def set_result(value: int) -> None:
+    def set_result(value: QDialog.DialogCode | int) -> None:
         results["return"] = value
 
     def set_callback(callback: Callable[[QDialog], None] | None) -> None:
@@ -184,7 +186,7 @@ def dialog_exec_stub(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
         calls.append(self)
         if callbacks:
             callbacks[0](self)
-        return results["return"]
+        return int(results["return"])
 
     monkeypatch.setattr(QDialog, "exec", fake_exec)
     return SimpleNamespace(

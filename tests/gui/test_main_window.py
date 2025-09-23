@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal, cast
 
@@ -1136,7 +1137,10 @@ def test_check_author_prompts_when_missing(
     try:
         invoked: list[str] = []
         monkeypatch.setattr(window, "on_author", lambda: invoked.append("on_author"))
-        mw.MainWindow._original_check_author(window)  # type: ignore[attr-defined]  # pdf-toolbox: fixture injects helper on MainWindow for tests | issue:-
+        original_attr = getattr(mw.MainWindow, "_original_check_author", None)
+        assert original_attr is not None
+        original = cast(Callable[[gui.MainWindow], None], original_attr)
+        original(window)
         assert messagebox_stubs.calls["warning"]
         assert invoked == ["on_author"]
     finally:
