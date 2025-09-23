@@ -4,8 +4,6 @@
 
 | File                                             | Rule                          | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------- | -------- |
-| src/pdf_toolbox/actions/\_\_init\_\_.py:87       | type: ignore[attr-defined]    | attach renderer flag for GUI                                          | -        |
-| src/pdf_toolbox/actions/\_\_init\_\_.py:94       | type: ignore[attr-defined]    | attach custom attribute for action registration                       | -        |
 | src/pdf_toolbox/actions/extract.py:8             | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | src/pdf_toolbox/actions/miro.py:27               | PLR0913                       | action signature mirrors GUI form                                     | -        |
 | src/pdf_toolbox/actions/pdf_images.py:11         | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
@@ -119,9 +117,6 @@
 | tests/renderers/test_http_office.py:219          | type: ignore[import-untyped]  | requests library does not ship type information                       | -        |
 | tests/renderers/test_http_office.py:246          | type: ignore[import-untyped]  | requests library does not ship type information                       | -        |
 | tests/renderers/test_http_office.py:480          | type: ignore[import-untyped]  | requests library does not ship type information                       | -        |
-| tests/test_actions.py:99                         | pragma: no cover              | stub action body unused during registry import                        | -        |
-| tests/test_actions.py:101                        | type: ignore[attr-defined]    | mark stub action for registry import                                  | -        |
-| tests/test_actions.py:103                        | type: ignore[attr-defined]    | register stub action on module for import test                        | -        |
 | tests/test_actions_e2e.py:9                      | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_converters.py:3                       | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
 | tests/test_images.py:6                           | type: ignore                  | PyMuPDF lacks type hints                                              | -        |

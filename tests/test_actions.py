@@ -1,4 +1,5 @@
 import sys
+import typing as t
 
 import pytest
 
@@ -91,16 +92,15 @@ def test_actions_import_registers_actions(monkeypatch: pytest.MonkeyPatch) -> No
 
     for name in actions.ACTION_MODULES:
         fullname = f"pdf_toolbox.actions.{name}"
-        stub = types.ModuleType(fullname)
+        stub = t.cast(t.Any, types.ModuleType(fullname))
         if name == "pdf_images":
 
             def fake_action() -> None:
                 """Fake action for registry checks."""
-                pass  # pragma: no cover  # pdf-toolbox: stub action body unused during registry import | issue:-
+                pass
 
-            fake_action.__pdf_toolbox_action__ = True  # type: ignore[attr-defined]  # pdf-toolbox: mark stub action for registry import | issue:-
             fake_action.__module__ = fullname
-            stub.fake_action = fake_action  # type: ignore[attr-defined]  # pdf-toolbox: register stub action on module for import test | issue:-
+            stub.fake_action = actions.action()(fake_action)
         monkeypatch.setitem(sys.modules, fullname, stub)
 
     actions._registry.clear()

@@ -8,6 +8,7 @@ import typing as t
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import cache
+from weakref import WeakKeyDictionary
 
 from pdf_toolbox.i18n import tr
 
@@ -28,11 +29,12 @@ class Action:
 
     fqname: str
     key: str
-    func: t.Callable
+    func: t.Callable[..., t.Any]
     params: list[Param]
     help: str
     category: str | None = None
     requires_pptx_renderer: bool = False
+    visible: bool = True
 
     @property
     def name(self) -> str:
@@ -41,7 +43,20 @@ class Action:
         return translated if translated != self.key else _format_name(self.key)
 
 
+@dataclass
+class _ActionDefinition:
+    """Configuration captured when an action is decorated."""
+
+    name: str | None
+    category: str | None
+    requires_pptx_renderer: bool
+    visible: bool
+
+
 _registry: dict[str, Action] = {}
+_definitions: WeakKeyDictionary[t.Callable[..., t.Any], _ActionDefinition] = (
+    WeakKeyDictionary()
+)
 
 
 def _format_name(func_name: str) -> str:
@@ -69,6 +84,23 @@ def _format_name(func_name: str) -> str:
     return " ".join(parts)
 
 
+def _remember_definition(
+    fn: t.Callable[..., t.Any],
+    *,
+    name: str | None,
+    category: str | None,
+    visible: bool,
+    requires_pptx_renderer: bool,
+) -> None:
+    """Store metadata for *fn* so discovery can rebuild the registry."""
+    _definitions[fn] = _ActionDefinition(
+        name=name,
+        category=category,
+        requires_pptx_renderer=requires_pptx_renderer,
+        visible=visible,
+    )
+
+
 def action(
     name: str | None = None,
     *,
@@ -83,27 +115,40 @@ def action(
     :func:`list_actions`.
     """
 
-    def deco(fn):
-        fn.__pptx_renderer_required__ = requires_pptx_renderer  # type: ignore[attr-defined]  # pdf-toolbox: attach renderer flag for GUI | issue:-
+    def deco(fn: t.Callable[..., t.Any]):
+        _remember_definition(
+            fn,
+            name=name,
+            category=category,
+            visible=visible,
+            requires_pptx_renderer=requires_pptx_renderer,
+        )
         act = build_action(
             fn,
             name=name,
             category=category,
             requires_pptx_renderer=requires_pptx_renderer,
+            visible=visible,
         )
-        fn.__pdf_toolbox_action__ = visible  # type: ignore[attr-defined]  # pdf-toolbox: attach custom attribute for action registration | issue:-
         _registry[act.fqname] = act
         return fn
 
     return deco
 
 
+def _definition_for(
+    fn: t.Callable[..., t.Any],
+) -> _ActionDefinition | None:
+    return _definitions.get(fn)
+
+
 def build_action(
-    fn,
+    fn: t.Callable[..., t.Any],
     name: str | None = None,
     category: str | None = None,
     *,
     requires_pptx_renderer: bool | None = None,
+    visible: bool | None = None,
 ) -> Action:
     sig = inspect.signature(fn)
     hints = t.get_type_hints(fn, include_extras=True)
@@ -118,19 +163,37 @@ def build_action(
                 default=param.default,
             )
         )
+    definition = _definition_for(fn)
+    resolved_name = (
+        name if name is not None else definition.name if definition else None
+    )
+    resolved_category = (
+        category
+        if category is not None
+        else definition.category
+        if definition
+        else None
+    )
+    resolved_requires = (
+        requires_pptx_renderer
+        if requires_pptx_renderer is not None
+        else definition.requires_pptx_renderer
+        if definition
+        else False
+    )
+    resolved_visible = (
+        visible if visible is not None else definition.visible if definition else True
+    )
     module_name = fn.__module__
     return Action(
         fqname=f"{module_name}.{fn.__name__}",
-        key=name or fn.__name__,
+        key=resolved_name or fn.__name__,
         func=fn,
         params=params,
         help=(fn.__doc__ or "").strip(),
-        category=category,
-        requires_pptx_renderer=(
-            requires_pptx_renderer
-            if requires_pptx_renderer is not None
-            else getattr(fn, "__pptx_renderer_required__", False)
-        ),
+        category=resolved_category,
+        requires_pptx_renderer=resolved_requires,
+        visible=resolved_visible,
     )
 
 
@@ -155,9 +218,10 @@ def _register_module(mod_name: str) -> None:
         return
     mod = importlib.import_module(mod_name)
     for _, obj in inspect.getmembers(mod, inspect.isfunction):
-        if getattr(obj, "__pdf_toolbox_action__", False):
-            act = build_action(obj)
-            _registry.setdefault(act.fqname, act)
+        if _definition_for(obj) is None:
+            continue
+        act = build_action(obj)
+        _registry.setdefault(act.fqname, act)
 
 
 ACTION_MODULES = [
@@ -179,11 +243,7 @@ def _auto_discover() -> None:
 def list_actions() -> list[Action]:
     """Return all discovered actions."""
     _auto_discover()
-    return [
-        act
-        for act in _registry.values()
-        if getattr(act.func, "__pdf_toolbox_action__", False)
-    ]
+    return [act for act in _registry.values() if act.visible]
 
 
 for _mod in ACTION_MODULES:
