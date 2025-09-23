@@ -15,6 +15,7 @@ from pdf_toolbox.actions.pdf_images import (
     pdf_to_images,
     resolve_image_settings,
 )
+from pdf_toolbox.i18n import tr
 from pdf_toolbox.miro import PROFILE_MIRO, export_pdf_for_miro
 from pdf_toolbox.paths import validate_path
 from pdf_toolbox.renderers.pptx import require_pptx_renderer
@@ -58,7 +59,7 @@ def miro_export(
     source = validate_path(input_path, must_exist=True)
     suffix = source.suffix.lower()
     if suffix not in {".pdf", ".pptx"}:
-        msg = f"Unsupported input type: {suffix}"
+        msg = tr("miro_unsupported_input", suffix=suffix)
         raise ValueError(msg)
 
     logger.info("Exporting %s using profile %s", source, opts.export_profile)

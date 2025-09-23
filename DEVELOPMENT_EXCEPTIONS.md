@@ -17,6 +17,7 @@
 | src/pdf_toolbox/gui/main_window.py:258           | type: ignore[attr-defined]   | PySide6 stubs miss Qt.UserRole                                            | -        |
 | src/pdf_toolbox/gui/main_window.py:264           | type: ignore[attr-defined]   | PySide6 stubs miss Qt.UserRole                                            | -        |
 | src/pdf_toolbox/gui/main_window.py:270           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
+| src/pdf_toolbox/gui/main_window.py:522           | TRY004                       | GUI handler expects ValueError                                            | -        |
 | src/pdf_toolbox/gui/main_window.py:591           | pragma: no cover             | opens external documentation                                              | -        |
 | src/pdf_toolbox/gui/main_window.py:771           | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/main_window.py:806           | type: ignore[attr-defined]   | PySide6 stubs miss dialog button enum                                     | -        |
@@ -95,7 +96,7 @@
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                                 | -        |
 | tests/gui/test_widgets.py:222                    | type: ignore[attr-defined]   | PySide6 stubs miss Qt.LeftButton                                          | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
-| tests/test_miro.py:248                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
+| tests/test_miro.py:250                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
 | tests/test_pptx.py:86                            | PLR0913                      | renderer API requires many parameters                                     | -        |
 | tests/test_pptx.py:177                           | PLR0913                      | renderer API requires many parameters                                     | -        |
 | tests/test_pptx.py:267                           | PLR0913                      | renderer API requires many parameters                                     | -        |

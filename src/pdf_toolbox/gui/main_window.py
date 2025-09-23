@@ -519,7 +519,7 @@ class MainWindow(QMainWindow):
             value = self._value_from_double_spin(widget, optional)
         else:
             msg = f"Unsupported widget type: {type(widget)!r}"
-            raise TypeError(msg)
+            raise ValueError(msg)  # noqa: TRY004  # pdf-toolbox: GUI handler expects ValueError | issue:-
         target_store[target_key] = value
 
     def _value_from_combo_with_spin(self, widget: ComboBoxWithSpin) -> Any:

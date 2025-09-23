@@ -22,6 +22,7 @@
     "language": "Sprache",
     "log_level": "Log Level",
     "miro_export": "Miro-Export",
+    "miro_unsupported_input": "Nicht unterstützter Eingabetyp: {suffix}",
     "open_folder": "Ordner öffnen",
     "pdf_to_images": "PDF zu Bildern",
     "pptx.http.bad_status": "HTTP-PPTX-Renderer antwortete mit einem unerwarteten Status.",

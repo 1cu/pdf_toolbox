@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,7 @@ from PIL import Image
 
 from pdf_toolbox import image_utils, miro
 from pdf_toolbox.actions.miro import MiroExportOptions, miro_export
+from pdf_toolbox.i18n import tr
 from pdf_toolbox.miro import PROFILE_MIRO, ExportProfile, export_pdf_for_miro
 from pdf_toolbox.renderers.pptx import (
     PPTX_PROVIDER_DOCS_URL,
@@ -297,7 +299,8 @@ def test_miro_export_pptx_without_provider(tmp_path):
 def test_miro_export_rejects_unknown_extension(tmp_path):
     bogus = tmp_path / "data.txt"
     bogus.write_text("hello")
-    with pytest.raises(ValueError, match="Unsupported input type"):
+    expected = re.escape(tr("miro_unsupported_input", suffix=".txt"))
+    with pytest.raises(ValueError, match=expected):
         miro_export(str(bogus))
 
 
