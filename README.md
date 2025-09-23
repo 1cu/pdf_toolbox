@@ -113,8 +113,9 @@ for typed parameters and handles validation.
 Choose the “Miro (optimised for Miro/Boards)” profile in the GUI to create
 per-page exports that respect Miro’s 30 MB / 32 MP / 8192×4096 limits. Vector
 pages render as SVG with fonts converted to paths; raster-heavy slides use an
-adaptive pipeline that keeps DPI high while staying within limits. The export
-writes `miro_export.json` with per-page metadata and warnings.
+adaptive pipeline that keeps DPI high while staying within limits. Enable the
+debug manifest option to write `miro_export.json` with per-page metadata and
+warnings.
 
 ## Development quick facts
 

@@ -33,6 +33,7 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
     quality: int | QualityChoice = "High (95)",
     out_dir: str | None = None,
     cancel: Event | None = None,
+    write_manifest: bool = False,
 ) -> list[str]:
     """Export slides using either the custom or Miro profile.
 
@@ -45,6 +46,7 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
         quality: Quality preset/value for lossy formats in the custom profile.
         out_dir: Optional target directory for exported files.
         cancel: Optional cancellation event.
+        write_manifest: When ``True`` write ``miro_export.json`` with metadata.
 
     Returns:
         list[str]: Paths to generated files.
@@ -81,8 +83,10 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
             pages=pages,
             profile=PROFILE_MIRO,
             cancel=cancel,
+            write_manifest=write_manifest,
         )
-        logger.info("Manifest written to %s", outcome.manifest)
+        if outcome.manifest:
+            logger.info("Manifest written to %s", outcome.manifest)
         return outcome.files
 
     if suffix == ".pptx":

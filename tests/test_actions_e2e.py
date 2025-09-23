@@ -175,7 +175,7 @@ def test_miro_export_custom_profile_e2e(sample_pdf: str, tmp_path: Path) -> None
 
 
 def test_miro_export_miro_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
-    """The Miro profile generates a manifest alongside exported pages."""
+    """The Miro profile can optionally generate a manifest."""
     out_dir = tmp_path / "miro"
     outputs = [
         Path(path)
@@ -193,11 +193,25 @@ def test_miro_export_miro_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
         assert path.stat().st_size > 0
 
     manifest_path = out_dir / "miro_export.json"
+    assert not manifest_path.exists()
+
+    debug_outputs = [
+        Path(path)
+        for path in miro_export(
+            sample_pdf,
+            out_dir=str(out_dir),
+            export_profile="miro",
+            pages="1-2",
+            write_manifest=True,
+        )
+    ]
+    assert len(debug_outputs) == 2
+
     assert manifest_path.exists()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert [entry["page"] for entry in manifest] == [1, 2]
-    for entry, path in zip(manifest, outputs, strict=False):
+    for entry, path in zip(manifest, debug_outputs, strict=False):
         fmt = entry.get("format")
         if fmt:
             assert path.suffix.lower() == f".{fmt.lower()}"
