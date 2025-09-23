@@ -64,6 +64,32 @@ def test_format_name_plural_acronyms():
     assert actions._format_name("pdfs_to_pngs") == "PDFs to PNGs"
 
 
+def test_dataclass_parameters_exposed():
+    from dataclasses import dataclass
+
+    @dataclass
+    class SampleOptions:
+        mode: str = "auto"
+        limit: int | None = None
+
+    @actions.action()
+    def sample(path: str, options: SampleOptions | None = None) -> None:
+        del path, options
+
+    act = actions.build_action(sample, name="sample")
+
+    assert act.dataclass_params["options"] is SampleOptions
+    assert any(
+        param.name == "path" and param.parent is None for param in act.form_params
+    )
+    assert any(
+        param.name == "mode" and param.parent == "options" for param in act.form_params
+    )
+    assert any(
+        param.name == "limit" and param.parent == "options" for param in act.form_params
+    )
+
+
 def test_register_module_skips_undocumented():
     import types
 

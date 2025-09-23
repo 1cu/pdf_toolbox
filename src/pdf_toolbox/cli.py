@@ -203,10 +203,16 @@ def _cmd_describe(identifier: str) -> None:
         lines.append(f"Category: {action.category}")
     if action.help:
         lines.extend(["Description:", action.help])
-    if action.params:
+    form_params = action.form_params or action.params
+    params = [
+        param
+        for param in form_params
+        if param.name not in {"cancel", "progress_callback"}
+    ]
+    if params:
         lines.append("Parameters:")
         lines.extend(
-            f"  --{param.name}{_format_param_suffix(param)}" for param in action.params
+            f"  --{param.name}{_format_param_suffix(param)}" for param in params
         )
     else:
         lines.append("Parameters: none")
@@ -299,22 +305,46 @@ def _build_call_arguments(action: Action, provided: dict[str, str]) -> dict[str,
     values: dict[str, t.Any] = {}
     remaining = dict(provided)
     missing: list[str] = []
-    for param in action.params:
+    dataclass_values: dict[str, dict[str, t.Any]] = {}
+    dataclass_missing: dict[str, list[str]] = {}
+    if action.dataclass_params:
+        dataclass_values = {name: {} for name in action.dataclass_params}
+        dataclass_missing = {name: [] for name in action.dataclass_params}
+    iterable = action.form_params if action.form_params else action.params
+    for param in iterable:
         if param.kind not in {
             "POSITIONAL_ONLY",
             "POSITIONAL_OR_KEYWORD",
             "KEYWORD_ONLY",
         }:
             raise CliError.unsupported_parameter_kind(param.kind)
-        if param.name in remaining:
-            raw_value = remaining.pop(param.name)
-            values[param.name] = _convert_value(raw_value, param.annotation)
+        cli_key = param.name
+        store = values
+        target_name = param.name
+        if param.parent is not None:
+            store = dataclass_values[param.parent]
+            target_name = param.name
+        if cli_key in remaining:
+            raw_value = remaining.pop(cli_key)
+            store[target_name] = _convert_value(raw_value, param.annotation)
         elif param.default is inspect._empty:
-            missing.append(param.name)
+            full_name = param.full_name
+            if param.parent is not None:
+                dataclass_missing[param.parent].append(full_name)
+            else:
+                missing.append(full_name)
     if missing:
         raise CliError.missing_required_parameters(missing)
+    dataclass_instances: dict[str, t.Any] = {}
+    for dc_name, dc_type in action.dataclass_params.items():
+        missing_fields = dataclass_missing.get(dc_name)
+        if missing_fields:
+            raise CliError.missing_required_parameters(missing_fields)
+        field_values = dataclass_values.get(dc_name, {})
+        dataclass_instances[dc_name] = dc_type(**field_values)
     if remaining:
         raise CliError.unknown_parameters(remaining)
+    values.update(dataclass_instances)
     return values
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
 from typing import Literal
@@ -23,53 +24,56 @@ ProfileChoice = Literal["custom", "miro"]
 ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
 
+@dataclass(slots=True)
+class MiroExportOptions:
+    """Options exposed by the :func:`miro_export` action."""
+
+    pages: str | None = None
+    export_profile: ProfileChoice = "miro"
+    image_format: ImageFormatChoice = "PNG"
+    dpi: int | DpiChoice = "High (300 dpi)"
+    quality: int | QualityChoice = "High (95)"
+    out_dir: str | None = None
+    write_manifest: bool = False
+
+
 @action(name="miro_export", category="Export")
-def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI form | issue:-
+def miro_export(
     input_path: str,
-    pages: str | None = None,
-    export_profile: ProfileChoice = "miro",
-    image_format: ImageFormatChoice = "PNG",
-    dpi: int | DpiChoice = "High (300 dpi)",
-    quality: int | QualityChoice = "High (95)",
-    out_dir: str | None = None,
+    options: MiroExportOptions | None = None,
+    *,
     cancel: Event | None = None,
-    write_manifest: bool = False,
 ) -> list[str]:
     """Export slides using either the custom or Miro profile.
 
     Args:
         input_path: PDF or PPTX file to export.
-        pages: Optional page specification string (``"1-3,5"`` style).
-        export_profile: Export profile to use (``"custom"`` or ``"miro"``).
-        image_format: Output image format when using the custom profile.
-        dpi: DPI or preset for the custom profile.
-        quality: Quality preset/value for lossy formats in the custom profile.
-        out_dir: Optional target directory for exported files.
+        options: Dataclass describing the export behaviour.
         cancel: Optional cancellation event.
-        write_manifest: When ``True`` write ``miro_export.json`` with metadata.
 
     Returns:
         list[str]: Paths to generated files.
     """
+    opts = options or MiroExportOptions()
     source = validate_path(input_path, must_exist=True)
     suffix = source.suffix.lower()
     if suffix not in {".pdf", ".pptx"}:
         msg = f"Unsupported input type: {suffix}"
         raise ValueError(msg)
 
-    logger.info("Exporting %s using profile %s", source, export_profile)
+    logger.info("Exporting %s using profile %s", source, opts.export_profile)
 
     def export_pdf_path(pdf_path: Path, override_out_dir: str | None) -> list[str]:
         """Export *pdf_path* using the configured profile."""
-        if export_profile == "custom":
+        if opts.export_profile == "custom":
             fmt, quality_val, dpi_val = resolve_image_settings(
-                image_format,
-                quality,
-                dpi,
+                opts.image_format,
+                opts.quality,
+                opts.dpi,
             )
             return pdf_to_images(
                 str(pdf_path),
-                pages=pages,
+                pages=opts.pages,
                 dpi=dpi_val,
                 image_format=fmt,
                 quality=quality_val,
@@ -80,10 +84,10 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
         outcome = export_pdf_for_miro(
             str(pdf_path),
             out_dir=override_out_dir,
-            pages=pages,
+            pages=opts.pages,
             profile=PROFILE_MIRO,
             cancel=cancel,
-            write_manifest=write_manifest,
+            write_manifest=opts.write_manifest,
         )
         if outcome.manifest:
             logger.info("Manifest written to %s", outcome.manifest)
@@ -91,13 +95,13 @@ def miro_export(  # noqa: PLR0913  # pdf-toolbox: action signature mirrors GUI f
 
     if suffix == ".pptx":
         renderer = require_pptx_renderer()
-        target_dir = sane_output_dir(source, out_dir)
+        target_dir = sane_output_dir(source, opts.out_dir)
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_pdf = Path(tmp_dir) / f"{source.stem}.pdf"
             pdf_path = Path(renderer.to_pdf(str(source), output_path=str(tmp_pdf)))
             return export_pdf_path(pdf_path, str(target_dir))
 
-    return export_pdf_path(source, out_dir)
+    return export_pdf_path(source, opts.out_dir)
 
 
-__all__ = ["miro_export"]
+__all__ = ["MiroExportOptions", "miro_export"]

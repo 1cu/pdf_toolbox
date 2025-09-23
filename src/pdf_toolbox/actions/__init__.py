@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import importlib
 import inspect
+import types
 import typing as t
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import MISSING, dataclass, field, fields, is_dataclass
 from functools import cache
 from threading import RLock
 from weakref import WeakKeyDictionary
@@ -22,6 +23,12 @@ class Param:
     kind: str
     annotation: t.Any
     default: t.Any = inspect._empty
+    parent: str | None = None
+
+    @property
+    def full_name(self) -> str:
+        """Return a dotted identifier for nested parameters."""
+        return f"{self.parent}.{self.name}" if self.parent else self.name
 
 
 @dataclass
@@ -36,6 +43,8 @@ class Action:
     category: str | None = None
     requires_pptx_renderer: bool = False
     visible: bool = True
+    dataclass_params: dict[str, type[t.Any]] = field(default_factory=dict)
+    form_params: list[Param] = field(default_factory=list)
 
     @property
     def name(self) -> str:
@@ -104,6 +113,19 @@ def _format_name(func_name: str) -> str:
         else:
             parts.append(low)
     return " ".join(parts)
+
+
+def _extract_dataclass(annotation: t.Any) -> type[t.Any] | None:
+    """Return the dataclass type embedded in *annotation* if present."""
+    if is_dataclass(annotation):
+        return t.cast(type[t.Any], annotation)
+    origin = t.get_origin(annotation)
+    if origin in (t.Union, types.UnionType):
+        for arg in t.get_args(annotation):
+            extracted = _extract_dataclass(arg)
+            if extracted is not None:
+                return extracted
+    return None
 
 
 def _remember_definition(
@@ -201,16 +223,42 @@ def build_action(
     sig = inspect.signature(fn)
     hints = t.get_type_hints(fn, include_extras=True)
     params: list[Param] = []
+    form_params: list[Param] = []
+    dataclass_params: dict[str, type[t.Any]] = {}
     for param in sig.parameters.values():
         ann = hints.get(param.name, param.annotation)
-        params.append(
-            Param(
-                name=param.name,
-                kind=str(param.kind),
-                annotation=ann,
-                default=param.default,
-            )
+        param_meta = Param(
+            name=param.name,
+            kind=str(param.kind),
+            annotation=ann,
+            default=param.default,
         )
+        params.append(param_meta)
+        dataclass_type = _extract_dataclass(ann)
+        if dataclass_type is not None:
+            dataclass_params[param.name] = dataclass_type
+            dc_hints = t.get_type_hints(dataclass_type, include_extras=True)
+            for field_info in fields(dataclass_type):
+                default: t.Any
+                if field_info.default is not MISSING:
+                    default = field_info.default
+                else:
+                    factory = getattr(field_info, "default_factory", MISSING)
+                    if factory is not MISSING:
+                        default = t.cast(t.Callable[[], t.Any], factory)()
+                    else:
+                        default = inspect._empty
+                form_params.append(
+                    Param(
+                        name=field_info.name,
+                        kind="POSITIONAL_OR_KEYWORD",
+                        annotation=dc_hints.get(field_info.name, field_info.type),
+                        default=default,
+                        parent=param.name,
+                    )
+                )
+        else:
+            form_params.append(param_meta)
     definition = _definition_for(fn)
     resolved_name = _resolve_attr(name, definition.name if definition else None)
     resolved_category = _resolve_attr(
@@ -234,6 +282,8 @@ def build_action(
         category=resolved_category,
         requires_pptx_renderer=resolved_requires,
         visible=resolved_visible,
+        dataclass_params=dataclass_params,
+        form_params=form_params,
     )
 
 

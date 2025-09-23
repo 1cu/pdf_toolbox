@@ -10,7 +10,7 @@ import fitz
 from PIL import Image
 
 from pdf_toolbox.actions.extract import extract_range, split_pdf
-from pdf_toolbox.actions.miro import miro_export
+from pdf_toolbox.actions.miro import MiroExportOptions, miro_export
 from pdf_toolbox.actions.pdf_images import DPI_PRESETS, pdf_to_images
 from pdf_toolbox.actions.unlock import unlock_pdf
 
@@ -155,12 +155,14 @@ def test_miro_export_custom_profile_e2e(sample_pdf: str, tmp_path: Path) -> None
         Path(path)
         for path in miro_export(
             sample_pdf,
-            out_dir=str(out_dir),
-            export_profile="custom",
-            image_format="JPEG",
-            dpi="Medium (150 dpi)",
-            quality="Medium (85)",
-            pages="1-2",
+            MiroExportOptions(
+                out_dir=str(out_dir),
+                export_profile="custom",
+                image_format="JPEG",
+                dpi="Medium (150 dpi)",
+                quality="Medium (85)",
+                pages="1-2",
+            ),
         )
     ]
 
@@ -181,9 +183,7 @@ def test_miro_export_miro_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
         Path(path)
         for path in miro_export(
             sample_pdf,
-            out_dir=str(out_dir),
-            export_profile="miro",
-            pages="1-2",
+            MiroExportOptions(out_dir=str(out_dir), export_profile="miro", pages="1-2"),
         )
     ]
 
@@ -199,10 +199,12 @@ def test_miro_export_miro_profile_e2e(sample_pdf: str, tmp_path: Path) -> None:
         Path(path)
         for path in miro_export(
             sample_pdf,
-            out_dir=str(out_dir),
-            export_profile="miro",
-            pages="1-2",
-            write_manifest=True,
+            MiroExportOptions(
+                out_dir=str(out_dir),
+                export_profile="miro",
+                pages="1-2",
+                write_manifest=True,
+            ),
         )
     ]
     assert len(debug_outputs) == 2
