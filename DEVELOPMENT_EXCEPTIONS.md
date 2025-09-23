@@ -4,12 +4,6 @@
 
 | File                                             | Rule                          | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------- | -------- |
-| scripts/pin_actions.py:150                       | S310                          | validated HTTPS request to GitHub API                                 | -        |
-| scripts/pin_actions.py:154                       | S310, B310                    | GitHub API requests rely on urllib with pinned CA bundle              | -        |
-| scripts/pin_actions.py:159                       | pragma: no cover              | log and rethrow network errors for diagnostics                        | -        |
-| scripts/prune_releases.py:28                     | S310                          | urllib Request for GitHub API                                         | -        |
-| scripts/prune_releases.py:33                     | S310, B310                    | urllib urlopen for GitHub API                                         | -        |
-| scripts/prune_releases.py:60                     | type: ignore[arg-type]        | GitHub API returns untyped data                                       | -        |
 | src/pdf_toolbox/actions/\_\_init\_\_.py:87       | type: ignore[attr-defined]    | attach renderer flag for GUI                                          | -        |
 | src/pdf_toolbox/actions/\_\_init\_\_.py:94       | type: ignore[attr-defined]    | attach custom attribute for action registration                       | -        |
 | src/pdf_toolbox/actions/extract.py:8             | type: ignore                  | PyMuPDF lacks type hints                                              | -        |
