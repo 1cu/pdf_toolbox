@@ -9,7 +9,7 @@ import pytest
 
 from pdf_toolbox import config
 from pdf_toolbox.actions import pptx as pptx_actions
-from pdf_toolbox.actions.pptx import pptx_to_images, pptx_to_pdf
+from pdf_toolbox.actions.pptx import PptxExportOptions, pptx_to_images, pptx_to_pdf
 from pdf_toolbox.renderers import pptx
 from pdf_toolbox.renderers import registry as pptx_registry
 from pdf_toolbox.renderers.pptx import (
@@ -157,7 +157,10 @@ def test_renderer_config(monkeypatch, tmp_path, simple_pptx):
 
     renderer = get_pptx_renderer()
     assert isinstance(renderer, DummyRenderer)
-    result_dir = pptx_to_images(simple_pptx, pages="1-2", out_dir=str(out_dir))
+    result_dir = pptx_to_images(
+        simple_pptx,
+        PptxExportOptions(pages="1-2", out_dir=str(out_dir)),
+    )
     assert Path(result_dir) == Path(out_dir)
     assert captured_images["pages"] == "1-2"
     assert captured_pdf["range_spec"] is None
@@ -240,9 +243,11 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
 
     result_dir = pptx_to_images(
         simple_pptx,
-        image_format="png",
-        quality="Low (70)",
-        pages="1-2",
+        PptxExportOptions(
+            image_format="png",
+            quality="Low (70)",
+            pages="1-2",
+        ),
     )
     assert Path(result_dir) == tmp_path / "rendered"
     assert captured["format"] == "PNG"
@@ -319,7 +324,7 @@ def test_pptx_to_images_returns_out_dir_when_empty(monkeypatch, simple_pptx, tmp
     monkeypatch.setattr(pptx_actions, "pdf_to_images", fake_pdf_to_images)
 
     out_dir = tmp_path / "empty"
-    result = pptx_to_images(simple_pptx, out_dir=str(out_dir))
+    result = pptx_to_images(simple_pptx, PptxExportOptions(out_dir=str(out_dir)))
 
     assert result == str(out_dir)
     assert captured["invoked"] is True

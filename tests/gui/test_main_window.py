@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 import pytest
 
@@ -12,14 +13,18 @@ pytest.importorskip("PySide6.QtWidgets")
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QDialogButtonBox,
+    QDoubleSpinBox,
     QLabel,
     QLineEdit,
     QSpinBox,
 )
 
 from pdf_toolbox import actions, gui
+from pdf_toolbox.gui.main_window import ComboBoxWithSpin
+from pdf_toolbox.gui.widgets import FileEdit
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 
@@ -27,6 +32,14 @@ pytestmark = [
     pytest.mark.gui,
     pytest.mark.usefixtures("force_lang_en", "temp_config_dir", "no_file_dialogs"),
 ]
+
+
+def _expect_widget[TWidget](
+    window: gui.MainWindow, key: str, expected_type: type[TWidget]
+) -> TWidget:
+    widget = window.current_widgets[key]
+    assert isinstance(widget, expected_type)
+    return cast(TWidget, widget)
 
 
 def test_load_config_default(temp_config_dir: Path) -> None:
@@ -78,8 +91,10 @@ def test_mainwindow_collect_args(monkeypatch: pytest.MonkeyPatch, qtbot) -> None
     try:
         window.current_action = act
         window.build_form(act)
-        window.current_widgets["name"].setText("foo")
-        window.current_widgets["flag"].setChecked(True)
+        name_edit = _expect_widget(window, "name", QLineEdit)
+        name_edit.setText("foo")
+        flag_box = _expect_widget(window, "flag", QCheckBox)
+        flag_box.setChecked(True)
         assert window.collect_args() == {"name": "foo", "flag": True}
     finally:
         window.close()
@@ -107,12 +122,14 @@ def test_build_form_handles_pep604_union(
     try:
         window.build_form(act)
         window.show()
-        combo, spin = window.current_widgets["dpi"]
-        assert combo.currentText() == "High"
-        assert not spin.isVisible()
-        combo.setCurrentText("Custom")
+        widget = window.current_widgets["dpi"]
+        assert isinstance(widget, ComboBoxWithSpin)
+        assert widget.combo_box.currentText() == "High"
+        assert not widget.spin_box.isVisible()
+        idx = widget.combo_box.findData("__custom__")
+        widget.combo_box.setCurrentIndex(max(idx, 0))
         QApplication.processEvents()
-        assert spin.isVisible()
+        assert widget.spin_box.isVisible()
     finally:
         window.close()
 
@@ -130,10 +147,11 @@ def test_build_form_union_int_default(monkeypatch: pytest.MonkeyPatch, qtbot) ->
         window.build_form(act)
         window.show()
         QApplication.processEvents()
-        combo, spin = window.current_widgets["dpi"]
-        assert combo.currentText() == "Custom"
-        assert spin.isVisible()
-        assert spin.value() == 150
+        widget = window.current_widgets["dpi"]
+        assert isinstance(widget, ComboBoxWithSpin)
+        assert widget.combo_box.currentData() == "__custom__"
+        assert widget.spin_box.isVisible()
+        assert widget.spin_box.value() == 150
     finally:
         window.close()
 
@@ -149,7 +167,7 @@ def test_float_none_spinbox_range(monkeypatch: pytest.MonkeyPatch, qtbot) -> Non
     window = _make_window(qtbot)
     try:
         window.build_form(act)
-        spin = window.current_widgets["max_size_mb"]
+        spin = _expect_widget(window, "max_size_mb", QDoubleSpinBox)
         assert spin.maximum() > 99
     finally:
         window.close()
@@ -307,7 +325,11 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
         combo = window.profile_combo
         assert combo is not None
         assert combo.currentData() == "custom"
-        for name in ("image_format", "dpi", "quality"):
+        for name in (
+            "options.image_format",
+            "options.dpi",
+            "options.quality",
+        ):
             widget = window.field_rows.get(name)
             assert widget is not None
             assert widget.isVisible()
@@ -315,7 +337,11 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
         combo.setCurrentIndex(combo.findData("miro"))
         QApplication.processEvents()
         assert combo.currentData() == "miro"
-        for name in ("image_format", "dpi", "quality"):
+        for name in (
+            "options.image_format",
+            "options.dpi",
+            "options.quality",
+        ):
             widget = window.field_rows.get(name)
             assert widget is not None
             assert not widget.isVisible()
@@ -395,7 +421,7 @@ def test_on_run_fails_fast_without_pptx_provider(
     try:
         window.current_action = act
         window.build_form(act)
-        widget = window.current_widgets["input_pptx"]
+        widget = _expect_widget(window, "input_pptx", FileEdit)
         widget.setText("deck.pptx")
         baseline_calls = len(calls)
         window.on_run()
@@ -491,7 +517,8 @@ def test_on_run_cancel_wait_timeout(monkeypatch: pytest.MonkeyPatch, qtbot) -> N
     try:
         window.current_action = act
         window.build_form(act)
-        window.current_widgets["path"].setText("file.pdf")
+        file_edit = _expect_widget(window, "path", FileEdit)
+        file_edit.setText("file.pdf")
 
         class BlockingWorker:
             def __init__(self) -> None:
@@ -560,20 +587,22 @@ def test_collect_args_handles_composite_widgets(
         window.current_action = act
         window.build_form(act)
         assert "dpi" in window.current_widgets
-        combo, spin = window.current_widgets["dpi"]
-        combo.setCurrentText("Custom")
-        spin.setValue(300)
+        widget = window.current_widgets["dpi"]
+        assert isinstance(widget, ComboBoxWithSpin)
+        idx = widget.combo_box.findData("__custom__")
+        widget.combo_box.setCurrentIndex(max(idx, 0))
+        widget.spin_box.setValue(300)
         file_one = tmp_path / "a.pdf"
         file_two = tmp_path / "b.pdf"
         file_one.write_text("dummy")
         file_two.write_text("dummy")
-        file_edit = window.current_widgets["paths"]
+        file_edit = _expect_widget(window, "paths", FileEdit)
         file_edit.setText(f"{file_one};{file_two}")
-        double_spin = window.current_widgets["max_size_mb"]
+        double_spin = _expect_widget(window, "max_size_mb", QDoubleSpinBox)
         double_spin.setValue(0)
-        mode_combo = window.current_widgets["mode"]
+        mode_combo = _expect_widget(window, "mode", QComboBox)
         mode_combo.setCurrentText("B")
-        count_spin = window.current_widgets["count"]
+        count_spin = _expect_widget(window, "count", QSpinBox)
         count_spin.setValue(0)
         result = window.collect_args()
         assert result["dpi"] == 300
@@ -599,7 +628,7 @@ def test_collect_args_multi_file_requires_value(
     try:
         window.current_action = act
         window.build_form(act)
-        file_edit = window.current_widgets["paths"]
+        file_edit = _expect_widget(window, "paths", FileEdit)
         file_edit.setText("")
         with pytest.raises(ValueError, match="cannot be empty"):
             window.collect_args()
@@ -768,7 +797,7 @@ def test_on_run_collects_validation_errors(
     try:
         window.current_action = act
         window.build_form(act)
-        widget = window.current_widgets["path"]
+        widget = _expect_widget(window, "path", FileEdit)
         widget.clear()
         window.on_run()
         assert messagebox_stubs.calls["critical"]
@@ -794,7 +823,8 @@ def test_on_run_success_triggers_worker_lifecycle(
     try:
         window.current_action = act
         window.build_form(act)
-        window.current_widgets["input_pdf"].setText("report.pdf")
+        file_edit = _expect_widget(window, "input_pdf", FileEdit)
+        file_edit.setText("report.pdf")
         window.on_run()
         qtbot.waitUntil(lambda: window.worker is None)
         assert stub_worker.starts
@@ -846,7 +876,8 @@ def test_on_run_cancel_running_worker(
     try:
         window.current_action = act
         window.build_form(act)
-        window.current_widgets["path"].setText("file.pdf")
+        file_edit = _expect_widget(window, "path", FileEdit)
+        file_edit.setText("file.pdf")
         running = stub_worker.cls(sample, {"path": "file.pdf"})
         running._running = True
         window.worker = running
@@ -1106,7 +1137,10 @@ def test_check_author_prompts_when_missing(
     try:
         invoked: list[str] = []
         monkeypatch.setattr(window, "on_author", lambda: invoked.append("on_author"))
-        mw.MainWindow._original_check_author(window)  # type: ignore[attr-defined]  # pdf-toolbox: fixture injects helper on MainWindow for tests | issue:-
+        original_attr = getattr(mw.MainWindow, "_original_check_author", None)
+        assert original_attr is not None
+        original = cast(Callable[[gui.MainWindow], None], original_attr)
+        original(window)
         assert messagebox_stubs.calls["warning"]
         assert invoked == ["on_author"]
     finally:

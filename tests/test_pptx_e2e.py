@@ -10,7 +10,7 @@ import fitz
 from PIL import Image
 
 from pdf_toolbox.actions import pptx as pptx_actions
-from pdf_toolbox.actions.pptx import pptx_to_images, pptx_to_pdf
+from pdf_toolbox.actions.pptx import PptxExportOptions, pptx_to_images, pptx_to_pdf
 from pdf_toolbox.renderers.pptx import BasePptxRenderer
 from pdf_toolbox.utils import parse_page_spec
 
@@ -33,13 +33,15 @@ def test_pptx_to_images_e2e(
     max_size_mb = 1.0
     result_dir = pptx_to_images(
         simple_pptx,
-        pages="1-3",
-        image_format="JPEG",
-        quality="Medium (85)",
-        width=640,
-        height=480,
-        max_size_mb=max_size_mb,
-        out_dir=str(output_dir),
+        PptxExportOptions(
+            pages="1-3",
+            image_format="JPEG",
+            quality="Medium (85)",
+            width=640,
+            height=480,
+            max_size_mb=max_size_mb,
+            out_dir=str(output_dir),
+        ),
     )
 
     assert Path(result_dir) == output_dir

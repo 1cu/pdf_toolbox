@@ -4,36 +4,18 @@
 
 | File                                             | Rule                         | Reason                                                                    | Issue/PR |
 | ------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------- | -------- |
-| src/pdf_toolbox/actions/miro.py:27               | PLR0913                      | action signature mirrors GUI form                                         | -        |
 | src/pdf_toolbox/actions/pdf_images.py:127        | PLR0912, PLR0913, PLR0915    | rendering pages needs many parameters and branches                        | -        |
 | src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                      | conversion helper requires many parameters                                | -        |
-| src/pdf_toolbox/actions/pptx.py:19               | PLR0913                      | action interface requires many parameters                                 | -        |
 | src/pdf_toolbox/cli.py:92                        | pragma: no cover             | delegate help/usage exit codes to argparse                                | -        |
 | src/pdf_toolbox/cli.py:102                       | pragma: no cover             | runtime errors bubble up to stderr for CLI users                          | -        |
-| src/pdf_toolbox/cli.py:376                       | pragma: no cover             | preserve conversion error text for numeric parameters                     | -        |
-| src/pdf_toolbox/cli.py:391                       | pragma: no cover             | surface constructor failures from custom annotations                      | -        |
+| src/pdf_toolbox/cli.py:460                       | pragma: no cover             | preserve conversion error text for numeric parameters                     | -        |
+| src/pdf_toolbox/cli.py:475                       | pragma: no cover             | surface constructor failures from custom annotations                      | -        |
 | src/pdf_toolbox/gui/\_\_init\_\_.py:44           | pragma: no cover             | environment dependent                                                     | -        |
-| src/pdf_toolbox/gui/main_window.py:87            | PLR0915                      | constructor sets up many widgets                                          | -        |
-| src/pdf_toolbox/gui/main_window.py:165           | type: ignore[attr-defined]   | PySide6 stubs miss form layout policy enum                                | -        |
-| src/pdf_toolbox/gui/main_window.py:201           | type: ignore[attr-defined]   | PySide6 stubs miss tool button enum                                       | -        |
-| src/pdf_toolbox/gui/main_window.py:232           | type: ignore[attr-defined]   | PySide6 stubs miss Qt.UserRole                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:238           | type: ignore[attr-defined]   | PySide6 stubs miss Qt.UserRole                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:244           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
-| src/pdf_toolbox/gui/main_window.py:302           | type: ignore[attr-defined]   | `types.UnionType` absent from stubs                                       | -        |
-| src/pdf_toolbox/gui/main_window.py:402           | type: ignore[arg-type]       | PySide6 stubs reject tuple variant                                        | -        |
-| src/pdf_toolbox/gui/main_window.py:403           | type: ignore[assignment]     | tuple already handled                                                     | -        |
-| src/pdf_toolbox/gui/main_window.py:415           | PLR0912                      | argument collection involves many branches                                | -        |
-| src/pdf_toolbox/gui/main_window.py:430           | type: ignore[attr-defined]   | PySide6 stubs miss Qt enum                                                | -        |
-| src/pdf_toolbox/gui/main_window.py:493           | pragma: no cover             | opens external documentation                                              | -        |
-| src/pdf_toolbox/gui/main_window.py:674           | N802                         | Qt requires camelCase event name                                          | -        |
-| src/pdf_toolbox/gui/main_window.py:709           | type: ignore[attr-defined]   | PySide6 stubs miss dialog button enum                                     | -        |
-| src/pdf_toolbox/gui/main_window.py:713           | type: ignore[attr-defined]   | PySide6 stubs miss dialog attribute                                       | -        |
-| src/pdf_toolbox/gui/main_window.py:729           | type: ignore[attr-defined]   | PySide6 stubs miss dialog button enum                                     | -        |
-| src/pdf_toolbox/gui/main_window.py:733           | type: ignore[attr-defined]   | PySide6 stubs miss dialog attribute                                       | -        |
-| src/pdf_toolbox/gui/main_window.py:753           | type: ignore[attr-defined]   | PySide6 stubs miss dialog button enum                                     | -        |
-| src/pdf_toolbox/gui/main_window.py:757           | type: ignore[attr-defined]   | PySide6 stubs miss dialog attribute                                       | -        |
-| src/pdf_toolbox/gui/main_window.py:809           | type: ignore[attr-defined]   | PySide6 stubs miss dialog button enum                                     | -        |
-| src/pdf_toolbox/gui/main_window.py:813           | type: ignore[attr-defined]   | PySide6 stubs miss dialog attribute                                       | -        |
+| src/pdf_toolbox/gui/main_window.py:109           | PLR0915                      | constructor sets up many widgets                                          | -        |
+| src/pdf_toolbox/gui/main_window.py:272           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
+| src/pdf_toolbox/gui/main_window.py:524           | TRY004                       | GUI handler expects ValueError                                            | -        |
+| src/pdf_toolbox/gui/main_window.py:593           | pragma: no cover             | opens external documentation                                              | -        |
+| src/pdf_toolbox/gui/main_window.py:773           | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:36                | type: ignore[override]       | QObject method signature differs from logging.Handler.emit                | -        |
 | src/pdf_toolbox/gui/widgets.py:76                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:81                | N802                         | Qt requires camelCase event name                                          | -        |
@@ -83,16 +65,14 @@
 | tests/gui/conftest_qt.py:126                     | N802                         | stub preserves Qt camelCase API                                           | -        |
 | tests/gui/conftest_qt.py:129                     | N802, type: ignore[override] | stub preserves Qt camelCase API                                           | -        |
 | tests/gui/conftest_qt.py:132                     | N802, type: ignore[override] | stub preserves Qt camelCase API                                           | -        |
-| tests/gui/conftest_qt.py:172                     | type: ignore[attr-defined]   | PySide6 stubs miss QDialog.Accepted                                       | -        |
-| tests/gui/conftest_qt.py:216                     | N802, pragma: no cover       | method name follows Qt worker API                                         | -        |
-| tests/gui/test_main_window.py:502                | N802                         | mimic Qt worker API naming                                                | -        |
-| tests/gui/test_main_window.py:516                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
-| tests/gui/test_main_window.py:624                | N802                         | mimic Qt worker API naming                                                | -        |
-| tests/gui/test_main_window.py:634                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
-| tests/gui/test_main_window.py:716                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
-| tests/gui/test_main_window.py:720                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
-| tests/gui/test_main_window.py:1082               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
-| tests/gui/test_main_window.py:1109               | type: ignore[attr-defined]   | fixture injects helper on MainWindow for tests                            | -        |
+| tests/gui/conftest_qt.py:218                     | N802, pragma: no cover       | method name follows Qt worker API                                         | -        |
+| tests/gui/test_main_window.py:529                | N802                         | mimic Qt worker API naming                                                | -        |
+| tests/gui/test_main_window.py:543                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
+| tests/gui/test_main_window.py:653                | N802                         | mimic Qt worker API naming                                                | -        |
+| tests/gui/test_main_window.py:663                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
+| tests/gui/test_main_window.py:745                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
+| tests/gui/test_main_window.py:749                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
+| tests/gui/test_main_window.py:1113               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
 | tests/gui/test_widgets.py:124                    | N802                         | stub mirrors Qt URL API                                                   | -        |
 | tests/gui/test_widgets.py:131                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:142                    | N802                         | stub mirrors Qt event API                                                 | -        |
@@ -100,15 +80,14 @@
 | tests/gui/test_widgets.py:187                    | N802                         | stub mirrors Qt URL API                                                   | -        |
 | tests/gui/test_widgets.py:194                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                                 | -        |
-| tests/gui/test_widgets.py:222                    | type: ignore[attr-defined]   | PySide6 stubs miss Qt.LeftButton                                          | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
-| tests/test_miro.py:241                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
+| tests/test_miro.py:250                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
 | tests/test_pptx.py:86                            | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:174                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:262                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:335                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx.py:406                           | PLR0913                      | renderer API requires many parameters                                     | -        |
-| tests/test_pptx_e2e.py:76                        | PLR0913                      | renderer API requires many parameters                                     | -        |
+| tests/test_pptx.py:177                           | PLR0913                      | renderer API requires many parameters                                     | -        |
+| tests/test_pptx.py:267                           | PLR0913                      | renderer API requires many parameters                                     | -        |
+| tests/test_pptx.py:340                           | PLR0913                      | renderer API requires many parameters                                     | -        |
+| tests/test_pptx.py:411                           | PLR0913                      | renderer API requires many parameters                                     | -        |
+| tests/test_pptx_e2e.py:78                        | PLR0913                      | renderer API requires many parameters                                     | -        |
 | tests/test_pptx_ms_office_renderer.py:21         | N802                         | mirror COM method name                                                    | -        |
 | tests/test_pptx_ms_office_renderer.py:25         | N802                         | mirror COM method name                                                    | -        |
 | tests/test_pptx_ms_office_renderer.py:46         | N802                         | COM style method name                                                     | -        |

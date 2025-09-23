@@ -12,6 +12,9 @@ Note: `DEVELOPMENT_EXCEPTIONS.md` is generated. Do not edit it manually—run `s
 - [x] Rebuilt the actions registry to persist metadata outside the decorated
   callables, ensuring reloads keep definitions discoverable without mutating the
   functions directly. (2025-03-17)
+- [x] Replaced direct Qt attribute access with enum-qualified names across the
+  main window and GUI tests, eliminating the remaining `type: ignore[attr-defined]`
+  suppressions without custom stubs. (2025-03-18)
 
 ## Methodology
 
@@ -69,8 +72,8 @@ Prerequisite:
 ### `src/pdf_toolbox/gui/main_window.py`
 
 - **L87 – `PLR0915`**: The constructor wires up widgets, state, and configuration. Extract widget construction into dedicated factory methods (`_build_toolbar`, `_build_banner`, etc.) and rely on helper classes for complex sections (profile selection, action list). This shortens `__init__` below the branch threshold.
-- **L165, L201 – `type: ignore[attr-defined]` (missing Qt enums)**: Ship local `.pyi` stub augmentations (`qt-stubs.pyi`) that expose the missing enum members (`QFormLayout.FieldGrowthPolicy`, `QToolButton.ToolButtonPopupMode`). Use `typing_extensions.override` where appropriate. Adding these definitions removes the ignores.
-- **L232, L238 – `type: ignore[attr-defined]` (`Qt.UserRole`)**: Covered by the same stub augmentation—extend the QtCore stub to include `Qt.UserRole` and similar constants.
+- **L165, L201 – `type: ignore[attr-defined]` (missing Qt enums)**: Ship local `.pyi` stub augmentations (`qt-stubs.pyi`) that expose the missing enum members (`QFormLayout.FieldGrowthPolicy`, `QToolButton.ToolButtonPopupMode`). Use `typing_extensions.override` where appropriate. Adding these definitions removes the ignores. *Status: resolved 2025-03-18 by switching to the enum-qualified members exposed in the runtime API, removing the suppressions without extra stubs.*
+- **L232, L238 – `type: ignore[attr-defined]` (`Qt.UserRole`)**: Covered by the same stub augmentation—extend the QtCore stub to include `Qt.UserRole` and similar constants. *Status: resolved 2025-03-18 via `Qt.ItemDataRole.UserRole`.*
 - **L244 – `PLR0912`, `PLR0915`**: `_build_form` mixes parameter inspection, widget selection, and config binding. Introduce a strategy registry mapping annotation types to widget factories, so each branch moves into its own function. The main loop can dispatch to these factories, reducing complexity.
 - **L302 – `type: ignore[attr-defined]` (`types.UnionType`)**: Update the local PySide stubs to include `types.UnionType` in the `typing` utilities exported in Qt, or gate the branch using `if isinstance(ann, types.UnionType)` without referencing attributes flagged by the stub.
 - **L402 – `type: ignore[arg-type]` and L403 – `type: ignore[assignment]`**: These lines unpack tuple values returned by the widget builder. Replace the tuple with a small dataclass representing the composite widget so type checkers understand the shape, or refactor `_collect_arguments` to handle the tuple via structural typing (`Protocol`).
@@ -78,7 +81,7 @@ Prerequisite:
 - **L430 – `type: ignore[attr-defined]` (Qt enum)**: Covered by stub augmentation.
 - **L493 – `pragma: no cover`**: The method launches the documentation URL. Add an integration test that patches `QDesktopServices.openUrl` and asserts it receives the expected URL—this works under headless CI and removes the pragma.
 - **L674 – `N802`**: The event handler must be named `changeEvent` to override the Qt virtual. Provide a thin adapter method (`def change_event(self, event): self.changeEvent(event)`) for code using snake_case while leaving the canonical override. Then mark the camelCase method as private or rely on `@override` to show it's intentional; if the snake_case wrapper becomes the public entry, the lint suppression can move to the wrapper or disappear entirely.
-- **L709, L729, L753, L809 – `type: ignore[attr-defined]` (dialog button enum)** and **L713, L733, L757, L813 – `type: ignore[attr-defined]` (dialog attribute)**: Extend the Qt stub file with the missing `QMessageBox.StandardButton` and `QDialog.DialogCode` aliases. Alternatively, wrap the dialog creation in helper functions typed with `Literal` values so the return types remain precise without referencing the missing attributes directly.
+- **L709, L729, L753, L809 – `type: ignore[attr-defined]` (dialog button enum)** and **L713, L733, L757, L813 – `type: ignore[attr-defined]` (dialog attribute)**: Extend the Qt stub file with the missing `QMessageBox.StandardButton` and `QDialog.DialogCode` aliases. Alternatively, wrap the dialog creation in helper functions typed with `Literal` values so the return types remain precise without referencing the missing attributes directly. *Status: resolved 2025-03-18 by instantiating `QDialogButtonBox` with `StandardButton` members and comparing against `QDialog.DialogCode`.*
 
 ### `src/pdf_toolbox/gui/widgets.py`
 
@@ -141,7 +144,7 @@ Prerequisite:
 
 - **CamelCase `N802` entries (L117, L120, L123, L126, L129, L132)**: Provide helper mixins that expose snake_case methods and internally delegate to Qt-style names, allowing the test stubs to comply with Ruff while still satisfying Qt. Alternatively, generate `.pyi` stub files for the Qt helpers so the runtime functions keep their camelCase names but Ruff ignores the stubs.
 - **`type: ignore[override]` entries (L120, L129, L132)**: Switching to stub files also resolves the override mismatch because the implementation file no longer needs to inherit Qt types directly.
-- **L172 – `type: ignore[attr-defined]`**: Extend the PySide stub with `QDialog.Accepted`.
+- **L172 – `type: ignore[attr-defined]`**: Extend the PySide stub with `QDialog.Accepted`. *Status: resolved 2025-03-18 by updating the tests to use `QDialog.DialogCode.Accepted`.*
 - **L216 – `pragma: no cover`**: Add a test that instantiates the worker stub and triggers the method via Qt's event loop under Xvfb to prove the branch works.
 
 ### `tests/gui/test_main_window.py`
@@ -154,7 +157,7 @@ Prerequisite:
 ### `tests/gui/test_widgets.py`
 
 - **CamelCase `N802` entries (L124, L131, L142, L145, L187, L194, L204)**: Similar adapter or stub strategies as the other Qt tests.
-- **L222 – `type: ignore[attr-defined]`**: Expand the PySide stub to include `Qt.LeftButton`.
+- **L222 – `type: ignore[attr-defined]`**: Expand the PySide stub to include `Qt.LeftButton`. *Status: resolved 2025-03-18 via `Qt.MouseButton.LeftButton`.*
 
 ### `tests/gui/test_worker.py`
 

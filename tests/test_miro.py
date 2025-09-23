@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
 from PIL import Image
 
 from pdf_toolbox import image_utils, miro
-from pdf_toolbox.actions.miro import miro_export
+from pdf_toolbox.actions.miro import MiroExportOptions, miro_export
+from pdf_toolbox.i18n import tr
 from pdf_toolbox.miro import PROFILE_MIRO, ExportProfile, export_pdf_for_miro
 from pdf_toolbox.renderers.pptx import (
     PPTX_PROVIDER_DOCS_URL,
@@ -193,26 +195,33 @@ def test_export_pdf_for_miro_integration(sample_pdf, pdf_with_image, tmp_path):
 def test_miro_export_custom_pdf(sample_pdf, tmp_path):
     outputs = miro_export(
         sample_pdf,
-        out_dir=str(tmp_path),
-        export_profile="custom",
-        image_format="PNG",
-        dpi="High (300 dpi)",
+        MiroExportOptions(
+            out_dir=str(tmp_path),
+            export_profile="custom",
+            image_format="PNG",
+            dpi="High (300 dpi)",
+        ),
     )
     assert len(outputs) == 3
     assert all(Path(path).exists() for path in outputs)
 
 
 def test_miro_export_miro_pdf(sample_pdf, tmp_path):
-    outputs = miro_export(sample_pdf, out_dir=str(tmp_path), export_profile="miro")
+    outputs = miro_export(
+        sample_pdf,
+        MiroExportOptions(out_dir=str(tmp_path), export_profile="miro"),
+    )
     assert outputs
     manifest = tmp_path / "miro_export.json"
     assert not manifest.exists()
 
     debug_outputs = miro_export(
         sample_pdf,
-        out_dir=str(tmp_path),
-        export_profile="miro",
-        write_manifest=True,
+        MiroExportOptions(
+            out_dir=str(tmp_path),
+            export_profile="miro",
+            write_manifest=True,
+        ),
     )
     assert debug_outputs
     assert manifest.exists()
@@ -254,7 +263,9 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
     pptx_path = tmp_path / "deck.pptx"
     pptx_path.write_bytes(b"pptx")
-    outputs_default = miro_export(str(pptx_path), export_profile="miro")
+    outputs_default = miro_export(
+        str(pptx_path), MiroExportOptions(export_profile="miro")
+    )
     assert outputs_default
     assert all(Path(path).exists() for path in outputs_default)
     assert all(Path(path).parent == tmp_path for path in outputs_default)
@@ -264,9 +275,11 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     explicit_dir = tmp_path / "explicit"
     outputs = miro_export(
         str(pptx_path),
-        out_dir=str(explicit_dir),
-        export_profile="miro",
-        write_manifest=True,
+        MiroExportOptions(
+            out_dir=str(explicit_dir),
+            export_profile="miro",
+            write_manifest=True,
+        ),
     )
     assert outputs
     assert all(Path(path).exists() for path in outputs)
@@ -286,7 +299,8 @@ def test_miro_export_pptx_without_provider(tmp_path):
 def test_miro_export_rejects_unknown_extension(tmp_path):
     bogus = tmp_path / "data.txt"
     bogus.write_text("hello")
-    with pytest.raises(ValueError, match="Unsupported input type"):
+    expected = re.escape(tr("miro_unsupported_input", suffix=".txt"))
+    with pytest.raises(ValueError, match=expected):
         miro_export(str(bogus))
 
 

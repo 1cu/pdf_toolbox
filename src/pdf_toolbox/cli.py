@@ -203,14 +203,62 @@ def _cmd_describe(identifier: str) -> None:
         lines.append(f"Category: {action.category}")
     if action.help:
         lines.extend(["Description:", action.help])
-    if action.params:
+    form_params = action.form_params or action.params
+    params = [
+        param
+        for param in form_params
+        if param.name not in {"cancel", "progress_callback"}
+    ]
+    if params:
         lines.append("Parameters:")
         lines.extend(
-            f"  --{param.name}{_format_param_suffix(param)}" for param in action.params
+            f"  --{_param_cli_key(param)}{_format_param_suffix(param)}"
+            for param in params
         )
     else:
         lines.append("Parameters: none")
     _write_lines(sys.stdout, lines)
+
+
+def _param_cli_key(param: t.Any) -> str:
+    """Return the CLI name for *param*, including parents when present."""
+    return param.full_name if getattr(param, "parent", None) else param.name
+
+
+def _pop_first(mapping: dict[str, str], keys: t.Iterable[str]) -> str | None:
+    """Return the value for the first present *keys* entry, removing it."""
+    for key in keys:
+        if key in mapping:
+            return mapping.pop(key)
+    return None
+
+
+def _finalize_dataclasses(
+    action: Action,
+    *,
+    dataclass_values: dict[str, dict[str, t.Any]],
+    required_fields: dict[str, dict[str, str]],
+    parent_required: dict[str, bool],
+    provided: dict[str, bool],
+) -> dict[str, t.Any]:
+    """Instantiate dataclass parameters and validate required fields."""
+    instances: dict[str, t.Any] = {}
+    for dc_name, dc_type in action.dataclass_params.items():
+        required = required_fields.get(dc_name, {})
+        collected = dataclass_values.get(dc_name, {})
+        missing_fields = [
+            full_name
+            for field_name, full_name in required.items()
+            if field_name not in collected
+        ]
+        needs_instance = provided.get(dc_name, False) or parent_required.get(
+            dc_name, False
+        )
+        if missing_fields and needs_instance:
+            raise CliError.missing_required_parameters(missing_fields)
+        if needs_instance:
+            instances[dc_name] = dc_type(**collected)
+    return instances
 
 
 def _cmd_run(identifier: str, arguments: list[str]) -> None:
@@ -299,22 +347,58 @@ def _build_call_arguments(action: Action, provided: dict[str, str]) -> dict[str,
     values: dict[str, t.Any] = {}
     remaining = dict(provided)
     missing: list[str] = []
+    dataclass_values: dict[str, dict[str, t.Any]] = {
+        name: {} for name in action.dataclass_params
+    }
+    dataclass_required_fields: dict[str, dict[str, str]] = {
+        name: {} for name in action.dataclass_params
+    }
+    dataclass_parent_required: dict[str, bool] = dict.fromkeys(
+        action.dataclass_params, False
+    )
+    dataclass_provided: dict[str, bool] = dict.fromkeys(action.dataclass_params, False)
     for param in action.params:
+        if param.name in dataclass_parent_required:
+            dataclass_parent_required[param.name] = param.default is inspect._empty
+    iterable = action.form_params if action.form_params else action.params
+    for param in iterable:
         if param.kind not in {
             "POSITIONAL_ONLY",
             "POSITIONAL_OR_KEYWORD",
             "KEYWORD_ONLY",
         }:
             raise CliError.unsupported_parameter_kind(param.kind)
-        if param.name in remaining:
-            raw_value = remaining.pop(param.name)
-            values[param.name] = _convert_value(raw_value, param.annotation)
-        elif param.default is inspect._empty:
-            missing.append(param.name)
+        parent = param.parent
+        if parent is None:
+            raw_value = _pop_first(remaining, (_param_cli_key(param),))
+            if raw_value is not None:
+                values[param.name] = _convert_value(raw_value, param.annotation)
+                continue
+            if param.default is inspect._empty:
+                missing.append(param.full_name)
+            continue
+        raw_value = _pop_first(remaining, (_param_cli_key(param), param.name))
+        if raw_value is not None:
+            dataclass_values[parent][param.name] = _convert_value(
+                raw_value, param.annotation
+            )
+            dataclass_provided[parent] = True
+            continue
+        if param.default is inspect._empty:
+            required = dataclass_required_fields[parent]
+            required.setdefault(param.name, param.full_name)
     if missing:
         raise CliError.missing_required_parameters(missing)
+    dataclass_instances = _finalize_dataclasses(
+        action,
+        dataclass_values=dataclass_values,
+        required_fields=dataclass_required_fields,
+        parent_required=dataclass_parent_required,
+        provided=dataclass_provided,
+    )
     if remaining:
         raise CliError.unknown_parameters(remaining)
+    values.update(dataclass_instances)
     return values
 
 

@@ -6,12 +6,13 @@ import argparse
 import inspect
 import json
 import typing as t
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 
 from pdf_toolbox import cli
-from pdf_toolbox.actions import Action, Param
+from pdf_toolbox.actions import Action, Param, build_action
 
 
 def _param(
@@ -232,6 +233,118 @@ def test_run_action_surfaces_runtime_errors(capsys: pytest.CaptureFixture[str]) 
     assert code == 1
     err = capsys.readouterr().err
     assert "Error: boom" in err
+
+
+def test_run_action_handles_dataclass_options(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    @dataclass
+    class Options:
+        mode: str = "auto"
+        limit: int | None = None
+
+    def dataclass_action(path: str, options: Options | None = None) -> dict[str, t.Any]:
+        opts = options or Options()
+        return {"path": path, "mode": opts.mode, "limit": opts.limit}
+
+    monkeypatch.setitem(dataclass_action.__globals__, "Options", Options)
+    action_obj = build_action(dataclass_action, name="dataclass_action")
+    monkeypatch.setattr(cli, "list_actions", lambda: [action_obj])
+
+    target = tmp_path / "example.txt"
+    code = cli.main(
+        [
+            "run",
+            "dataclass_action",
+            "--path",
+            str(target),
+            "--options.mode",
+            "fast",
+            "--options.limit",
+            "7",
+        ]
+    )
+    assert code == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result == {"path": str(target), "mode": "fast", "limit": 7}
+
+
+def test_run_action_allows_optional_dataclass_defaults(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    @dataclass
+    class Options:
+        required: str
+        limit: int | None = None
+
+    def dataclass_action(path: str, options: Options | None = None) -> dict[str, t.Any]:
+        if options is None:
+            return {"path": path, "mode": "auto", "limit": None}
+        return {"path": path, "mode": options.required, "limit": options.limit}
+
+    monkeypatch.setitem(dataclass_action.__globals__, "Options", Options)
+    action_obj = build_action(dataclass_action, name="dataclass_action")
+    monkeypatch.setattr(cli, "list_actions", lambda: [action_obj])
+
+    target = tmp_path / "example.txt"
+    code = cli.main(["run", "dataclass_action", "--path", str(target)])
+    assert code == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result == {"path": str(target), "mode": "auto", "limit": None}
+
+    code = cli.main(
+        [
+            "run",
+            "dataclass_action",
+            "--path",
+            str(target),
+            "--options.limit",
+            "5",
+        ]
+    )
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "options.required" in err
+
+
+def test_run_action_reports_missing_dataclass_field(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    @dataclass
+    class Options:
+        required: str
+
+    def dataclass_action(path: str, options: Options) -> str:
+        return f"{path}:{options.required}"
+
+    monkeypatch.setitem(dataclass_action.__globals__, "Options", Options)
+    action_obj = build_action(dataclass_action, name="dataclass_action")
+    monkeypatch.setattr(cli, "list_actions", lambda: [action_obj])
+
+    code = cli.main(["run", "dataclass_action", "--path", "doc.pdf"])
+    assert code == 2
+    err = capsys.readouterr().err
+    assert "options.required" in err
+
+
+def test_describe_lists_dotted_dataclass_fields(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    @dataclass
+    class Options:
+        required: str
+
+    def dataclass_action(path: str, options: Options) -> None:
+        del path, options
+
+    monkeypatch.setitem(dataclass_action.__globals__, "Options", Options)
+    action_obj = build_action(dataclass_action, name="dataclass_action")
+    monkeypatch.setattr(cli, "list_actions", lambda: [action_obj])
+
+    code = cli.main(["describe", "dataclass_action"])
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "--options.required" in out
 
 
 def test_main_returns_parse_exit_code(capsys: pytest.CaptureFixture[str]) -> None:
