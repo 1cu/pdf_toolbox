@@ -3,7 +3,21 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import ClassVar, Literal
+
+
+@dataclass(slots=True)
+class RenderOptions:
+    """Describe image rendering behaviour shared by PPTX renderers."""
+
+    out_dir: str | None = None
+    max_size_mb: float | None = None
+    image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG"
+    quality: int | None = None
+    width: int | None = None
+    height: int | None = None
+    range_spec: str | None = None
 
 
 class BasePptxRenderer(ABC):
@@ -19,29 +33,17 @@ class BasePptxRenderer(ABC):
     name: ClassVar[str] = ""
 
     @abstractmethod
-    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+    def to_images(
         self,
         input_pptx: str,
-        out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
-        quality: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        range_spec: str | None = None,
+        options: RenderOptions | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to individual images.
 
         Args:
             input_pptx: Path to the PPTX presentation to render.
-            out_dir: Optional destination directory. Implementations may create
-                one when omitted.
-            max_size_mb: Maximum size for each output image when supported.
-            image_format: Desired image format.
-            quality: Encoder quality hint where supported by the backend.
-            width: Optional override for the exported image width in pixels.
-            height: Optional override for the exported image height in pixels.
-            range_spec: Normalised page selection passed from the UI layer.
+            options: Structured rendering configuration. Implementations should
+                treat ``None`` the same as ``RenderOptions()``.
 
         Returns:
             Path to the directory that contains the exported slide images.
@@ -79,4 +81,4 @@ class BasePptxRenderer(ABC):
         """
 
 
-__all__ = ["BasePptxRenderer"]
+__all__ = ["BasePptxRenderer", "RenderOptions"]

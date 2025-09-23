@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, Literal
+from typing import ClassVar
 
 from pdf_toolbox.renderers.pptx import PptxProviderUnavailableError
-from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 from pdf_toolbox.renderers.registry import register
 
 
@@ -24,28 +24,13 @@ class PptxLightweightStub(BasePptxRenderer):
         """Backward compatible alias for :meth:`probe`."""
         return cls.probe()
 
-    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+    def to_images(
         self,
         input_pptx: str,
-        out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
-        quality: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        range_spec: str | None = None,
+        options: RenderOptions | None = None,
     ) -> str:
         """Raise because the lightweight renderer has not been implemented yet."""
-        del (
-            input_pptx,
-            out_dir,
-            max_size_mb,
-            image_format,
-            quality,
-            width,
-            height,
-            range_spec,
-        )
+        del input_pptx, options
         raise PptxProviderUnavailableError()
 
     def to_pdf(

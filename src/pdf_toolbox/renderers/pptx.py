@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Literal
-
 from pdf_toolbox.config import load_config
 from pdf_toolbox.i18n import tr
-from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 from pdf_toolbox.renderers.registry import register as register_renderer
 from pdf_toolbox.renderers.registry import select as registry_select
 
@@ -54,28 +52,13 @@ class NullRenderer(BasePptxRenderer):
 
     name = "null"
 
-    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+    def to_images(
         self,
         input_pptx: str,
-        out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
-        quality: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        range_spec: str | None = None,
+        options: RenderOptions | None = None,
     ) -> str:
         """Always raise because no renderer is configured."""
-        del (
-            input_pptx,
-            out_dir,
-            max_size_mb,
-            image_format,
-            quality,
-            width,
-            height,
-            range_spec,
-        )
+        del input_pptx, options
         raise PptxProviderUnavailableError()
 
     def to_pdf(
@@ -131,6 +114,7 @@ __all__ = [
     "NullRenderer",
     "PptxProviderUnavailableError",
     "PptxRenderingError",
+    "RenderOptions",
     "UnsupportedOptionError",
     "get_pptx_renderer",
     "require_pptx_renderer",

@@ -15,6 +15,9 @@ Note: `DEVELOPMENT_EXCEPTIONS.md` is generated. Do not edit it manually—run `s
 - [x] Replaced direct Qt attribute access with enum-qualified names across the
   main window and GUI tests, eliminating the remaining `type: ignore[attr-defined]`
   suppressions without custom stubs. (2025-03-18)
+- [x] Introduced a shared `RenderOptions` dataclass for PPTX renderers and
+  migrated the implementations and tests, eliminating the documented
+  `PLR0913` exceptions in the renderer layer. (2025-09-23)
 
 ## Methodology
 
@@ -107,26 +110,26 @@ Prerequisite:
 ### `src/pdf_toolbox/renderers/http_office.py`
 
 - **L23, L25, L30 – `pragma: no cover`** and **L24, L26 – `type: ignore[...]`**: Apply the same `requests` protocol/stub strategy and extend tests to cover missing dependency scenarios, allowing removal of the pragmas and ignores.
-- **L346 – `PLR0913`**: Introduce a configuration dataclass representing an HTTP rendering request (`HttpRenderJob`). Pass the dataclass to the renderer instead of eight discrete parameters.
+- **L346 – `PLR0913`**: Introduce a configuration dataclass representing an HTTP rendering request (`HttpRenderJob`). Pass the dataclass to the renderer instead of eight discrete parameters. *Status: resolved 2025-09-23 by adopting the shared `RenderOptions` dataclass in the renderer API.*
 
 ### `src/pdf_toolbox/renderers/lightweight_stub.py`
 
-- **L27 – `PLR0913`**: The lightweight renderer mirrors the full renderer API. Extract a shared `RenderOptions` dataclass used by all renderers so each implementation receives a single structured object.
+- **L27 – `PLR0913`**: The lightweight renderer mirrors the full renderer API. Extract a shared `RenderOptions` dataclass used by all renderers so each implementation receives a single structured object. *Status: resolved 2025-09-23 with the shared `RenderOptions` dataclass migration.*
 
 ### `src/pdf_toolbox/renderers/ms_office.py`
 
 - **L19, L20, L22 – `type: ignore` (pywin32)**: Vendor or generate stubs for the specific COM interfaces used (`Dispatch`, `constants`, etc.), or depend on `pywin32-stubs`. With type information available, the ignores disappear.
 - **L25, L26, L28, L29 – `type: ignore[assignment]`**: Replace module-level sentinels with explicit `typing.Protocol` objects that describe the COM interfaces. When pywin32 is unavailable, assign instances of lightweight sentinel classes implementing the protocol instead of `None`.
 - **L27, L75, L104, L134, L161, L175, L242, L256, L312 – `pragma: no cover`**: These paths handle Windows-specific COM errors. Write platform-marked tests (`pytest.mark.windows`) that run under Windows CI to exercise the real COM integration. For non-Windows environments, factor the COM interactions into injectable collaborators and unit test them with fakes to cover error handling.
-- **L256 – `PLR0913`**: Align with the shared `RenderOptions` dataclass described above.
+- **L256 – `PLR0913`**: Align with the shared `RenderOptions` dataclass described above. *Status: resolved 2025-09-23 by migrating the renderer to consume `RenderOptions`.*
 
 ### `src/pdf_toolbox/renderers/pptx.py`
 
-- **L57 – `PLR0913`**: Adopt the shared `RenderOptions` object.
+- **L57 – `PLR0913`**: Adopt the shared `RenderOptions` object. *Status: resolved 2025-09-23 by updating the renderer signature.*
 
 ### `src/pdf_toolbox/renderers/pptx_base.py`
 
-- **L22 – `PLR0913`**: Again solved by the common options dataclass.
+- **L22 – `PLR0913`**: Again solved by the common options dataclass. *Status: resolved 2025-09-23 with the `RenderOptions` dataclass introduction.*
 
 ### `src/pdf_toolbox/renderers/registry.py`
 

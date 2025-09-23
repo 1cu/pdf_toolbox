@@ -17,6 +17,7 @@ from pdf_toolbox.renderers.pptx import (
     PptxProviderUnavailableError,
     get_pptx_renderer,
 )
+from pdf_toolbox.renderers.pptx_base import RenderOptions
 
 
 def test_rendering_actions_raise(simple_pptx):
@@ -83,18 +84,12 @@ def test_renderer_config(monkeypatch, tmp_path, simple_pptx):
     class DummyRenderer(BasePptxRenderer):
         name = "dummy"
 
-        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+        def to_images(
             self,
             _input_pptx: str,
-            out_dir: str | None = None,
-            max_size_mb: float | None = None,
-            image_format: str = "JPEG",
-            quality: int | None = None,
-            width: int | None = None,
-            height: int | None = None,
-            range_spec: str | None = None,
+            options: RenderOptions | None = None,
         ) -> str:
-            del out_dir, max_size_mb, image_format, quality, width, height, range_spec
+            del options
             return "ok"
 
         def to_pdf(
@@ -174,18 +169,12 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
     class DummyRenderer(BasePptxRenderer):
         name = "dummy"
 
-        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+        def to_images(
             self,
             _input_pptx: str,
-            out_dir: str | None = None,
-            max_size_mb: float | None = None,
-            image_format: str = "JPEG",
-            quality: int | None = None,
-            width: int | None = None,
-            height: int | None = None,
-            range_spec: str | None = None,
+            options: RenderOptions | None = None,
         ) -> str:
-            del out_dir, max_size_mb, image_format, quality, width, height, range_spec
+            del options
             return "ok"
 
         def to_pdf(
@@ -264,26 +253,12 @@ def test_pptx_to_images_returns_out_dir_when_empty(monkeypatch, simple_pptx, tmp
     class DummyRenderer(BasePptxRenderer):
         name = "dummy"
 
-        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+        def to_images(
             self,
             _input_pptx: str,
-            out_dir: str | None = None,
-            max_size_mb: float | None = None,
-            image_format: str = "JPEG",
-            quality: int | None = None,
-            width: int | None = None,
-            height: int | None = None,
-            range_spec: str | None = None,
+            options: RenderOptions | None = None,
         ) -> str:
-            del (
-                out_dir,
-                max_size_mb,
-                image_format,
-                quality,
-                width,
-                height,
-                range_spec,
-            )
+            del options
             return "unused"
 
         def to_pdf(
@@ -337,26 +312,12 @@ def test_pptx_to_images_returns_temp_dir_when_empty(monkeypatch, simple_pptx, tm
     class DummyRenderer(BasePptxRenderer):
         name = "dummy"
 
-        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+        def to_images(
             self,
             _input_pptx: str,
-            out_dir: str | None = None,
-            max_size_mb: float | None = None,
-            image_format: str = "JPEG",
-            quality: int | None = None,
-            width: int | None = None,
-            height: int | None = None,
-            range_spec: str | None = None,
+            options: RenderOptions | None = None,
         ) -> str:
-            del (
-                out_dir,
-                max_size_mb,
-                image_format,
-                quality,
-                width,
-                height,
-                range_spec,
-            )
+            del options
             return "unused"
 
         def to_pdf(
@@ -408,26 +369,12 @@ def test_convert_pptx_to_pdf_cleans_up(monkeypatch, simple_pptx, tmp_path):
     class DummyRenderer(BasePptxRenderer):
         name = "dummy"
 
-        def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+        def to_images(
             self,
             _input_pptx: str,
-            out_dir: str | None = None,
-            max_size_mb: float | None = None,
-            image_format: str = "JPEG",
-            quality: int | None = None,
-            width: int | None = None,
-            height: int | None = None,
-            range_spec: str | None = None,
+            options: RenderOptions | None = None,
         ) -> str:
-            del (
-                out_dir,
-                max_size_mb,
-                image_format,
-                quality,
-                width,
-                height,
-                range_spec,
-            )
+            del options
             return "unused"
 
         def to_pdf(

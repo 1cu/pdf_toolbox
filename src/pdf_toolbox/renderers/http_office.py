@@ -17,7 +17,7 @@ from pdf_toolbox.renderers.pptx import (
     PptxRenderingError,
     UnsupportedOptionError,
 )
-from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 from pdf_toolbox.renderers.registry import register
 from pdf_toolbox.utils import logger
 
@@ -335,28 +335,13 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
 
         return str(destination)
 
-    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+    def to_images(
         self,
         input_pptx: str,
-        out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
-        quality: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        range_spec: str | None = None,
+        options: RenderOptions | None = None,
     ) -> str:
         """The HTTP renderer does not support slide image export."""
-        del (
-            input_pptx,
-            out_dir,
-            max_size_mb,
-            image_format,
-            quality,
-            width,
-            height,
-            range_spec,
-        )
+        del input_pptx, options
         msg = "Slide image export is not supported."
         raise UnsupportedOptionError(msg)
 

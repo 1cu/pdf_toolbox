@@ -6,10 +6,10 @@ import contextlib
 import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any, ClassVar, Literal
+from typing import Any, ClassVar
 
 from pdf_toolbox.renderers.pptx import PptxRenderingError, UnsupportedOptionError
-from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 from pdf_toolbox.renderers.registry import register
 from pdf_toolbox.utils import logger, parse_page_spec
 
@@ -253,34 +253,28 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         logger.info("Rendered %d slide(s) to %s", len(exported), out)
         return str(out)
 
-    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer API requires many parameters | issue:-
+    def to_images(
         self,
         input_pptx: str,
-        out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        image_format: Literal["PNG", "JPEG", "TIFF"] = "JPEG",
-        quality: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        range_spec: str | None = None,
+        options: RenderOptions | None = None,
     ) -> str:
         """Render ``input_pptx`` slides to images."""
-        del quality, max_size_mb
+        opts = options or RenderOptions()
 
         inp = Path(input_pptx).resolve()
         if not inp.exists():
             msg = f"Input file not found: {inp}"
             raise PptxRenderingError(msg, code="unavailable")
 
-        out = Path(out_dir) if out_dir else inp.with_suffix("")
+        out = Path(opts.out_dir) if opts.out_dir else inp.with_suffix("")
         out.mkdir(parents=True, exist_ok=True)
 
         ext_map = {"JPEG": "JPEG", "PNG": "PNG", "TIFF": "TIFF"}
-        fmt = image_format.upper()
+        fmt = (opts.image_format or "").upper()
         try:
             ext = ext_map[fmt]
         except KeyError as exc:
-            msg = f"Unsupported image format: {image_format}"
+            msg = f"Unsupported image format: {opts.image_format}"
             raise PptxRenderingError(msg, code="unsupported_option") from exc
 
         logger.info("Rendering %s to images (%s)", inp, fmt)
@@ -291,7 +285,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                 presentation = _open_presentation(app, inp)
                 slides = list(presentation.Slides)
                 total = len(slides)
-                numbers = _resolve_slide_numbers(range_spec, total)
+                numbers = _resolve_slide_numbers(opts.range_spec, total)
                 padding = max(3, len(str(total or 1)))
                 pattern = f"slide-*.{fmt.lower()}"
                 for existing in out.glob(pattern):
@@ -301,8 +295,13 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                 for number in numbers:
                     slide = slides[number - 1]
                     filename = out / f"slide-{number:0{padding}d}.{fmt.lower()}"
-                    if width is not None and height is not None:
-                        slide.Export(str(filename), ext, int(width), int(height))
+                    if opts.width is not None and opts.height is not None:
+                        slide.Export(
+                            str(filename),
+                            ext,
+                            int(opts.width),
+                            int(opts.height),
+                        )
                     else:
                         slide.Export(str(filename), ext)
                     count += 1

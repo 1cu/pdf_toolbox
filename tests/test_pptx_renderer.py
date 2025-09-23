@@ -11,24 +11,18 @@ from pdf_toolbox.renderers.pptx import (
     get_pptx_renderer,
     require_pptx_renderer,
 )
-from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
+from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 
 
 class _BaseTestRenderer(BasePptxRenderer):
     """Minimal renderer implementation for registry tests."""
 
-    def to_images(  # noqa: PLR0913  # pdf-toolbox: renderer stub matches renderer API signature | issue:-
+    def to_images(
         self,
         _input_pptx: str,
-        out_dir: str | None = None,
-        max_size_mb: float | None = None,
-        image_format: str = "JPEG",
-        quality: int | None = None,
-        width: int | None = None,
-        height: int | None = None,
-        range_spec: str | None = None,
+        options: RenderOptions | None = None,
     ) -> str:
-        del (out_dir, max_size_mb, image_format, quality, width, height, range_spec)
+        del options
         return "images"
 
     def to_pdf(
