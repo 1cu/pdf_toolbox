@@ -18,8 +18,9 @@ fi
 apt-get update
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     xvfb libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
-    libxcb-render-util0 libxcb-xkb1 libxkbcommon0 libxrender1 libegl1 libgl1 \
-    libdbus-1-3 libxcb-randr0 libxcb-xfixes0 libxcb-cursor0 libxcb-shape0
+    libxcb-util1 libxcb-render-util0 libxcb-xkb1 libxkbcommon0 libxrender1 \
+    libegl1 libgl1 libdbus-1-3 libxcb-randr0 libxcb-xfixes0 libxcb-cursor0 \
+    libxcb-shape0
 
 apt-get clean
 rm -rf /var/lib/apt/lists/*
