@@ -25,8 +25,6 @@ from pdf_toolbox.utils import logger, sane_output_dir
 ProfileChoice = Literal["custom", "miro"]
 ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 
-ERR_CUSTOM_DPI_UNRESOLVED = "dpi could not be resolved for custom profile"
-
 
 @dataclass(slots=True)
 class MiroExportOptions:
@@ -79,7 +77,7 @@ def miro_export(
                 opts.dpi,
             )
             if dpi_val is None:
-                raise ValueError(ERR_CUSTOM_DPI_UNRESOLVED)
+                raise ValueError(tr("miro_custom_dpi_unresolved"))
             fmt_literal = cast(ImageFormatChoice, fmt)
             options = PdfImageOptions(
                 pages=opts.pages,

@@ -65,6 +65,9 @@ ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
 # Tune batching for very large documents to keep peak memory lower
 BATCH_THRESHOLD_PAGES = 200
 
+# Stop lossless scaling once the step size becomes negligible
+LOSSLESS_SCALE_EPSILON = 0.001
+
 # Preset quality options for lossy formats like JPEG and WebP. The GUI presents
 # the human readable key while the value is the numeric quality passed to
 # :func:`PIL.Image.Image.save`.
@@ -351,6 +354,8 @@ def _scale_lossless_image(
         scale = (scale_low + scale_high) / 2
         if scale <= 0:
             break
+        if scale_high - scale_low < LOSSLESS_SCALE_EPSILON:
+            break
         new_size = (
             max(1, int(image.width * scale)),
             max(1, int(image.height * scale)),
@@ -568,6 +573,7 @@ def pdf_to_images(
 __all__ = [
     "DPI_PRESETS",
     "LOSSY_QUALITY_PRESETS",
+    "ImageFormatChoice",
     "PdfImageOptions",
     "pdf_to_images",
     "resolve_image_settings",

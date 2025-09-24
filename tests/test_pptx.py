@@ -215,7 +215,8 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
         cancel: object | None = None,
         **legacy_kwargs: Any,
     ) -> list[str]:
-        del pdf_path, cancel
+        assert cancel is None
+        del pdf_path
         if options is None:
             options = PdfImageOptions(**legacy_kwargs)
         captured["format"] = options.image_format

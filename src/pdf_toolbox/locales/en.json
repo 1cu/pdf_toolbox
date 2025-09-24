@@ -21,6 +21,7 @@
     "gui_export_profile_miro_help": "Max. 30 MB per page, capped at 8192x4096 (32 MP), sharp at 400% zoom with SVG when possible.",
     "language": "Language",
     "log_level": "Log Level",
+    "miro_custom_dpi_unresolved": "DPI could not be resolved for the custom profile.",
     "miro_export": "Miro Export",
     "miro_unsupported_input": "Unsupported input type: {suffix}",
     "open_folder": "Open folder",
