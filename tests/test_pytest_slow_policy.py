@@ -164,7 +164,15 @@ def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
 
 
 def _run(pytester: pytest.Pytester, *args: str):
-    return pytester.runpytest_inprocess("-p", "no:cov", *args)
+    return pytester.runpytest_inprocess(
+        # ``-rA`` restores the terminal outcome summary that ``-q`` from the
+        # repository's ``addopts`` setting suppresses.  The summary is required
+        # for ``RunResult.assert_outcomes`` to function on pytest>=8.4.
+        "-p",
+        "no:cov",
+        "-rA",
+        *args,
+    )
 
 
 @pytest.mark.slow
