@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from contextlib import suppress
 from pathlib import Path
 from types import SimpleNamespace
@@ -164,18 +165,26 @@ def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
 
 
 def _run(pytester: pytest.Pytester, *args: str) -> pytest.RunResult:
-    return pytester.runpytest_inprocess(
-        "--override-ini",
-        # Drop ``-q`` from ``addopts`` so pytest still renders the terminal
-        # outcome summary that ``RunResult.assert_outcomes`` relies on when
-        # parsing results under pytest>=8.4.
-        "addopts=--durations=0 --durations-min=0.75",
-        "-p",
-        "no:pytestqt",
-        "-p",
-        "no:cov",
-        *args,
-    )
+    previous = os.environ.get("PYTEST_DISABLE_PLUGIN_AUTOLOAD")
+    os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+    try:
+        return pytester.runpytest_inprocess(
+            "--override-ini",
+            # Drop ``-q`` from ``addopts`` so pytest still renders the terminal
+            # outcome summary that ``RunResult.assert_outcomes`` relies on when
+            # parsing results under pytest>=8.4.
+            "addopts=--durations=0 --durations-min=0.75",
+            "-p",
+            "no:pytestqt",
+            "-p",
+            "no:cov",
+            *args,
+        )
+    finally:
+        if previous is None:
+            os.environ.pop("PYTEST_DISABLE_PLUGIN_AUTOLOAD", None)
+        else:
+            os.environ["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = previous
 
 
 @pytest.mark.slow
