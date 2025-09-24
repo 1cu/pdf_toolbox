@@ -43,6 +43,7 @@ DEFAULT_CONFIG = {
     "log_level": "INFO",
     "language": "system",
     _PPTX_RENDERER_KEY: _PPTX_RENDERER_DEFAULT,
+    "http_office": {},
 }
 
 
