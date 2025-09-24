@@ -1098,6 +1098,16 @@ def test_on_pptx_renderer_updates_configuration(
     dialog_exec_stub.set_callback(fill)
     window = _make_window(qtbot)
     try:
+        window.cfg["http_office"] = {
+            "mode": "auto",
+            "endpoint": "https://existing.example/convert",
+            "timeout_s": 30.0,
+            "verify_tls": True,
+            "headers": {
+                "Authorization": "Bearer old-token",
+                "X-Trace-ID": "42",
+            },
+        }
         window.on_pptx_renderer()
         assert window.cfg["pptx_renderer"] == "http_office"
         assert saved
@@ -1107,7 +1117,10 @@ def test_on_pptx_renderer_updates_configuration(
         assert http_saved["mode"] == "stirling"
         assert http_saved["endpoint"] == "https://stirling.example/api/pptx"
         assert http_saved["verify_tls"] is False
-        assert http_saved["headers"] == {"X-API-Key": "secret-token"}
+        assert http_saved["headers"] == {
+            "X-Trace-ID": "42",
+            "X-API-Key": "secret-token",
+        }
         assert http_saved["timeout_s"] == pytest.approx(45.0)
         assert window.cfg["http_office"] == http_saved
     finally:

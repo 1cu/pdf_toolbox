@@ -891,6 +891,7 @@ class MainWindow(QMainWindow):
         QCheckBox,
         QLineEdit,
         QLineEdit,
+        str | None,
     ]:
         """Return the HTTP renderer configuration group and its widgets."""
         http_group = QGroupBox(tr("pptx_http_settings"))
@@ -930,12 +931,17 @@ class MainWindow(QMainWindow):
 
         header_name_value = ""
         header_value_value = ""
+        header_original_key: str | None = None
         existing_headers = http_cfg.get("headers")
         if isinstance(existing_headers, Mapping):
             for key, value in existing_headers.items():
                 if key is None:
                     continue
-                header_name_value = str(key)
+                candidate = str(key).strip()
+                if not candidate:
+                    continue
+                header_original_key = candidate
+                header_name_value = candidate
                 header_value_value = "" if value is None else str(value)
                 break
 
@@ -955,6 +961,7 @@ class MainWindow(QMainWindow):
             http_verify,
             http_header_name,
             http_header_value,
+            header_original_key,
         )
 
     def on_pptx_renderer(
@@ -996,6 +1003,7 @@ class MainWindow(QMainWindow):
             http_verify,
             http_header_name,
             http_header_value,
+            http_header_original_key,
         ) = self._create_http_office_group(http_cfg)
 
         form.addRow(http_group)
@@ -1022,7 +1030,20 @@ class MainWindow(QMainWindow):
             value = combo.currentData()
             cfg["pptx_renderer"] = str(value) if value else "auto"
             headers: dict[str, str] = {}
+            existing_headers = http_cfg.get("headers")
+            if isinstance(existing_headers, Mapping):
+                for key, value in existing_headers.items():
+                    if key is None:
+                        continue
+                    candidate = str(key).strip()
+                    if not candidate:
+                        continue
+                    headers[candidate] = "" if value is None else str(value)
             header_name = http_header_name.text().strip()
+            if http_header_original_key and (
+                not header_name or header_name != http_header_original_key
+            ):
+                headers.pop(http_header_original_key, None)
             if header_name:
                 headers[header_name] = http_header_value.text()
             http_payload: dict[str, object] = {
