@@ -37,6 +37,8 @@ ERR_COULD_NOT_REDUCE = "Could not reduce image below max_size_mb"
 ERR_WIDTH_HEIGHT = "width and height must be provided together"
 ERR_DPI_UNRESOLVED = "dpi could not be resolved"
 ERR_MAX_SIZE_REQUIRED = "max_size_mb must be provided when enforcing limits"
+ERR_WIDTH_HEIGHT_POSITIVE = "width and height must be > 0"
+ERR_MAX_SIZE_POSITIVE = "max_size_mb must be > 0"
 
 # Supported output formats for PDF rendering; WebP offers
 # smaller files with good quality.
@@ -203,6 +205,8 @@ def _resolve_dpi(
     if width is not None or height is not None:
         if width is None or height is None:
             raise ValueError(ERR_WIDTH_HEIGHT)
+        if width <= 0 or height <= 0:
+            raise ValueError(ERR_WIDTH_HEIGHT_POSITIVE)
         first = doc.load_page(0)
         w_in = first.rect.width / 72
         h_in = first.rect.height / 72
@@ -215,6 +219,8 @@ def _resolve_dpi(
 def _resolve_max_bytes(max_size_mb: float | None) -> int | None:
     if max_size_mb is None:
         return None
+    if max_size_mb <= 0:
+        raise ValueError(ERR_MAX_SIZE_POSITIVE)
     return int(max_size_mb * 1024 * 1024)
 
 
@@ -286,12 +292,13 @@ def _write_raster_without_limit(
 ) -> _RasterRenderDetails:
     details = _RasterRenderDetails()
     fmt = plan.image_format
+    q = max(1, min(plan.quality, 100))
     if fmt == "JPEG":
-        out_path.write_bytes(encode_jpeg(image, quality=plan.quality))
-        details.quality = plan.quality
+        out_path.write_bytes(encode_jpeg(image, quality=q))
+        details.quality = q
     elif fmt == "WEBP":
-        out_path.write_bytes(encode_webp(image, lossless=False, quality=plan.quality))
-        details.quality = plan.quality
+        out_path.write_bytes(encode_webp(image, lossless=False, quality=q))
+        details.quality = q
     elif fmt == "PNG":
         out_path.write_bytes(
             encode_png(
@@ -342,15 +349,17 @@ def _scale_lossless_image(
     image_format: str,
     max_bytes: int,
     out_path: Path,
+    cancel: Event | None = None,
 ) -> _RasterRenderDetails:
     warnings.warn(
         "Image scaled down to meet max_size_mb; size is approximate",
         UserWarning,
-        stacklevel=1,
+        stacklevel=2,
     )
     scale_low, scale_high = 0.0, 1.0
     scaled_bytes: bytes | None = None
     for _ in range(20):
+        raise_if_cancelled(cancel)
         scale = (scale_low + scale_high) / 2
         if scale <= 0:
             break
@@ -385,13 +394,16 @@ def _write_lossy_with_limit(
     image: Image.Image,
     plan: _ImageRenderPlan,
     out_path: Path,
+    *,
+    cancel: Event | None = None,
 ) -> _RasterRenderDetails:
     if plan.max_bytes is None:
         raise ValueError(ERR_MAX_SIZE_REQUIRED)
-    q_low, q_high = 1, plan.quality
+    q_low, q_high = 1, max(1, min(plan.quality, 100))
     best_quality: int | None = None
     best_data: bytes | None = None
     while q_low <= q_high:
+        raise_if_cancelled(cancel)
         mid = (q_low + q_high) // 2
         if plan.image_format == "JPEG":
             data = encode_jpeg(image, quality=mid)
@@ -413,6 +425,8 @@ def _write_lossless_with_limit(
     image: Image.Image,
     plan: _ImageRenderPlan,
     out_path: Path,
+    *,
+    cancel: Event | None = None,
 ) -> _RasterRenderDetails:
     if plan.max_bytes is None:
         raise ValueError(ERR_MAX_SIZE_REQUIRED)
@@ -434,6 +448,7 @@ def _write_lossless_with_limit(
         image_format=fmt,
         max_bytes=max_bytes,
         out_path=out_path,
+        cancel=cancel,
     )
 
 
@@ -441,10 +456,12 @@ def _write_raster_with_limit(
     image: Image.Image,
     plan: _ImageRenderPlan,
     out_path: Path,
+    *,
+    cancel: Event | None = None,
 ) -> _RasterRenderDetails:
     if plan.image_format in {"JPEG", "WEBP"}:
-        return _write_lossy_with_limit(image, plan, out_path)
-    return _write_lossless_with_limit(image, plan, out_path)
+        return _write_lossy_with_limit(image, plan, out_path, cancel=cancel)
+    return _write_lossless_with_limit(image, plan, out_path, cancel=cancel)
 
 
 def _render_raster_page(
@@ -452,13 +469,15 @@ def _render_raster_page(
     plan: _ImageRenderPlan,
     *,
     page_no: int,
+    cancel: Event | None = None,
 ) -> str:
-    image = render_page_image(page, plan.dpi, keep_alpha=False)
+    keep_alpha = plan.extension not in {"jpg", "jpeg"}
+    image = render_page_image(page, plan.dpi, keep_alpha=keep_alpha)
     out_path = plan.out_dir / f"{plan.stem}_Page_{page_no}.{plan.extension}"
     if plan.max_bytes is None:
         details = _write_raster_without_limit(image, plan, out_path)
     else:
-        details = _write_raster_with_limit(image, plan, out_path)
+        details = _write_raster_with_limit(image, plan, out_path, cancel=cancel)
     size_out = out_path.stat().st_size / 1024
     scale_factor = details.scale if details.scale is not None else 1
     final_width = int(image.width * scale_factor)
@@ -499,7 +518,9 @@ def _render_batches(
             if plan.image_format == "SVG":
                 outputs.append(_render_svg_page(page, plan, page_no=page_no))
                 continue
-            outputs.append(_render_raster_page(page, plan, page_no=page_no))
+            outputs.append(
+                _render_raster_page(page, plan, page_no=page_no, cancel=cancel)
+            )
     return outputs
 
 

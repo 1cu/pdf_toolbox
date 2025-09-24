@@ -77,7 +77,7 @@ def miro_export(
                 opts.dpi,
             )
             if dpi_val is None:
-                raise ValueError(tr("miro_custom_dpi_unresolved"))
+                raise ValueError(tr("strings.miro_custom_dpi_unresolved"))
             fmt_literal = cast(ImageFormatChoice, fmt)
             options = PdfImageOptions(
                 pages=opts.pages,

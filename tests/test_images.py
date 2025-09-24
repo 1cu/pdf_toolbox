@@ -105,6 +105,26 @@ def test_pdf_to_images_requires_width_height(sample_pdf, tmp_path):
         pdf_to_images(sample_pdf, PdfImageOptions(width=100, out_dir=str(tmp_path)))
 
 
+def test_pdf_to_images_requires_positive_dimensions(sample_pdf, tmp_path):
+    with pytest.raises(ValueError, match="width and height must be > 0"):
+        pdf_to_images(
+            sample_pdf,
+            PdfImageOptions(width=0, height=100, out_dir=str(tmp_path)),
+        )
+
+
+def test_pdf_to_images_requires_positive_max_size(sample_pdf, tmp_path):
+    with pytest.raises(ValueError, match="max_size_mb must be > 0"):
+        pdf_to_images(
+            sample_pdf,
+            PdfImageOptions(
+                image_format="JPEG",
+                max_size_mb=0,
+                out_dir=str(tmp_path),
+            ),
+        )
+
+
 def test_pdf_to_images_svg(sample_pdf, tmp_path):
     outputs = pdf_to_images(
         sample_pdf,
@@ -270,11 +290,13 @@ def test_pdf_to_images_lossy_quality_preset(sample_pdf, tmp_path, fmt):
         PdfImageOptions(
             image_format=fmt,
             quality="Medium (85)",
-            dpi="Low (72 dpi)",
+            pages="1",
+            width=64,
+            height=64,
             out_dir=str(tmp_path),
         ),
     )
-    assert len(images) == 3
+    assert len(images) == 1
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
@@ -284,11 +306,13 @@ def test_pdf_to_images_lossy_quality_custom(sample_pdf, tmp_path, fmt):
         PdfImageOptions(
             image_format=fmt,
             quality=80,
-            dpi="Low (72 dpi)",
+            pages="1",
+            width=64,
+            height=64,
             out_dir=str(tmp_path),
         ),
     )
-    assert len(images) == 3
+    assert len(images) == 1
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])

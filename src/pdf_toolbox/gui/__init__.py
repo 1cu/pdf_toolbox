@@ -53,7 +53,7 @@ try:  # Detect Qt availability for headless error handling tests
 except (ImportError, OSError, RuntimeError) as _qt_exc:
     QT_AVAILABLE = False
     QT_IMPORT_ERROR = _qt_exc
-    logger.warning("Qt import failed: %s", _qt_exc)
+    logger.warning("Qt import failed", exc_info=True)
 
 if not TYPE_CHECKING:
     if QT_AVAILABLE:
@@ -80,15 +80,9 @@ def main() -> None:
     if not QT_AVAILABLE:
         raise QT_IMPORT_ERROR or RuntimeError("Qt libraries not available")
 
-    app = QApplication(
-        []
-    )  # pragma: no cover  # pdf-toolbox: GUI launch requires event loop | issue:-
-    _win = (
-        MainWindow()
-    )  # pragma: no cover  # pdf-toolbox: GUI launch requires event loop | issue:-
-    sys.exit(
-        app.exec()
-    )  # pragma: no cover  # pdf-toolbox: GUI launch requires event loop | issue:-
+    app = QApplication(sys.argv)
+    _win = MainWindow()
+    sys.exit(app.exec())
 
 
 __all__ = [

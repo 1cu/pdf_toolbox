@@ -72,7 +72,7 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
     class DummyPage:
         def get_pixmap(self, matrix, alpha: bool = False):
             _ = matrix
-            assert alpha is False
+            assert alpha is True
             return DummyPix(4)
 
     def fake_load_page(_doc, _index):
@@ -96,7 +96,7 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
     assert outputs
 
 
-def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
+def test_render_doc_pages_strips_alpha_for_jpeg(monkeypatch, sample_pdf):
     class DummyPix:
         def __init__(self, alpha: int):
             self.colorspace = type("CS", (), {"n": 3})()
@@ -125,7 +125,7 @@ def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
             input_path=sample_pdf,
             page_numbers=[1],
             dpi=72,
-            image_format="PNG",
+            image_format="JPEG",
             quality=95,
         )
         outputs = images_mod._render_doc_pages(doc, request)
