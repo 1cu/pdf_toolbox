@@ -10,10 +10,10 @@
 | src/pdf_toolbox/cli.py:475                       | pragma: no cover             | surface constructor failures from custom annotations                  | -        |
 | src/pdf_toolbox/gui/\_\_init\_\_.py:24           | pragma: no cover             | typing-only import guard                                              | -        |
 | src/pdf_toolbox/gui/\_\_init\_\_.py:28           | pragma: no cover             | runtime fallback for typing                                           | -        |
-| src/pdf_toolbox/gui/main_window.py:109           | PLR0915                      | constructor sets up many widgets                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:272           | PLR0912, PLR0915             | dynamic form builder is inherently complex                            | -        |
-| src/pdf_toolbox/gui/main_window.py:524           | TRY004                       | GUI handler expects ValueError                                        | -        |
-| src/pdf_toolbox/gui/main_window.py:771           | N802                         | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:111           | PLR0915                      | constructor sets up many widgets                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:274           | PLR0912, PLR0915             | dynamic form builder is inherently complex                            | -        |
+| src/pdf_toolbox/gui/main_window.py:526           | TRY004                       | GUI handler expects ValueError                                        | -        |
+| src/pdf_toolbox/gui/main_window.py:773           | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:36                | type: ignore[override]       | QObject method signature differs from logging.Handler.emit            | -        |
 | src/pdf_toolbox/gui/widgets.py:76                | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:81                | N802                         | Qt requires camelCase event name                                      | -        |
@@ -52,7 +52,7 @@
 | tests/gui/test_main_window.py:664                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
 | tests/gui/test_main_window.py:746                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
 | tests/gui/test_main_window.py:750                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:1139               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
+| tests/gui/test_main_window.py:1166               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
 | tests/gui/test_widgets.py:124                    | N802                         | stub mirrors Qt URL API                                               | -        |
 | tests/gui/test_widgets.py:131                    | N802                         | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:142                    | N802                         | stub mirrors Qt event API                                             | -        |

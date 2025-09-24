@@ -122,7 +122,7 @@ def test_to_pdf_streams_response(tmp_path, monkeypatch):
 
     assert Path(result).read_bytes() == b"%PDF-1.7\n"
     assert captured["endpoint"] == "https://example.test/render"
-    assert captured["field"] == "file"
+    assert captured["field"] == "fileInput"
     assert captured["filename"] == "deck.pptx"
     assert captured["mime"].endswith("presentation")
     assert captured["headers"] == {"X-Test": "1"}
@@ -395,6 +395,39 @@ def test_to_pdf_requires_endpoint(tmp_path):
         renderer.to_pdf(str(tmp_path / "deck.pptx"), str(tmp_path / "out.pdf"))
 
     assert "endpoint" in str(exc.value)
+
+
+def test_to_pdf_rejects_invalid_endpoint(tmp_path):
+    renderer = _renderer_with_endpoint("ftp://example")
+    pptx = tmp_path / "deck.pptx"
+    pptx.write_bytes(b"deck")
+
+    with pytest.raises(PptxRenderingError) as exc:
+        renderer.to_pdf(str(pptx), str(tmp_path / "out.pdf"))
+
+    assert "HTTP(S) URL" in str(exc.value)
+
+
+def test_stirling_endpoint_appends_default_path(monkeypatch):
+    renderer = _renderer_with_endpoint("https://example.test", mode="stirling")
+    monkeypatch.setattr(http_office_module, "requests", object())
+
+    context = renderer._request_context()
+
+    assert context.endpoint == "https://example.test/api/v1/convert/file/pdf"
+    assert context.field == "fileInput"
+
+
+def test_stirling_endpoint_preserves_custom_path(monkeypatch):
+    renderer = _renderer_with_endpoint(
+        "https://example.test/api/v1/convert/file/pdf", mode="stirling"
+    )
+    monkeypatch.setattr(http_office_module, "requests", object())
+
+    context = renderer._request_context()
+
+    assert context.endpoint == "https://example.test/api/v1/convert/file/pdf"
+    assert context.field == "fileInput"
 
 
 def test_post_stream_file_streams_and_closes(tmp_path, monkeypatch):

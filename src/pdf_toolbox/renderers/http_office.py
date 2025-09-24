@@ -7,7 +7,7 @@ from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar, Literal, cast
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 from pdf_toolbox.config import load_config
 from pdf_toolbox.i18n import tr
@@ -26,6 +26,7 @@ Mode = Literal["auto", "stirling", "gotenberg"]
 _DEFAULT_TIMEOUT = 60.0
 _HTTP_OK = 200
 _MIME_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+_STIRLING_PDF_PATH = "/api/v1/convert/file/pdf"
 
 
 def _coerce_bool(value: object, default: bool) -> bool:
@@ -135,7 +136,7 @@ class _HttpRequestContext:
     """Request metadata computed for an HTTP rendering call."""
 
     endpoint: str
-    field: Literal["file", "files"]
+    field: Literal["file", "files", "fileInput"]
     headers: Mapping[str, str]
     timeout_s: float | None
     verify_tls: bool
@@ -192,6 +193,30 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             return "stirling"
         return mode
 
+    def _normalise_endpoint(
+        self,
+        endpoint: str,
+        mode: Literal["stirling", "gotenberg"],
+    ) -> str:
+        """Return a validated endpoint for ``mode``."""
+        parsed = urlparse(endpoint)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise PptxRenderingError(
+                tr("pptx.http.invalid_endpoint"),
+                code="unavailable",
+            )
+
+        if mode == "stirling" and parsed.path in {"", "/"}:
+            # Allow users to supply either the full endpoint or the base host.
+            parsed = parsed._replace(
+                path=_STIRLING_PDF_PATH,
+                params="",
+                query="",
+                fragment="",
+            )
+            return urlunparse(parsed)
+        return endpoint
+
     def _validate_pdf_options(
         self,
         *,
@@ -240,10 +265,16 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             raise PptxRenderingError(msg, code="unavailable")
         req = cast(RequestsModule, requests)
         mode = self._selected_mode()
-        field = "files" if mode == "gotenberg" else "file"
+        endpoint = self._normalise_endpoint(endpoint, mode)
+        if mode == "gotenberg":
+            field: Literal["file", "files", "fileInput"] = "files"
+        elif mode == "stirling":
+            field = "fileInput"
+        else:
+            field = "file"
         self._cached_context = _HttpRequestContext(
             endpoint=endpoint,
-            field=cast(Literal["file", "files"], field),
+            field=field,
             headers=self._cfg.http_office.headers,
             timeout_s=self._cfg.http_office.timeout_s,
             verify_tls=self._cfg.http_office.verify_tls,
