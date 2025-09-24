@@ -13,16 +13,11 @@
 | src/pdf_toolbox/gui/main_window.py:109           | PLR0915                      | constructor sets up many widgets                                          | -        |
 | src/pdf_toolbox/gui/main_window.py:272           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
 | src/pdf_toolbox/gui/main_window.py:524           | TRY004                       | GUI handler expects ValueError                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:773           | N802                         | Qt requires camelCase event name                                          | -        |
+| src/pdf_toolbox/gui/main_window.py:771           | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:36                | type: ignore[override]       | QObject method signature differs from logging.Handler.emit                | -        |
 | src/pdf_toolbox/gui/widgets.py:76                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:81                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:99                | N802                         | Qt requires camelCase event name                                          | -        |
-| src/pdf_toolbox/miro.py:247                      | pragma: no cover             | guard against environment-specific WebP encoder issues                    | -        |
-| src/pdf_toolbox/miro.py:262                      | pragma: no cover             | Pillow sometimes lacks WebP support                                       | -        |
-| src/pdf_toolbox/miro.py:282                      | pragma: no cover             | PNG encoder failure varies by platform                                    | -        |
-| src/pdf_toolbox/miro.py:302                      | pragma: no cover             | JPEG encoder may be unavailable                                           | -        |
-| src/pdf_toolbox/miro.py:695                      | pragma: no cover             | keep GUI responsive despite renderer crashes                              | -        |
 | src/pdf_toolbox/miro.py:715                      | PLR0913                      | export pipeline exposes optional tuning knobs                             | -        |
 | src/pdf_toolbox/renderers/\_http_util.py:23      | pragma: no cover             | renderer checks dependency availability before calling helper             | -        |
 | src/pdf_toolbox/renderers/\_requests.py:12       | pragma: no cover             | optional dependency import guard exercised via unit tests                 | -        |
@@ -65,7 +60,7 @@
 | tests/gui/test_main_window.py:664                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
 | tests/gui/test_main_window.py:746                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
 | tests/gui/test_main_window.py:750                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
-| tests/gui/test_main_window.py:1138               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
+| tests/gui/test_main_window.py:1137               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
 | tests/gui/test_widgets.py:124                    | N802                         | stub mirrors Qt URL API                                                   | -        |
 | tests/gui/test_widgets.py:131                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:142                    | N802                         | stub mirrors Qt event API                                                 | -        |
@@ -76,7 +71,7 @@
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
 | tests/test_gui_import.py:127                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
 | tests/test_gui_import.py:132                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
-| tests/test_miro.py:250                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
+| tests/test_miro.py:251                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
 | tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                    | -        |
 | tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                    | -        |
 | tests/test_pptx_ms_office_renderer.py:47         | N802                         | COM style method name                                                     | -        |
