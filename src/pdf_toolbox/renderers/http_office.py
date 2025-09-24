@@ -296,15 +296,6 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         context = self._request_context()
         source, destination = self._prepare_paths(input_pptx, output_path)
 
-        logger.info(
-            "Rendering PPTX via HTTP provider",
-            extra={
-                "renderer": self.name,
-                "mode": context.mode,
-                "endpoint": context.endpoint,
-            },
-        )
-
         req = context.requests
 
         try:
@@ -355,7 +346,10 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             )
 
         logger.info(
-            "Rendered PPTX via HTTP provider",
+            "Rendered %s via HTTP provider to %s (%.1f kB)",
+            source,
+            destination,
+            written / 1024,
             extra={
                 "renderer": self.name,
                 "mode": context.mode,

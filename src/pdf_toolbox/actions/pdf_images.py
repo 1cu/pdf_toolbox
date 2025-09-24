@@ -492,13 +492,20 @@ def _render_raster_page(
         summary.append(f"compress_level={details.compress_level}")
     detail_str = ", ".join(summary)
     if plan.max_size_mb is None:
-        logger.info("Page %d rendered %s (%.1f kB)", page_no, detail_str, size_out)
+        logger.info(
+            "Page %d rendered %s to %s (%.1f kB)",
+            page_no,
+            detail_str,
+            out_path.name,
+            size_out,
+        )
     else:
         logger.info(
-            "Page %d saved %s to meet %.1f MB (%.1f kB)",
+            "Page %d saved %s to meet %.1f MB limit in %s (%.1f kB)",
             page_no,
             detail_str,
             plan.max_size_mb,
+            out_path.name,
             size_out,
         )
     return str(out_path)
