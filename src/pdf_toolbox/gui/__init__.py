@@ -63,9 +63,7 @@ if not TYPE_CHECKING:
         MainWindow = _LoadedMainWindow
     else:
         try:
-            _main_window_mod = importlib.import_module(
-                "pdf_toolbox.gui.main_window"
-            )
+            _main_window_mod = importlib.import_module("pdf_toolbox.gui.main_window")
         except (
             ImportError,
             OSError,

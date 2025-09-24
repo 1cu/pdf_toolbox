@@ -75,8 +75,8 @@
 | tests/gui/test_widgets.py:194                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                                 | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
-| tests/test_gui_import.py:134                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
-| tests/test_gui_import.py:139                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
+| tests/test_gui_import.py:127                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
+| tests/test_gui_import.py:132                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
 | tests/test_miro.py:250                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
 | tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                    | -        |
 | tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                    | -        |
