@@ -6,6 +6,7 @@ import html
 import inspect
 import sys
 import types
+from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import metadata
 from typing import Any, Literal, Union, get_args, get_origin
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QFormLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -878,6 +880,90 @@ class MainWindow(QMainWindow):
             self._populate_actions()
             self.update_status(tr(self.status_key), self.status_key)
 
+    def _create_http_office_group(
+        self,
+        http_cfg: Mapping[str, object],
+    ) -> tuple[
+        QGroupBox,
+        QComboBox,
+        QLineEdit,
+        QDoubleSpinBox,
+        QCheckBox,
+        QLineEdit,
+        QLineEdit,
+        str | None,
+    ]:
+        """Return the HTTP renderer configuration group and its widgets."""
+        http_group = QGroupBox(tr("pptx_http_settings"))
+        http_group.setObjectName("pptx_http_group")
+        http_layout = QFormLayout(http_group)
+
+        http_type = QComboBox()
+        http_type.setObjectName("pptx_http_type")
+        http_type.addItem(tr("pptx_http_type_auto"), "auto")
+        http_type.addItem(tr("pptx_http_type_stirling"), "stirling")
+        http_type.addItem(tr("pptx_http_type_gotenberg"), "gotenberg")
+        current_http_mode = str(http_cfg.get("mode") or "auto")
+        http_index = http_type.findData(current_http_mode)
+        http_type.setCurrentIndex(max(http_index, 0))
+        http_layout.addRow(tr("pptx_http_type_label"), http_type)
+
+        http_endpoint = QLineEdit(str(http_cfg.get("endpoint") or ""))
+        http_endpoint.setObjectName("pptx_http_endpoint")
+        http_layout.addRow(tr("pptx_http_endpoint"), http_endpoint)
+
+        http_timeout = QDoubleSpinBox()
+        http_timeout.setObjectName("pptx_http_timeout")
+        http_timeout.setRange(0.0, 600.0)
+        http_timeout.setDecimals(1)
+        http_timeout.setSingleStep(1.0)
+        stored_timeout = http_cfg.get("timeout_s")
+        http_timeout_value = (
+            float(stored_timeout) if isinstance(stored_timeout, int | float) else 60.0
+        )
+        http_timeout.setValue(http_timeout_value)
+        http_layout.addRow(tr("pptx_http_timeout"), http_timeout)
+
+        http_verify = QCheckBox(tr("pptx_http_verify_tls"))
+        http_verify.setObjectName("pptx_http_verify_tls")
+        http_verify.setChecked(bool(http_cfg.get("verify_tls", True)))
+        http_layout.addRow(http_verify)
+
+        header_name_value = ""
+        header_value_value = ""
+        header_original_key: str | None = None
+        existing_headers = http_cfg.get("headers")
+        if isinstance(existing_headers, Mapping):
+            for key, value in existing_headers.items():
+                if key is None:
+                    continue
+                candidate = str(key).strip()
+                if not candidate:
+                    continue
+                header_original_key = candidate
+                header_name_value = candidate
+                header_value_value = "" if value is None else str(value)
+                break
+
+        http_header_name = QLineEdit(header_name_value)
+        http_header_name.setObjectName("pptx_http_header_name")
+        http_layout.addRow(tr("pptx_http_header_name"), http_header_name)
+
+        http_header_value = QLineEdit(header_value_value)
+        http_header_value.setObjectName("pptx_http_header_value")
+        http_layout.addRow(tr("pptx_http_header_value"), http_header_value)
+
+        return (
+            http_group,
+            http_type,
+            http_endpoint,
+            http_timeout,
+            http_verify,
+            http_header_name,
+            http_header_value,
+            header_original_key,
+        )
+
     def on_pptx_renderer(
         self,
     ) -> None:
@@ -903,6 +989,31 @@ class MainWindow(QMainWindow):
         index = combo.findData(current)
         combo.setCurrentIndex(max(index, 0))
         form.addRow("PPTX Renderer", combo)
+
+        raw_http_cfg = cfg.get("http_office")
+        http_cfg: dict[str, object] = (
+            dict(raw_http_cfg) if isinstance(raw_http_cfg, dict) else {}
+        )
+
+        (
+            http_group,
+            http_type,
+            http_endpoint,
+            http_timeout,
+            http_verify,
+            http_header_name,
+            http_header_value,
+            http_header_original_key,
+        ) = self._create_http_office_group(http_cfg)
+
+        form.addRow(http_group)
+
+        def _update_http_visibility() -> None:
+            http_group.setVisible(combo.currentData() == "http_office")
+
+        combo.currentIndexChanged.connect(lambda _index: _update_http_visibility())
+        _update_http_visibility()
+
         renderer = self._select_pptx_provider()
         if renderer is None:
             eff = QLabel(tr("pptx.no_provider"))
@@ -918,6 +1029,31 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.DialogCode.Accepted:
             value = combo.currentData()
             cfg["pptx_renderer"] = str(value) if value else "auto"
+            headers: dict[str, str] = {}
+            existing_headers = http_cfg.get("headers")
+            if isinstance(existing_headers, Mapping):
+                for key, value in existing_headers.items():
+                    if key is None:
+                        continue
+                    candidate = str(key).strip()
+                    if not candidate:
+                        continue
+                    headers[candidate] = "" if value is None else str(value)
+            header_name = http_header_name.text().strip()
+            if http_header_original_key and (
+                not header_name or header_name != http_header_original_key
+            ):
+                headers.pop(http_header_original_key, None)
+            if header_name:
+                headers[header_name] = http_header_value.text()
+            http_payload: dict[str, object] = {
+                "mode": http_type.currentData() or "auto",
+                "endpoint": http_endpoint.text().strip(),
+                "timeout_s": float(http_timeout.value()),
+                "verify_tls": http_verify.isChecked(),
+                "headers": headers,
+            }
+            cfg["http_office"] = http_payload
             save_config(cfg)
 
     def on_about(

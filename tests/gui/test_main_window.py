@@ -1068,21 +1068,61 @@ def test_on_pptx_renderer_updates_configuration(
     """Selecting a PPTX renderer stores the choice."""
     import pdf_toolbox.gui.main_window as mw
 
-    saved: list[dict[str, str]] = []
+    saved: list[dict[str, object]] = []
     monkeypatch.setattr(mw, "save_config", lambda cfg: saved.append(cfg.copy()))
 
     def fill(dialog) -> None:
         combo = dialog.findChildren(QComboBox)[0]
         index = combo.findData("http_office")
         combo.setCurrentIndex(index)
+        http_type = dialog.findChild(QComboBox, "pptx_http_type")
+        assert http_type is not None
+        http_type_index = http_type.findData("stirling")
+        http_type.setCurrentIndex(max(http_type_index, 0))
+        http_endpoint = dialog.findChild(QLineEdit, "pptx_http_endpoint")
+        assert http_endpoint is not None
+        http_endpoint.setText("https://stirling.example/api/pptx")
+        http_timeout = dialog.findChild(QDoubleSpinBox, "pptx_http_timeout")
+        assert http_timeout is not None
+        http_timeout.setValue(45.0)
+        http_verify = dialog.findChild(QCheckBox, "pptx_http_verify_tls")
+        assert http_verify is not None
+        http_verify.setChecked(False)
+        header_name = dialog.findChild(QLineEdit, "pptx_http_header_name")
+        header_value = dialog.findChild(QLineEdit, "pptx_http_header_value")
+        assert header_name is not None
+        assert header_value is not None
+        header_name.setText("X-API-Key")
+        header_value.setText("secret-token")
 
     dialog_exec_stub.set_callback(fill)
     window = _make_window(qtbot)
     try:
+        window.cfg["http_office"] = {
+            "mode": "auto",
+            "endpoint": "https://existing.example/convert",
+            "timeout_s": 30.0,
+            "verify_tls": True,
+            "headers": {
+                "Authorization": "Bearer old-token",
+                "X-Trace-ID": "42",
+            },
+        }
         window.on_pptx_renderer()
         assert window.cfg["pptx_renderer"] == "http_office"
         assert saved
         assert saved[-1]["pptx_renderer"] == "http_office"
+        http_saved = saved[-1]["http_office"]
+        assert isinstance(http_saved, dict)
+        assert http_saved["mode"] == "stirling"
+        assert http_saved["endpoint"] == "https://stirling.example/api/pptx"
+        assert http_saved["verify_tls"] is False
+        assert http_saved["headers"] == {
+            "X-Trace-ID": "42",
+            "X-API-Key": "secret-token",
+        }
+        assert http_saved["timeout_s"] == pytest.approx(45.0)
+        assert window.cfg["http_office"] == http_saved
     finally:
         window.close()
 
