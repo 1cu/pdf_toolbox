@@ -904,12 +904,14 @@ def test_on_run_cancel_running_worker(
         file_edit.setText("file.pdf")
         running = stub_worker.cls(sample, {"path": "file.pdf"})
         running._running = True
+        assert running.isRunning() is True
         window.worker = running
         window.on_run()
         assert stub_worker.cancels
         assert stub_worker.waits
         assert stub_worker.waits[-1] == 100
         assert window.worker is None
+        assert running.isRunning() is False
         assert window.status_key == "cancelled"
         assert window.progress.value() == 0
         assert window.run_btn.text() == tr("start")

@@ -52,14 +52,14 @@
 | tests/gui/conftest_qt.py:126                     | N802                         | stub preserves Qt camelCase API                                           | -        |
 | tests/gui/conftest_qt.py:129                     | N802, type: ignore[override] | stub preserves Qt camelCase API                                           | -        |
 | tests/gui/conftest_qt.py:132                     | N802, type: ignore[override] | stub preserves Qt camelCase API                                           | -        |
-| tests/gui/conftest_qt.py:218                     | N802, pragma: no cover       | method name follows Qt worker API                                         | -        |
+| tests/gui/conftest_qt.py:218                     | N802                         | method name follows Qt worker API                                         | -        |
 | tests/gui/test_main_window.py:530                | N802                         | mimic Qt worker API naming                                                | -        |
 | tests/gui/test_main_window.py:544                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
 | tests/gui/test_main_window.py:654                | N802                         | mimic Qt worker API naming                                                | -        |
 | tests/gui/test_main_window.py:664                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
 | tests/gui/test_main_window.py:746                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
 | tests/gui/test_main_window.py:750                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
-| tests/gui/test_main_window.py:1137               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
+| tests/gui/test_main_window.py:1139               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
 | tests/gui/test_widgets.py:124                    | N802                         | stub mirrors Qt URL API                                                   | -        |
 | tests/gui/test_widgets.py:131                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:142                    | N802                         | stub mirrors Qt event API                                                 | -        |

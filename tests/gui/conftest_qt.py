@@ -215,7 +215,7 @@ def stub_worker(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
             self._running = False
             created.append(self)
 
-        def isRunning(self) -> bool:  # noqa: N802  # pragma: no cover  # pdf-toolbox: method name follows Qt worker API | issue:-
+        def isRunning(self) -> bool:  # noqa: N802  # pdf-toolbox: method name follows Qt worker API | issue:-
             return self._running
 
         def cancel(self) -> None:
