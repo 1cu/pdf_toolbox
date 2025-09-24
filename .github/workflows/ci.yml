@@ -18,18 +18,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install Qt system dependencies
-        run: &install-qt-deps |
-          sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            libxkbcommon-x11-0 \
-            libxcb-cursor0 \
-            libxcb-icccm4 \
-            libxcb-keysyms1 \
-            libxcb-shape0 \
-            libegl1 \
-            libgl1
-          # pytest-qt: ensure DISPLAY via Xvfb/libxcb/libEGL on ubuntu-latest
+        run: scripts/ci/install-qt-headless.sh
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
