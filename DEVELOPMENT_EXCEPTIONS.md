@@ -13,7 +13,6 @@
 | src/pdf_toolbox/gui/main_window.py:109           | PLR0915                      | constructor sets up many widgets                                          | -        |
 | src/pdf_toolbox/gui/main_window.py:272           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
 | src/pdf_toolbox/gui/main_window.py:524           | TRY004                       | GUI handler expects ValueError                                            | -        |
-| src/pdf_toolbox/gui/main_window.py:593           | pragma: no cover             | opens external documentation                                              | -        |
 | src/pdf_toolbox/gui/main_window.py:773           | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:36                | type: ignore[override]       | QObject method signature differs from logging.Handler.emit                | -        |
 | src/pdf_toolbox/gui/widgets.py:76                | N802                         | Qt requires camelCase event name                                          | -        |
@@ -60,13 +59,13 @@
 | tests/gui/conftest_qt.py:129                     | N802, type: ignore[override] | stub preserves Qt camelCase API                                           | -        |
 | tests/gui/conftest_qt.py:132                     | N802, type: ignore[override] | stub preserves Qt camelCase API                                           | -        |
 | tests/gui/conftest_qt.py:218                     | N802, pragma: no cover       | method name follows Qt worker API                                         | -        |
-| tests/gui/test_main_window.py:529                | N802                         | mimic Qt worker API naming                                                | -        |
-| tests/gui/test_main_window.py:543                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
-| tests/gui/test_main_window.py:653                | N802                         | mimic Qt worker API naming                                                | -        |
-| tests/gui/test_main_window.py:663                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
-| tests/gui/test_main_window.py:745                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
-| tests/gui/test_main_window.py:749                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
-| tests/gui/test_main_window.py:1113               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
+| tests/gui/test_main_window.py:530                | N802                         | mimic Qt worker API naming                                                | -        |
+| tests/gui/test_main_window.py:544                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
+| tests/gui/test_main_window.py:654                | N802                         | mimic Qt worker API naming                                                | -        |
+| tests/gui/test_main_window.py:664                | type: ignore[assignment]     | stub worker lacks QObject base class                                      | -        |
+| tests/gui/test_main_window.py:746                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
+| tests/gui/test_main_window.py:750                | type: ignore[override]       | stub implements abstract renderer for tests                               | -        |
+| tests/gui/test_main_window.py:1138               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
 | tests/gui/test_widgets.py:124                    | N802                         | stub mirrors Qt URL API                                                   | -        |
 | tests/gui/test_widgets.py:131                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:142                    | N802                         | stub mirrors Qt event API                                                 | -        |

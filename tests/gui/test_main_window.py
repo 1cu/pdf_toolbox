@@ -10,6 +10,7 @@ from typing import Literal, cast
 import pytest
 
 pytest.importorskip("PySide6.QtWidgets")
+from PySide6.QtCore import QUrl
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -757,6 +758,29 @@ def test_update_pptx_banner_hides_with_provider(
         assert not window.banner.isVisible()
     finally:
         window.close()
+
+
+def test_open_pptx_docs_uses_desktop_services(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Opening the PPTX docs delegates to QDesktopServices."""
+    import pdf_toolbox.gui.main_window as mw
+
+    window = _make_window(qtbot)
+    urls: list[QUrl] = []
+
+    def fake_open(url: QUrl) -> bool:
+        urls.append(url)
+        return True
+
+    monkeypatch.setattr(mw.QDesktopServices, "openUrl", fake_open)
+    try:
+        window._open_pptx_docs()
+    finally:
+        window.close()
+
+    assert urls
+    assert urls[0].toString() == QUrl(mw.PPTX_PROVIDER_DOCS_URL).toString()
 
 
 def test_info_dialog_renders_help_html(
