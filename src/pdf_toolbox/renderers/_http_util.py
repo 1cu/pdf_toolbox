@@ -18,9 +18,7 @@ def _post_stream_file(
     verify: bool,
 ) -> tuple[int, Iterable[bytes]]:
     """POST ``files`` to ``endpoint`` and return the response stream."""
-    if (
-        requests is None
-    ):  # pragma: no cover  # pdf-toolbox: renderer checks dependency availability before calling helper | issue:-
+    if requests is None:
         msg = "The 'requests' dependency is required for HTTP PPTX rendering."
         raise RuntimeError(msg)
 

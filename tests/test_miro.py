@@ -328,9 +328,9 @@ def test_iter_webp_candidates_logs_failures(monkeypatch, caplog):
     ) -> bytes:
         del _image, method
         if lossless:
-            raise RuntimeError("lossless boom")
+            raise RuntimeError
         if quality == 95:
-            raise RuntimeError("quality boom")
+            raise RuntimeError
         return str(quality).encode()
 
     monkeypatch.setattr(miro, "encode_webp", fake_encode_webp)
@@ -360,7 +360,7 @@ def test_iter_png_candidates_logs_failures(monkeypatch, caplog):
         optimize: bool = True,
     ) -> bytes:
         del _image, palette, compress_level, optimize
-        raise RuntimeError("png boom")
+        raise RuntimeError
 
     monkeypatch.setattr(miro, "encode_png", fake_encode_png)
 
@@ -386,7 +386,7 @@ def test_iter_jpeg_candidates_skips_failed_qualities(monkeypatch, caplog):
     ) -> bytes:
         del _image, subsampling
         if quality == 95:
-            raise RuntimeError("jpeg boom")
+            raise RuntimeError
         return b"jpeg"
 
     monkeypatch.setattr(miro, "encode_jpeg", fake_encode_jpeg)
@@ -418,8 +418,12 @@ def test_export_page_records_errors(monkeypatch, tmp_path, caplog):
 
     monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: False)
 
+    class RasterBoomError(RuntimeError):
+        def __str__(self) -> str:
+            return "raster boom"
+
     def boom(*_args, **_kwargs):
-        raise RuntimeError("raster boom")
+        raise RasterBoomError()
 
     monkeypatch.setattr(miro, "_rasterise_page", boom)
 
@@ -441,7 +445,9 @@ def test_export_page_records_errors(monkeypatch, tmp_path, caplog):
     assert result.error == "raster boom"
     assert "Export failed: raster boom" in result.warnings
     assert result.output_path is None
-    assert any("Failed to export page 1" in record.getMessage() for record in caplog.records)
+    assert any(
+        "Failed to export page 1" in record.getMessage() for record in caplog.records
+    )
 
 
 def test_page_is_vector_heavy_only_images():

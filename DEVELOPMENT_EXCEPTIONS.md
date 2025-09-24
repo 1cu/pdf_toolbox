@@ -19,7 +19,6 @@
 | src/pdf_toolbox/gui/widgets.py:81                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/gui/widgets.py:99                | N802                         | Qt requires camelCase event name                                          | -        |
 | src/pdf_toolbox/miro.py:715                      | PLR0913                      | export pipeline exposes optional tuning knobs                             | -        |
-| src/pdf_toolbox/renderers/\_http_util.py:23      | pragma: no cover             | renderer checks dependency availability before calling helper             | -        |
 | src/pdf_toolbox/renderers/\_requests.py:12       | pragma: no cover             | optional dependency import guard exercised via unit tests                 | -        |
 | src/pdf_toolbox/renderers/\_requests.py:17       | pragma: no cover             | optional dependency missing                                               | -        |
 | src/pdf_toolbox/renderers/\_requests.py:19       | pragma: no cover             | environments may raise arbitrary errors during import; degrade gracefully | -        |
