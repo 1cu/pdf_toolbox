@@ -12,10 +12,10 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 ## Methodology
 
 1. Regenerate `DEVELOPMENT_EXCEPTIONS.md` with `scripts/generate_exception_overview.py`.
-2. Group the inline exceptions by file to understand their shared causes.
-3. Inspect the affected implementation to confirm why the suppression is required today.
-4. Propose the smallest refactor, stub addition, or test coverage improvement that removes the suppression without regressing behaviour.
-5. Call out risks and prerequisites so the work can be scheduled realistically.
+1. Group the inline exceptions by file to understand their shared causes.
+1. Inspect the affected implementation to confirm why the suppression is required today.
+1. Propose the smallest refactor, stub addition, or test coverage improvement that removes the suppression without regressing behaviour.
+1. Call out risks and prerequisites so the work can be scheduled realistically.
 
 ## Detailed Review
 
@@ -105,9 +105,9 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 ## Cross-Cutting Initiatives
 
 1. **Third-party stubs**: Vendor or depend on stubs for PySide6 gaps and pywin32 so the GUI and Windows renderers compile cleanly without `type: ignore` noise.
-2. **Qt wrapper strategy**: Standardise on snake_case wrappers around camelCase Qt hooks, and ensure Ruff respects the intent via `typing_extensions.override` or dedicated stub files.
-3. **Dependency guards**: Encapsulate optional dependency checks in helper functions and add deterministic tests that toggle availability, eliminating `pragma: no cover` markers around import guards.
-4. **Dataclass/Protocol adoption**: Replace long parameter lists and loose sentinel objects with dataclasses and protocols so type checkers understand the API and Ruff's complexity rules are easier to satisfy.
+1. **Qt wrapper strategy**: Standardise on snake_case wrappers around camelCase Qt hooks, and ensure Ruff respects the intent via `typing_extensions.override` or dedicated stub files.
+1. **Dependency guards**: Encapsulate optional dependency checks in helper functions and add deterministic tests that toggle availability, eliminating `pragma: no cover` markers around import guards.
+1. **Dataclass/Protocol adoption**: Replace long parameter lists and loose sentinel objects with dataclasses and protocols so type checkers understand the API and Ruff's complexity rules are easier to satisfy.
 
 ## Maintenance Snapshot
 
