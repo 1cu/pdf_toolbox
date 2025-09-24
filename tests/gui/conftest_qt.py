@@ -9,6 +9,7 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from threading import Event
 from types import SimpleNamespace
+from typing import ClassVar
 
 os.environ.setdefault("QT_OPENGL", "software")
 
@@ -114,22 +115,36 @@ def messagebox_stubs(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
             self.buttons = None
             calls["instances"].append(self)
 
-        def setWindowTitle(self, title: str) -> None:  # noqa: N802  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
+        _camel_case_aliases: ClassVar[dict[str, str]] = {
+            "setWindowTitle": "set_window_title",
+            "setTextFormat": "set_text_format",
+            "setText": "set_text",
+            "setInformativeText": "set_informative_text",
+            "setStandardButtons": "set_standard_buttons",
+            "setTextInteractionFlags": "set_text_interaction_flags",
+        }
+
+        def __getattr__(self, name: str):
+            if name in self._camel_case_aliases:
+                return getattr(self, self._camel_case_aliases[name])
+            raise AttributeError(name)
+
+        def set_window_title(self, title: str) -> None:
             self.window_title = title
 
-        def setTextFormat(self, fmt) -> None:  # noqa: N802  # type: ignore[override]  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
+        def set_text_format(self, fmt) -> None:  # type: ignore[override]  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
             self.text_format = fmt
 
-        def setText(self, text: str) -> None:  # noqa: N802  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
+        def set_text(self, text: str) -> None:
             self.text = text
 
-        def setInformativeText(self, text: str) -> None:  # noqa: N802  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
+        def set_informative_text(self, text: str) -> None:
             self.informative_text = text
 
-        def setStandardButtons(self, buttons) -> None:  # noqa: N802  # type: ignore[override]  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
+        def set_standard_buttons(self, buttons) -> None:  # type: ignore[override]  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
             self.buttons = buttons
 
-        def setTextInteractionFlags(self, flags) -> None:  # noqa: N802  # type: ignore[override]  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
+        def set_text_interaction_flags(self, flags) -> None:  # type: ignore[override]  # pdf-toolbox: stub preserves Qt camelCase API | issue:-
             self.text_flags = flags
 
         def exec(self) -> QMessageBox.StandardButton:
@@ -215,7 +230,12 @@ def stub_worker(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
             self._running = False
             created.append(self)
 
-        def isRunning(self) -> bool:  # noqa: N802  # pragma: no cover  # pdf-toolbox: method name follows Qt worker API | issue:-
+        def __getattr__(self, name: str):
+            if name == "isRunning":
+                return self.is_running
+            raise AttributeError(name)
+
+        def is_running(self) -> bool:
             return self._running
 
         def cancel(self) -> None:

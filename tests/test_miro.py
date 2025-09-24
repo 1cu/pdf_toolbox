@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 from pathlib import Path
 
@@ -313,6 +314,140 @@ def test_remove_svg_metadata_strips_block():
 def test_remove_svg_metadata_missing_end_tag():
     svg = "<svg><metadata>foo<rect/></svg>"
     assert miro._remove_svg_metadata(svg) == svg
+
+
+def test_iter_webp_candidates_logs_failures(monkeypatch, caplog):
+    image = Image.new("RGB", (1, 1))
+
+    def fake_encode_webp(
+        _image: Image.Image,
+        *,
+        lossless: bool,
+        quality: int | None,
+        method: int = 6,
+    ) -> bytes:
+        del _image, method
+        if lossless:
+            raise RuntimeError
+        if quality == 95:
+            raise RuntimeError
+        return str(quality).encode()
+
+    monkeypatch.setattr(miro, "encode_webp", fake_encode_webp)
+
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.ERROR, logger="pdf_toolbox")
+    try:
+        candidates = list(miro._iter_webp_candidates(image))
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
+
+    assert [attempt.quality for _, _, attempt in candidates] == [90, 85]
+    assert "WebP lossless export failed" in caplog.text
+    assert "WebP quality export failed" in caplog.text
+
+
+def test_iter_png_candidates_logs_failures(monkeypatch, caplog):
+    image = Image.new("RGB", (1, 1))
+
+    def fake_encode_png(
+        _image: Image.Image,
+        *,
+        palette: bool = False,
+        compress_level: int = 9,
+        optimize: bool = True,
+    ) -> bytes:
+        del _image, palette, compress_level, optimize
+        raise RuntimeError
+
+    monkeypatch.setattr(miro, "encode_png", fake_encode_png)
+
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.ERROR, logger="pdf_toolbox")
+    try:
+        assert list(miro._iter_png_candidates(image, palette=False)) == []
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
+    assert "PNG export failed" in caplog.text
+
+
+def test_iter_jpeg_candidates_skips_failed_qualities(monkeypatch, caplog):
+    image = Image.new("RGB", (1, 1))
+
+    def fake_encode_jpeg(
+        _image: Image.Image,
+        *,
+        quality: int,
+        subsampling: int = 0,
+    ) -> bytes:
+        del _image, subsampling
+        if quality == 95:
+            raise RuntimeError
+        return b"jpeg"
+
+    monkeypatch.setattr(miro, "encode_jpeg", fake_encode_jpeg)
+
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.ERROR, logger="pdf_toolbox")
+    try:
+        candidates = list(miro._iter_jpeg_candidates(image))
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
+
+    assert len(candidates) == 1
+    fmt, data, attempt = candidates[0]
+    assert fmt == "JPEG"
+    assert data == b"jpeg"
+    assert attempt.quality == 90
+    assert "JPEG export failed" in caplog.text
+
+
+def test_export_page_records_errors(monkeypatch, tmp_path, caplog):
+    class DummyDoc:
+        name = "dummy.pdf"
+
+        def load_page(self, index: int) -> object:
+            assert index == 0
+            return object()
+
+    monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: False)
+
+    class RasterBoomError(RuntimeError):
+        def __str__(self) -> str:
+            return "raster boom"
+
+    def boom(*_args, **_kwargs):
+        raise RasterBoomError()
+
+    monkeypatch.setattr(miro, "_rasterise_page", boom)
+
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.ERROR, logger="pdf_toolbox")
+    try:
+        result = miro._export_page(
+            DummyDoc(),
+            1,
+            tmp_path,
+            PROFILE_MIRO,
+            PROFILE_MIRO.max_bytes,
+        )
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
+
+    assert result.error == "raster boom"
+    assert "Export failed: raster boom" in result.warnings
+    assert result.output_path is None
+    assert any(
+        "Failed to export page 1" in record.getMessage() for record in caplog.records
+    )
 
 
 def test_page_is_vector_heavy_only_images():

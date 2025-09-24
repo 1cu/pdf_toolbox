@@ -244,7 +244,7 @@ def _iter_webp_candidates(
     """Yield WebP encoding attempts for ``image``."""
     try:
         lossless_bytes = encode_webp(image, lossless=True, quality=None)
-    except Exception:  # pragma: no cover - WebP encoding may fail unexpectedly  # pdf-toolbox: guard against environment-specific WebP encoder issues | issue:-
+    except Exception:
         logger.exception("WebP lossless export failed")
     else:
         attempt = PageExportAttempt(
@@ -259,7 +259,7 @@ def _iter_webp_candidates(
     for quality in (95, 90, 85):
         try:
             webp_bytes = encode_webp(image, lossless=False, quality=quality)
-        except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: Pillow sometimes lacks WebP support | issue:-
+        except Exception:
             logger.exception("WebP quality export failed", exc_info=True)
             continue
         attempt = PageExportAttempt(
@@ -279,7 +279,7 @@ def _iter_png_candidates(
     """Yield PNG encoding attempts for ``image``."""
     try:
         png_bytes = encode_png(image, palette=palette)
-    except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: PNG encoder failure varies by platform | issue:-
+    except Exception:
         logger.exception("PNG export failed", exc_info=True)
         return
     attempt = PageExportAttempt(
@@ -299,7 +299,7 @@ def _iter_jpeg_candidates(
     for quality in (95, 90):
         try:
             jpeg_bytes = encode_jpeg(image, quality=quality)
-        except Exception:  # pragma: no cover - guard for Pillow edge cases  # pdf-toolbox: JPEG encoder may be unavailable | issue:-
+        except Exception:
             logger.exception("JPEG export failed", exc_info=True)
             continue
         attempt = PageExportAttempt(
@@ -692,7 +692,7 @@ def _export_page(
             result.warnings.append(
                 "Clamped by Miro dimension limits (max 8192x4096 @ 32 MP)",
             )
-    except Exception as exc:  # pragma: no cover - defensive against rendering edge cases  # pdf-toolbox: keep GUI responsive despite renderer crashes | issue:-
+    except Exception as exc:
         logger.exception("Failed to export page %d", page_number)
         result.error = str(exc)
         result.warnings.append(f"Export failed: {exc}")

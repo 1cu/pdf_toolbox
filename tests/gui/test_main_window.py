@@ -10,6 +10,7 @@ from typing import Literal, cast
 import pytest
 
 pytest.importorskip("PySide6.QtWidgets")
+from PySide6.QtCore import QUrl
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -759,6 +760,29 @@ def test_update_pptx_banner_hides_with_provider(
         window.close()
 
 
+def test_open_pptx_docs_uses_desktop_services(
+    monkeypatch: pytest.MonkeyPatch, qtbot
+) -> None:
+    """Opening the PPTX docs delegates to QDesktopServices."""
+    import pdf_toolbox.gui.main_window as mw
+
+    window = _make_window(qtbot)
+    urls: list[QUrl] = []
+
+    def fake_open(url: QUrl) -> bool:
+        urls.append(url)
+        return True
+
+    monkeypatch.setattr(mw.QDesktopServices, "openUrl", fake_open)
+    try:
+        window._open_pptx_docs()
+    finally:
+        window.close()
+
+    assert urls
+    assert urls[0].toString() == QUrl(mw.PPTX_PROVIDER_DOCS_URL).toString()
+
+
 def test_info_dialog_renders_help_html(
     monkeypatch: pytest.MonkeyPatch, qtbot, messagebox_stubs
 ) -> None:
@@ -880,12 +904,14 @@ def test_on_run_cancel_running_worker(
         file_edit.setText("file.pdf")
         running = stub_worker.cls(sample, {"path": "file.pdf"})
         running._running = True
+        assert running.isRunning() is True
         window.worker = running
         window.on_run()
         assert stub_worker.cancels
         assert stub_worker.waits
         assert stub_worker.waits[-1] == 100
         assert window.worker is None
+        assert running.isRunning() is False
         assert window.status_key == "cancelled"
         assert window.progress.value() == 0
         assert window.run_btn.text() == tr("start")

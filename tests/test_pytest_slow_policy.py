@@ -163,8 +163,19 @@ def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
     pytester.makeini("[pytest]\n" + ini)
 
 
-def _run(pytester: pytest.Pytester, *args: str):
-    return pytester.runpytest_inprocess("-p", "no:cov", *args)
+def _run(pytester: pytest.Pytester, *args: str) -> pytest.RunResult:
+    return pytester.runpytest_inprocess(
+        "--override-ini",
+        # Drop ``-q`` from ``addopts`` so pytest still renders the terminal
+        # outcome summary that ``RunResult.assert_outcomes`` relies on when
+        # parsing results under pytest>=8.4.
+        "addopts=--durations=0 --durations-min=0.75",
+        "-p",
+        "no:pytestqt",
+        "-p",
+        "no:cov",
+        *args,
+    )
 
 
 @pytest.mark.slow

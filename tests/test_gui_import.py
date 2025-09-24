@@ -10,7 +10,9 @@ import pytest
 
 
 @pytest.mark.qt_noop
-def test_gui_import_handles_missing_qt(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_gui_import_handles_missing_qt(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     """Import ``pdf_toolbox.gui`` when Qt libraries are unavailable."""
     original_gui = sys.modules.pop("pdf_toolbox.gui", None)
 
@@ -27,20 +29,16 @@ def test_gui_import_handles_missing_qt(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "PySide6", fake_pyside)
     monkeypatch.delitem(sys.modules, "PySide6.QtWidgets", raising=False)
 
-    module = None
-    captured: list[logging.LogRecord] = []
+    module: ModuleType | None = None
 
-    class _Handler(logging.Handler):
-        def emit(self, record: logging.LogRecord) -> None:
-            captured.append(record)
-
-    handler = _Handler()
-    target_logger = logging.getLogger("pdf_toolbox")
-    target_logger.addHandler(handler)
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.WARNING, logger="pdf_toolbox")
     try:
         module = importlib.import_module("pdf_toolbox.gui")
     finally:
-        target_logger.removeHandler(handler)
+        pdf_logger.removeHandler(caplog.handler)
         sys.modules.pop("pdf_toolbox.gui", None)
         if original_gui is not None:
             sys.modules["pdf_toolbox.gui"] = original_gui
@@ -50,7 +48,54 @@ def test_gui_import_handles_missing_qt(monkeypatch: pytest.MonkeyPatch) -> None:
     assert module.QT_AVAILABLE is False
     assert isinstance(module.QT_IMPORT_ERROR, Exception)
     assert "PySide6" in str(module.QT_IMPORT_ERROR)
-    assert any("Qt import failed" in record.getMessage() for record in captured)
+    assert "Qt import failed" in caplog.text
+
+
+@pytest.mark.qt_noop
+def test_gui_import_logs_stub_failure(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Log a helpful warning when the stub fallback cannot be imported."""
+    original_gui = sys.modules.pop("pdf_toolbox.gui", None)
+    original_main_window = sys.modules.pop("pdf_toolbox.gui.main_window", None)
+
+    fake_pyside = cast(Any, ModuleType("PySide6"))
+    fake_pyside.__path__ = []
+    monkeypatch.setitem(sys.modules, "PySide6", fake_pyside)
+    monkeypatch.delitem(sys.modules, "PySide6.QtWidgets", raising=False)
+
+    original_import_module = importlib.import_module
+
+    def _fake_import(name: str, package: str | None = None) -> ModuleType:
+        if name == "pdf_toolbox.gui.main_window":
+            raise RuntimeError
+        return original_import_module(name, package)
+
+    monkeypatch.setattr(importlib, "import_module", _fake_import)
+
+    module: ModuleType | None = None
+
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.WARNING, logger="pdf_toolbox")
+    try:
+        module = importlib.import_module("pdf_toolbox.gui")
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
+        sys.modules.pop("pdf_toolbox.gui", None)
+        if original_gui is not None:
+            sys.modules["pdf_toolbox.gui"] = original_gui
+        if original_main_window is not None:
+            sys.modules["pdf_toolbox.gui.main_window"] = original_main_window
+        importlib.invalidate_caches()
+
+    assert module is not None
+    assert module.QT_AVAILABLE is False
+    assert isinstance(module.QT_IMPORT_ERROR, Exception)
+    assert module.MainWindow.__module__ == "pdf_toolbox.gui"
+    assert "MainWindow stub import failed" in caplog.text
+    assert any(record.exc_info for record in caplog.records)
 
 
 def test_gui_main_uses_sys_argv(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -88,7 +133,7 @@ def test_gui_main_uses_sys_argv(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "PySide6.QtWidgets", qtwidgets)
     monkeypatch.setitem(sys.modules, "PySide6", fake_pyside)
 
-    module = None
+    module: ModuleType | None = None
     try:
         module = importlib.import_module("pdf_toolbox.gui")
         assert module.QT_AVAILABLE is True

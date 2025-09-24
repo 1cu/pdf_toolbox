@@ -588,9 +588,7 @@ class MainWindow(QMainWindow):
 
     def _open_pptx_docs(self) -> None:
         """Open the PPTX provider documentation in the default browser."""
-        QDesktopServices.openUrl(
-            QUrl(PPTX_PROVIDER_DOCS_URL)
-        )  # pragma: no cover  # pdf-toolbox: opens external documentation | issue:-
+        QDesktopServices.openUrl(QUrl(PPTX_PROVIDER_DOCS_URL))
 
     def _update_pptx_banner(self, provider: BasePptxRenderer | None) -> None:
         """Show or hide the PPTX provider warning banner."""

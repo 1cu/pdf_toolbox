@@ -2,24 +2,30 @@
 
 from __future__ import annotations
 
+import importlib
+from collections.abc import Callable
 from types import ModuleType
 from typing import cast
 
 from pdf_toolbox.renderers._requests_types import RequestsModule
 
-_requests_module: ModuleType | None
+Importer = Callable[[str], ModuleType]
 
-try:  # pragma: no cover  # pdf-toolbox: optional dependency import guard exercised via unit tests | issue:-
-    import requests as _requests_module
-except (
-    ModuleNotFoundError,
-    ImportError,
-):  # pragma: no cover  # pdf-toolbox: optional dependency missing | issue:-
-    _requests_module = None
-except Exception:  # pragma: no cover  # pdf-toolbox: environments may raise arbitrary errors during import; degrade gracefully | issue:-
-    _requests_module = None
 
-requests: RequestsModule | None = cast(RequestsModule | None, _requests_module)
+def _load_requests(
+    importer: Importer = importlib.import_module,
+) -> RequestsModule | None:
+    """Import :mod:`requests` using ``importer`` and degrade gracefully on failure."""
+    try:
+        module = importer("requests")
+    except (ModuleNotFoundError, ImportError):
+        return None
+    except Exception:
+        return None
+    return cast(RequestsModule, module)
+
+
+requests: RequestsModule | None = _load_requests()
 
 
 __all__ = ["RequestsModule", "requests"]
