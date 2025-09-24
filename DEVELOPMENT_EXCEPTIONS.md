@@ -8,9 +8,8 @@
 | src/pdf_toolbox/cli.py:102                       | pragma: no cover             | runtime errors bubble up to stderr for CLI users                          | -        |
 | src/pdf_toolbox/cli.py:460                       | pragma: no cover             | preserve conversion error text for numeric parameters                     | -        |
 | src/pdf_toolbox/cli.py:475                       | pragma: no cover             | surface constructor failures from custom annotations                      | -        |
-| src/pdf_toolbox/gui/\_\_init\_\_.py:23           | pragma: no cover             | typing-only import guard                                                  | -        |
-| src/pdf_toolbox/gui/\_\_init\_\_.py:27           | pragma: no cover             | runtime fallback for typing                                               | -        |
-| src/pdf_toolbox/gui/\_\_init\_\_.py:70           | pragma: no cover             | stub import fallback                                                      | -        |
+| src/pdf_toolbox/gui/\_\_init\_\_.py:24           | pragma: no cover             | typing-only import guard                                                  | -        |
+| src/pdf_toolbox/gui/\_\_init\_\_.py:28           | pragma: no cover             | runtime fallback for typing                                               | -        |
 | src/pdf_toolbox/gui/main_window.py:109           | PLR0915                      | constructor sets up many widgets                                          | -        |
 | src/pdf_toolbox/gui/main_window.py:272           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
 | src/pdf_toolbox/gui/main_window.py:524           | TRY004                       | GUI handler expects ValueError                                            | -        |
@@ -76,8 +75,8 @@
 | tests/gui/test_widgets.py:194                    | N802                         | stub mirrors Qt MIME API                                                  | -        |
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                                 | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                                | -        |
-| tests/test_gui_import.py:82                      | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
-| tests/test_gui_import.py:87                      | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
+| tests/test_gui_import.py:134                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
+| tests/test_gui_import.py:139                     | type: ignore[attr-defined]   | stub Qt module for tests                                                  | -        |
 | tests/test_miro.py:250                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                               | -        |
 | tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                    | -        |
 | tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                    | -        |

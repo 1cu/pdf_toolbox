@@ -13,6 +13,7 @@ It also re-exports ``Action`` and ``list_actions`` so tests can monkeypatch
 
 from __future__ import annotations
 
+import importlib
 import sys
 from typing import TYPE_CHECKING
 
@@ -62,13 +63,17 @@ if not TYPE_CHECKING:
         MainWindow = _LoadedMainWindow
     else:
         try:
-            from pdf_toolbox.gui import main_window as _main_window_mod
+            _main_window_mod = importlib.import_module(
+                "pdf_toolbox.gui.main_window"
+            )
         except (
             ImportError,
             OSError,
             RuntimeError,
-        ):  # pragma: no cover  # pdf-toolbox: stub import fallback | issue:-
-            pass
+        ) as _stub_exc:
+            logger.warning(
+                "MainWindow stub import failed", exc_info=_stub_exc
+            )
         else:
             stub_cls = getattr(_main_window_mod, "MainWindow", None)
             if isinstance(stub_cls, type):
