@@ -79,7 +79,7 @@ def test_gui_import_logs_stub_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 
     def _fake_import(name: str, package: str | None = None) -> ModuleType:
         if name == "pdf_toolbox.gui.main_window":
-            raise RuntimeError("main window stub unavailable")
+            raise RuntimeError
         return original_import_module(name, package)
 
     monkeypatch.setattr(importlib, "import_module", _fake_import)

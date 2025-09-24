@@ -72,7 +72,8 @@ if not TYPE_CHECKING:
             RuntimeError,
         ) as _stub_exc:
             logger.warning(
-                "MainWindow stub import failed", exc_info=_stub_exc
+                "MainWindow stub import failed",
+                exc_info=(type(_stub_exc), _stub_exc, _stub_exc.__traceback__),
             )
         else:
             stub_cls = getattr(_main_window_mod, "MainWindow", None)
