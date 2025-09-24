@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from pdf_toolbox import config
 from pdf_toolbox.actions import pptx as pptx_actions
+from pdf_toolbox.actions.pdf_images import PdfImageOptions
 from pdf_toolbox.actions.pptx import PptxExportOptions, pptx_to_images, pptx_to_pdf
 from pdf_toolbox.renderers import pptx
 from pdf_toolbox.renderers import registry as pptx_registry
@@ -125,21 +127,22 @@ def test_renderer_config(monkeypatch, tmp_path, simple_pptx):
 
     def fake_pdf_to_images(
         pdf_path: str,
+        options: PdfImageOptions | None = None,
         *,
-        pages: str | None = None,
-        image_format: str,
-        quality: int,
-        **kwargs: object,
+        cancel: object | None = None,
+        **legacy_kwargs: Any,
     ) -> list[str]:
+        assert cancel is None
+        if options is None:
+            options = PdfImageOptions(**legacy_kwargs)
         captured_images["pdf_path"] = pdf_path
-        captured_images["pages"] = pages
-        captured_images["image_format"] = image_format
-        captured_images["quality"] = quality
-        out_dir_obj = kwargs.get("out_dir")
-        out_dir_str = str(out_dir_obj) if out_dir_obj is not None else None
+        captured_images["pages"] = options.pages
+        captured_images["image_format"] = options.image_format
+        captured_images["quality"] = options.quality
+        out_dir_str = str(options.out_dir) if options.out_dir is not None else None
         captured_images["out_dir"] = out_dir_str
-        captured_images["width"] = kwargs.get("width")
-        captured_images["height"] = kwargs.get("height")
+        captured_images["width"] = options.width
+        captured_images["height"] = options.height
         out_dir_path = (
             Path(out_dir_str) if out_dir_str is not None else Path(tmp_path, "images")
         )
@@ -207,24 +210,25 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
 
     def fake_pdf_to_images(
         pdf_path: str,
+        options: PdfImageOptions | None = None,
         *,
-        pages: str | None = None,
-        image_format: str,
-        quality: int,
-        **kwargs: object,
+        cancel: object | None = None,
+        **legacy_kwargs: Any,
     ) -> list[str]:
+        assert cancel is None
         del pdf_path
-        captured["format"] = image_format
-        captured["quality"] = quality
-        captured["range_spec"] = pages
-        out_dir_obj = kwargs.get("out_dir")
-        out_dir_str = str(out_dir_obj) if out_dir_obj is not None else None
+        if options is None:
+            options = PdfImageOptions(**legacy_kwargs)
+        captured["format"] = options.image_format
+        captured["quality"] = options.quality
+        captured["range_spec"] = options.pages
+        out_dir_str = str(options.out_dir) if options.out_dir is not None else None
         captured["out_dir"] = out_dir_str
-        captured["width"] = kwargs.get("width")
-        captured["height"] = kwargs.get("height")
+        captured["width"] = options.width
+        captured["height"] = options.height
         output_dir = tmp_path / "rendered"
         output_dir.mkdir(parents=True, exist_ok=True)
-        image_path = output_dir / f"slide-001.{image_format.lower()}"
+        image_path = output_dir / f"slide-001.{options.image_format.lower()}"
         image_path.write_text("img")
         return [str(image_path)]
 
@@ -291,7 +295,13 @@ def test_pptx_to_images_returns_out_dir_when_empty(monkeypatch, simple_pptx, tmp
     cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
 
-    def fake_pdf_to_images(pdf_path: str, **_kwargs: object) -> list[str]:
+    def fake_pdf_to_images(
+        pdf_path: str,
+        options: PdfImageOptions | None = None,
+        **legacy_kwargs: Any,
+    ) -> list[str]:
+        if options is None:
+            options = PdfImageOptions(**legacy_kwargs)
         captured["pdf_path"] = pdf_path
         captured["invoked"] = True
         return []
@@ -350,9 +360,15 @@ def test_pptx_to_images_returns_temp_dir_when_empty(monkeypatch, simple_pptx, tm
     cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
 
-    def fake_pdf_to_images(pdf_path: str, **kwargs: object) -> list[str]:
+    def fake_pdf_to_images(
+        pdf_path: str,
+        options: PdfImageOptions | None = None,
+        **legacy_kwargs: Any,
+    ) -> list[str]:
+        if options is None:
+            options = PdfImageOptions(**legacy_kwargs)
         captured["pdf_path"] = pdf_path
-        captured["out_dir"] = kwargs.get("out_dir")
+        captured["out_dir"] = options.out_dir
         return []
 
     monkeypatch.setattr(pptx_actions, "pdf_to_images", fake_pdf_to_images)

@@ -56,6 +56,7 @@
     "split_pdf": "PDF teilen",
     "start": "Start",
     "stop": "Stop",
+    "strings.miro_custom_dpi_unresolved": "DPI konnte für das benutzerdefinierte Profil nicht ermittelt werden.",
     "system": "System",
     "unlock_pdf": "PDF entsperren",
     "warning": "Hinweis"

@@ -38,7 +38,7 @@ def test_gui_main_launches_application(monkeypatch: pytest.MonkeyPatch) -> None:
 
     gui.main()
 
-    assert created["args"] == []
+    assert created["args"] == gui.sys.argv
     assert created["window_created"] is True
     assert created["exec_called"] is True
     assert exit_codes == [0]

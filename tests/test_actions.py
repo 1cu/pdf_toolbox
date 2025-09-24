@@ -4,6 +4,7 @@ import pytest
 
 from pdf_toolbox import actions
 from pdf_toolbox.actions import list_actions
+from pdf_toolbox.actions.pdf_images import DPI_PRESETS, PdfImageOptions
 
 
 def test_registry_filters_internal_functions():
@@ -41,20 +42,30 @@ def test_literal_parameters_resolved():
         if action_obj.fqname == "pdf_toolbox.actions.pdf_images.pdf_to_images"
     )
 
-    pdf_format_ann = next(
-        param for param in pdf_action.params if param.name == "image_format"
-    ).annotation
-    pdf_dpi_ann = next(
-        param for param in pdf_action.params if param.name == "dpi"
-    ).annotation
+    assert pdf_action.dataclass_params["options"] is PdfImageOptions
 
     from typing import Literal, get_args, get_origin
 
-    from pdf_toolbox.actions.pdf_images import DPI_PRESETS
+    image_param = next(
+        param
+        for param in pdf_action.form_params
+        if param.name == "image_format" and param.parent == "options"
+    )
+    dpi_param = next(
+        param
+        for param in pdf_action.form_params
+        if param.name == "dpi" and param.parent == "options"
+    )
 
-    assert get_origin(pdf_format_ann) is Literal
-    assert set(get_args(pdf_format_ann)) == {"PNG", "JPEG", "TIFF", "WEBP", "SVG"}
-    dpi_args = get_args(pdf_dpi_ann)
+    assert get_origin(image_param.annotation) is Literal
+    assert set(get_args(image_param.annotation)) == {
+        "PNG",
+        "JPEG",
+        "TIFF",
+        "WEBP",
+        "SVG",
+    }
+    dpi_args = get_args(dpi_param.annotation)
     assert int in dpi_args
     literal = next(arg for arg in dpi_args if get_origin(arg) is Literal)
     assert set(get_args(literal)) == set(DPI_PRESETS.keys())

@@ -92,9 +92,9 @@ pdf-toolbox run extract_range --input-pdf in.pdf --pages 1-3
 ### Call actions from Python
 
 ```python
-from pdf_toolbox.actions.pdf_images import pdf_to_images
+from pdf_toolbox.actions.pdf_images import PdfImageOptions, pdf_to_images
 
-pdf_to_images("slides.pdf", max_size_mb=20)
+pdf_to_images("slides.pdf", PdfImageOptions(max_size_mb=20))
 ```
 
 Every registered `@action` is importable, so you can wire the building blocks into scheduled jobs or bespoke automation without touching the GUI.

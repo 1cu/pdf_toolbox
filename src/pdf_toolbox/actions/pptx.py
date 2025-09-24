@@ -8,6 +8,7 @@ from typing import Literal, cast
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.actions.pdf_images import (
+    PdfImageOptions,
     QualityChoice,
     pdf_to_images,
     resolve_image_settings,
@@ -57,16 +58,16 @@ def pptx_to_images(
     )
 
     with convert_pptx_to_pdf(input_pptx) as pdf_path:
-        outputs = pdf_to_images(
-            pdf_path,
+        image_options = PdfImageOptions(
             pages=opts.pages,
             image_format=fmt_literal,
             quality=quality_val,
             max_size_mb=opts.max_size_mb,
-            out_dir=target_out_dir,
+            out_dir=str(target_out_dir),
             width=opts.width,
             height=opts.height,
         )
+        outputs = pdf_to_images(pdf_path, image_options)
         result_dir = Path(outputs[0]).parent if outputs else target_out_dir
     return str(result_dir)
 

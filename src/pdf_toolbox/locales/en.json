@@ -56,6 +56,7 @@
     "split_pdf": "Split PDF",
     "start": "Start",
     "stop": "Stop",
+    "strings.miro_custom_dpi_unresolved": "DPI could not be resolved for the custom profile.",
     "system": "System",
     "unlock_pdf": "Unlock PDF",
     "warning": "Warning"

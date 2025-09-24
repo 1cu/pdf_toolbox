@@ -11,7 +11,11 @@ from PIL import Image
 
 from pdf_toolbox.actions.extract import extract_range, split_pdf
 from pdf_toolbox.actions.miro import MiroExportOptions, miro_export
-from pdf_toolbox.actions.pdf_images import DPI_PRESETS, pdf_to_images
+from pdf_toolbox.actions.pdf_images import (
+    DPI_PRESETS,
+    PdfImageOptions,
+    pdf_to_images,
+)
 from pdf_toolbox.actions.unlock import unlock_pdf
 
 
@@ -49,10 +53,12 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """`pdf_to_images` renders with DPI and dimension/size overrides."""
     dpi_outputs = pdf_to_images(
         sample_pdf,
-        pages="2",
-        image_format="PNG",
-        dpi="High (300 dpi)",
-        out_dir=str(tmp_path),
+        PdfImageOptions(
+            pages="2",
+            image_format="PNG",
+            dpi="High (300 dpi)",
+            out_dir=str(tmp_path),
+        ),
     )
 
     assert len(dpi_outputs) == 1
@@ -77,13 +83,15 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
     max_size_mb = 1.0
     dimension_outputs = pdf_to_images(
         sample_pdf,
-        pages="1-2",
-        image_format="JPEG",
-        width=640,
-        height=480,
-        quality="Medium (85)",
-        max_size_mb=max_size_mb,
-        out_dir=str(dimension_dir),
+        PdfImageOptions(
+            pages="1-2",
+            image_format="JPEG",
+            width=640,
+            height=480,
+            quality="Medium (85)",
+            max_size_mb=max_size_mb,
+            out_dir=str(dimension_dir),
+        ),
     )
 
     assert len(dimension_outputs) == 2
