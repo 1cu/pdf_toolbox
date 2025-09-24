@@ -163,14 +163,17 @@ def _activate_plugin(pytester: pytest.Pytester, ini: str) -> None:
     pytester.makeini("[pytest]\n" + ini)
 
 
-def _run(pytester: pytest.Pytester, *args: str):
+def _run(pytester: pytest.Pytester, *args: str) -> pytest.RunResult:
     return pytester.runpytest_inprocess(
-        # ``-rA`` restores the terminal outcome summary that ``-q`` from the
-        # repository's ``addopts`` setting suppresses.  The summary is required
-        # for ``RunResult.assert_outcomes`` to function on pytest>=8.4.
+        "--override-ini",
+        # Drop ``-q`` from ``addopts`` so pytest still renders the terminal
+        # outcome summary that ``RunResult.assert_outcomes`` relies on when
+        # parsing results under pytest>=8.4.
+        "addopts=--durations=0 --durations-min=0.75",
+        "-p",
+        "no:pytestqt",
         "-p",
         "no:cov",
-        "-rA",
         *args,
     )
 
