@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, cast
 
 import pytest
 
@@ -23,7 +22,7 @@ pytestmark = [
 def _find_action_item(window: gui.MainWindow, fqname: str):
     """Return the tree item associated with ``fqname``."""
     tree = window.tree
-    user_role = cast("int", cast(Any, Qt).UserRole)
+    user_role = int(Qt.ItemDataRole.UserRole)
 
     for index in range(tree.topLevelItemCount()):
         category = tree.topLevelItem(index)
@@ -48,6 +47,7 @@ def test_pdf_to_images_via_ui(
     """Drive the GUI to extract images from a PDF via the pdf_to_images action."""
     window = gui.MainWindow()
     qtbot.addWidget(window)
+    window.show()
     try:
         item = _find_action_item(
             window,
