@@ -4,13 +4,14 @@ import fitz
 import pytest
 
 from pdf_toolbox.actions import pdf_images as images_mod
-from pdf_toolbox.actions.pdf_images import pdf_to_images
+from pdf_toolbox.actions.pdf_images import PdfImageOptions, pdf_to_images
 from pdf_toolbox.actions.unlock import unlock_pdf
 
 
 def test_pdf_to_images_png(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi=72, image_format="PNG", out_dir=str(tmp_path)
+        sample_pdf,
+        PdfImageOptions(dpi=72, image_format="PNG", out_dir=str(tmp_path)),
     )
     assert len(outputs) == 3
     assert all(Path(output_path).exists() for output_path in outputs)
@@ -18,7 +19,8 @@ def test_pdf_to_images_png(sample_pdf, tmp_path):
 
 def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi="Low (72 dpi)", image_format="JPEG", out_dir=str(tmp_path)
+        sample_pdf,
+        PdfImageOptions(dpi="Low (72 dpi)", image_format="JPEG", out_dir=str(tmp_path)),
     )
     assert len(outputs) == 3
     assert all(Path(output_path).exists() for output_path in outputs)
@@ -26,14 +28,15 @@ def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
 
 def test_pdf_to_images_tiff(sample_pdf, tmp_path):
     outputs = pdf_to_images(
-        sample_pdf, dpi="Low (72 dpi)", image_format="TIFF", out_dir=str(tmp_path)
+        sample_pdf,
+        PdfImageOptions(dpi="Low (72 dpi)", image_format="TIFF", out_dir=str(tmp_path)),
     )
     assert len(outputs) == 3
     assert all(Path(output_path).exists() for output_path in outputs)
 
 
 def test_pdf_to_images_default_outdir(sample_pdf):
-    outputs = pdf_to_images(sample_pdf, dpi="Low (72 dpi)")
+    outputs = pdf_to_images(sample_pdf, PdfImageOptions(dpi="Low (72 dpi)"))
     assert all(
         Path(output_path).parent == Path(sample_pdf).parent for output_path in outputs
     )
@@ -82,7 +85,14 @@ def test_render_doc_pages_converts_colorspace(monkeypatch, sample_pdf):
     monkeypatch.setattr(images_mod.fitz.Document, "load_page", fake_load_page)
     monkeypatch.setattr(images_mod.fitz, "Pixmap", fake_pixmap)
     with images_mod.open_pdf(sample_pdf) as doc:
-        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG", 95)
+        request = images_mod._RenderRequest(
+            input_path=sample_pdf,
+            page_numbers=[1],
+            dpi=72,
+            image_format="PNG",
+            quality=95,
+        )
+        outputs = images_mod._render_doc_pages(doc, request)
     assert outputs
 
 
@@ -111,5 +121,12 @@ def test_render_doc_pages_strips_alpha(monkeypatch, sample_pdf):
     monkeypatch.setattr(images_mod.fitz.Document, "load_page", fake_load_page)
     monkeypatch.setattr(images_mod.fitz, "Pixmap", fake_pixmap)
     with images_mod.open_pdf(sample_pdf) as doc:
-        outputs = images_mod._render_doc_pages(sample_pdf, doc, [1], 72, "PNG", 95)
+        request = images_mod._RenderRequest(
+            input_path=sample_pdf,
+            page_numbers=[1],
+            dpi=72,
+            image_format="PNG",
+            quality=95,
+        )
+        outputs = images_mod._render_doc_pages(doc, request)
     assert outputs

@@ -4,8 +4,6 @@
 
 | File                                             | Rule                         | Reason                                                                    | Issue/PR |
 | ------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------- | -------- |
-| src/pdf_toolbox/actions/pdf_images.py:127        | PLR0912, PLR0913, PLR0915    | rendering pages needs many parameters and branches                        | -        |
-| src/pdf_toolbox/actions/pdf_images.py:322        | PLR0913                      | conversion helper requires many parameters                                | -        |
 | src/pdf_toolbox/cli.py:92                        | pragma: no cover             | delegate help/usage exit codes to argparse                                | -        |
 | src/pdf_toolbox/cli.py:102                       | pragma: no cover             | runtime errors bubble up to stderr for CLI users                          | -        |
 | src/pdf_toolbox/cli.py:460                       | pragma: no cover             | preserve conversion error text for numeric parameters                     | -        |

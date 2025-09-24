@@ -6,11 +6,12 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
-from typing import Literal
+from typing import Literal, cast
 
 from pdf_toolbox.actions import action
 from pdf_toolbox.actions.pdf_images import (
     DpiChoice,
+    PdfImageOptions,
     QualityChoice,
     pdf_to_images,
     resolve_image_settings,
@@ -23,6 +24,8 @@ from pdf_toolbox.utils import logger, sane_output_dir
 
 ProfileChoice = Literal["custom", "miro"]
 ImageFormatChoice = Literal["PNG", "JPEG", "TIFF", "WEBP", "SVG"]
+
+ERR_CUSTOM_DPI_UNRESOLVED = "dpi could not be resolved for custom profile"
 
 
 @dataclass(slots=True)
@@ -75,15 +78,17 @@ def miro_export(
                 opts.quality,
                 opts.dpi,
             )
-            return pdf_to_images(
-                str(pdf_path),
+            if dpi_val is None:
+                raise ValueError(ERR_CUSTOM_DPI_UNRESOLVED)
+            fmt_literal = cast(ImageFormatChoice, fmt)
+            options = PdfImageOptions(
                 pages=opts.pages,
-                dpi=dpi_val,
-                image_format=fmt,
+                dpi=int(dpi_val),
+                image_format=fmt_literal,
                 quality=quality_val,
                 out_dir=override_out_dir,
-                cancel=cancel,
             )
+            return pdf_to_images(str(pdf_path), options, cancel=cancel)
 
         outcome = export_pdf_for_miro(
             str(pdf_path),

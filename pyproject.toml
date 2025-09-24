@@ -115,6 +115,7 @@ addopts = "-q --durations=0 --durations-min=0.75"
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
   "gui: marks GUI tests (run with '-m gui')",
+  "qt_noop: tests that simulate Qt being unavailable",
 ]
 slow_threshold = 0.75
 fail_on_unmarked_slow = true

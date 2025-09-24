@@ -18,6 +18,7 @@ import sys
 import pdf_toolbox.config as _config
 from pdf_toolbox.actions import Action, list_actions
 from pdf_toolbox.gui.main_window import MainWindow
+from pdf_toolbox.utils import logger
 
 # Re-export config with indirection so tests can monkeypatch gui.CONFIG_PATH
 CONFIG_PATH = _config.CONFIG_PATH
@@ -39,11 +40,10 @@ try:  # Detect Qt availability for headless error handling tests
 
     QT_AVAILABLE = True
     QT_IMPORT_ERROR: Exception | None = None
-except (
-    Exception
-) as _qt_exc:  # pragma: no cover  # pdf-toolbox: environment dependent | issue:-
+except Exception as _qt_exc:  # pdf-toolbox: environment dependent | issue:-
     QT_AVAILABLE = False
     QT_IMPORT_ERROR = _qt_exc
+    logger.warning("Qt import failed: %s", _qt_exc)
 
 
 def main() -> None:
