@@ -63,7 +63,7 @@ def test_pdf_to_images_via_ui(
         assert window.current_action is not None
 
         input_edit = window.current_widgets["input_pdf"]
-        out_dir_edit = window.current_widgets["out_dir"]
+        out_dir_edit = window.current_widgets["options.out_dir"]
         assert hasattr(input_edit, "setText")
         assert hasattr(out_dir_edit, "setText")
 

@@ -40,7 +40,7 @@ try:  # Detect Qt availability for headless error handling tests
 
     QT_AVAILABLE = True
     QT_IMPORT_ERROR: Exception | None = None
-except Exception as _qt_exc:  # pdf-toolbox: environment dependent | issue:-
+except (ImportError, OSError, RuntimeError) as _qt_exc:
     QT_AVAILABLE = False
     QT_IMPORT_ERROR = _qt_exc
     logger.warning("Qt import failed: %s", _qt_exc)

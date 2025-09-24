@@ -4,6 +4,7 @@ import importlib
 import logging
 import sys
 from types import ModuleType
+from typing import Any, cast
 
 import pytest
 
@@ -11,19 +12,18 @@ import pytest
 @pytest.mark.qt_noop
 def test_gui_import_handles_missing_qt(monkeypatch: pytest.MonkeyPatch) -> None:
     """Import ``pdf_toolbox.gui`` when Qt libraries are unavailable."""
-
     original_gui = sys.modules.pop("pdf_toolbox.gui", None)
 
-    stub_main_window = ModuleType("pdf_toolbox.gui.main_window")
+    stub_main_window = cast(Any, ModuleType("pdf_toolbox.gui.main_window"))
 
     class DummyMainWindow:
         pass
 
-    setattr(stub_main_window, "MainWindow", DummyMainWindow)
+    stub_main_window.MainWindow = DummyMainWindow
     monkeypatch.setitem(sys.modules, "pdf_toolbox.gui.main_window", stub_main_window)
 
-    fake_pyside = ModuleType("PySide6")
-    setattr(fake_pyside, "__path__", [])
+    fake_pyside = cast(Any, ModuleType("PySide6"))
+    fake_pyside.__path__ = []
     monkeypatch.setitem(sys.modules, "PySide6", fake_pyside)
     monkeypatch.delitem(sys.modules, "PySide6.QtWidgets", raising=False)
 

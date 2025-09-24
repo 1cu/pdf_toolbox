@@ -8,7 +8,6 @@
 | src/pdf_toolbox/cli.py:102                       | pragma: no cover             | runtime errors bubble up to stderr for CLI users                          | -        |
 | src/pdf_toolbox/cli.py:460                       | pragma: no cover             | preserve conversion error text for numeric parameters                     | -        |
 | src/pdf_toolbox/cli.py:475                       | pragma: no cover             | surface constructor failures from custom annotations                      | -        |
-| src/pdf_toolbox/gui/\_\_init\_\_.py:44           | pragma: no cover             | environment dependent                                                     | -        |
 | src/pdf_toolbox/gui/main_window.py:109           | PLR0915                      | constructor sets up many widgets                                          | -        |
 | src/pdf_toolbox/gui/main_window.py:272           | PLR0912, PLR0915             | dynamic form builder is inherently complex                                | -        |
 | src/pdf_toolbox/gui/main_window.py:524           | TRY004                       | GUI handler expects ValueError                                            | -        |
