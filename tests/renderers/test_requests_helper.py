@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import types
+from typing import Any, cast
 
 import pytest
 
@@ -7,25 +10,20 @@ from pdf_toolbox.renderers import _requests
 
 @pytest.fixture
 def requests_stub() -> types.ModuleType:
-    module = types.ModuleType("requests")
-    Timeout = type("Timeout", (Exception,), {})
-    setattr(module, "Timeout", Timeout)
-    setattr(module, "ConnectionError", type("ConnectionError", (Exception,), {}))
-    setattr(module, "RequestException", type("RequestException", (Exception,), {}))
+    module = cast(Any, types.ModuleType("requests"))
+    timeout_error = type("Timeout", (Exception,), {})
+    connection_error = type("ConnectionError", (Exception,), {})
+    request_exception = type("RequestException", (Exception,), {})
 
-    def post(
-        url: str,
-        *,
-        files,
-        headers,
-        timeout,
-        verify: bool,
-        stream: bool,
-    ) -> None:
-        raise Timeout
+    module.Timeout = timeout_error
+    module.ConnectionError = connection_error
+    module.RequestException = request_exception
 
-    setattr(module, "post", post)
-    return module
+    def post(*_: Any, **__: Any) -> None:
+        raise timeout_error
+
+    module.post = post
+    return cast(types.ModuleType, module)
 
 
 def test_load_requests_imports_requests(requests_stub: types.ModuleType) -> None:
