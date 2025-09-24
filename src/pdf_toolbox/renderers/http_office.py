@@ -173,7 +173,12 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         try:
             renderer = cls()
         except (FileNotFoundError, ValueError) as exc:
-            logger.info("HTTP PPTX renderer probe failed: %s", exc)
+            logger.info(
+                "HTTP PPTX renderer probe failed (%s): %s",
+                type(exc).__name__,
+                exc,
+                extra={"renderer": cls.name},
+            )
             return False
         return renderer.can_handle()
 
@@ -355,6 +360,11 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 "mode": context.mode,
                 "endpoint": context.endpoint,
                 "bytes": written,
+                "source": str(source),
+                "destination": str(destination),
+                "timeout_s": context.timeout_s,
+                "verify_tls": context.verify_tls,
+                "field": context.field,
             },
         )
 

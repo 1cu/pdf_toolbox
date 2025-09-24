@@ -478,7 +478,8 @@ def _render_raster_page(
         details = _write_raster_without_limit(image, plan, out_path)
     else:
         details = _write_raster_with_limit(image, plan, out_path, cancel=cancel)
-    size_out = out_path.stat().st_size / 1024
+    size_bytes = out_path.stat().st_size
+    size_out = size_bytes / 1024
     scale_factor = details.scale if details.scale is not None else 1
     final_width = int(image.width * scale_factor)
     final_height = int(image.height * scale_factor)
@@ -491,22 +492,38 @@ def _render_raster_page(
     if details.compress_level is not None:
         summary.append(f"compress_level={details.compress_level}")
     detail_str = ", ".join(summary)
+    log_extra = {
+        "page": page_no,
+        "output": str(out_path),
+        "bytes": size_bytes,
+        "width": final_width,
+        "height": final_height,
+        "dpi": final_dpi,
+        "scale": details.scale,
+        "quality": details.quality,
+        "compress_level": details.compress_level,
+        "max_size_mb": plan.max_size_mb,
+        "limit_bytes": plan.max_bytes,
+        "image_format": plan.image_format,
+    }
     if plan.max_size_mb is None:
         logger.info(
             "Page %d rendered %s to %s (%.1f kB)",
             page_no,
             detail_str,
-            out_path.name,
+            str(out_path),
             size_out,
+            extra=log_extra,
         )
     else:
         logger.info(
-            "Page %d saved %s to meet %.1f MB limit in %s (%.1f kB)",
+            "Page %d saved %s within %.2f MB limit to %s (%.1f kB)",
             page_no,
             detail_str,
             plan.max_size_mb,
-            out_path.name,
+            str(out_path),
             size_out,
+            extra=log_extra,
         )
     return str(out_path)
 
@@ -586,11 +603,42 @@ def pdf_to_images(
 
     """
     opts = options or PdfImageOptions()
-    logger.info("pdf_to_images called for %s", input_pdf)
     doc = open_pdf(input_pdf)
     with doc:
         page_numbers = parse_page_spec(opts.pages, doc.page_count)
         plan = _build_render_plan(input_pdf, doc, opts, page_numbers)
+        detail_parts = [f"format={plan.image_format}"]
+        if opts.width is not None and opts.height is not None:
+            detail_parts.append(f"target={opts.width}x{opts.height}px")
+        else:
+            detail_parts.append(f"dpi={plan.dpi}")
+        if plan.image_format in {"JPEG", "WEBP"}:
+            detail_parts.append(f"quality={plan.quality}")
+        if plan.max_size_mb is not None:
+            detail_parts.append(f"limit={plan.max_size_mb:.2f} MB")
+        if plan.batch_size:
+            detail_parts.append(f"batch_size={plan.batch_size}")
+        detail_str = ", ".join(detail_parts)
+        logger.info(
+            "Rendering %d page(s) from %s to %s (%s)",
+            len(plan.page_numbers),
+            input_pdf,
+            plan.out_dir,
+            detail_str,
+            extra={
+                "input": input_pdf,
+                "output_dir": str(plan.out_dir),
+                "pages": plan.page_numbers,
+                "page_count": doc.page_count,
+                "image_format": plan.image_format,
+                "dpi": plan.dpi,
+                "quality": plan.quality,
+                "max_size_mb": plan.max_size_mb,
+                "target_width": opts.width,
+                "target_height": opts.height,
+                "batch_size": plan.batch_size,
+            },
+        )
         return _render_batches(
             doc,
             plan,
