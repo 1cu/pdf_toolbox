@@ -14,22 +14,6 @@
 | src/pdf_toolbox/gui/widgets.py:99                | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/miro.py:715                      | PLR0913                      | export pipeline exposes optional tuning knobs                         | -        |
 | src/pdf_toolbox/renderers/\_requests_types.py:28 | PLR0913                      | mirror requests.post signature for accuracy                           | -        |
-| src/pdf_toolbox/renderers/ms_office.py:19        | pragma: no cover             | PowerPoint automation relies on pywin32                               | -        |
-| src/pdf_toolbox/renderers/ms_office.py:20        | type: ignore                 | pywin32 is optional and lacks type hints                              | -        |
-| src/pdf_toolbox/renderers/ms_office.py:22        | type: ignore                 | pywin32 is optional and lacks type hints                              | -        |
-| src/pdf_toolbox/renderers/ms_office.py:24        | pragma: no cover             | gracefully degrade without pywin32                                    | -        |
-| src/pdf_toolbox/renderers/ms_office.py:25        | type: ignore[assignment]     | treat missing pywin32 as absent backend                               | -        |
-| src/pdf_toolbox/renderers/ms_office.py:26        | type: ignore[assignment]     | treat missing pywin32 as absent backend                               | -        |
-| src/pdf_toolbox/renderers/ms_office.py:27        | pragma: no cover             | PowerPoint COM only available on Windows                              | -        |
-| src/pdf_toolbox/renderers/ms_office.py:28        | type: ignore[assignment]     | COM unsupported on non-Windows platforms                              | -        |
-| src/pdf_toolbox/renderers/ms_office.py:29        | type: ignore[assignment]     | COM unsupported on non-Windows platforms                              | -        |
-| src/pdf_toolbox/renderers/ms_office.py:75        | pragma: no cover             | surface COM automation failure                                        | -        |
-| src/pdf_toolbox/renderers/ms_office.py:104       | pragma: no cover             | propagate COM initialisation failure                                  | -        |
-| src/pdf_toolbox/renderers/ms_office.py:134       | pragma: no cover             | propagate PowerPoint open failure                                     | -        |
-| src/pdf_toolbox/renderers/ms_office.py:161       | pragma: no cover             | propagate COM initialisation failure                                  | -        |
-| src/pdf_toolbox/renderers/ms_office.py:175       | pragma: no cover             | guard unexpected COM errors                                           | -        |
-| src/pdf_toolbox/renderers/ms_office.py:242       | pragma: no cover             | propagate COM export failure                                          | -        |
-| src/pdf_toolbox/renderers/ms_office.py:311       | pragma: no cover             | propagate COM export failure                                          | -        |
 | src/pdf_toolbox/renderers/registry.py:83         | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
 | src/pdf_toolbox/renderers/registry.py:106        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning    | -        |
 | src/pdf_toolbox/renderers/registry.py:125        | BLE001, RUF100               | plugin modules may be missing or broken; degrade to warning           | -        |
@@ -67,6 +51,8 @@
 | tests/test_pptx_ms_office_renderer.py:108        | N802                         | COM style method name                                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:121        | N802                         | COM style method name                                                 | -        |
 | tests/test_pptx_ms_office_renderer.py:126        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:264        | N802                         | COM style name                                                        | -        |
+| tests/test_pptx_ms_office_renderer.py:457        | N802                         | COM style name                                                        | -        |
 
 <!-- mdformat on -->
 
