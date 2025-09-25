@@ -85,6 +85,22 @@ def _normalise_headers(headers: object) -> Mapping[str, str]:
     return dict(result)
 
 
+def _redact_url(url: str) -> str:
+    """Return ``url`` without user info, query parameters, or fragments."""
+    parsed = urlparse(url)
+    if not parsed.hostname:
+        return url
+    hostname = parsed.hostname
+    if parsed.port:
+        hostname = f"{hostname}:{parsed.port}"
+    redacted = parsed._replace(
+        netloc=hostname,
+        query="",
+        fragment="",
+    )
+    return urlunparse(redacted)
+
+
 @dataclass(frozen=True, slots=True)
 class HttpOfficeSection:
     """Configuration block for the HTTP renderer."""
@@ -173,7 +189,12 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         try:
             renderer = cls()
         except (FileNotFoundError, ValueError) as exc:
-            logger.info("HTTP PPTX renderer probe failed: %s", exc)
+            logger.info(
+                "HTTP PPTX renderer probe failed (%s): %s",
+                type(exc).__name__,
+                exc,
+                extra={"renderer": cls.name},
+            )
             return False
         return renderer.can_handle()
 
@@ -296,15 +317,6 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         context = self._request_context()
         source, destination = self._prepare_paths(input_pptx, output_path)
 
-        logger.info(
-            "Rendering PPTX via HTTP provider",
-            extra={
-                "renderer": self.name,
-                "mode": context.mode,
-                "endpoint": context.endpoint,
-            },
-        )
-
         req = context.requests
 
         try:
@@ -354,14 +366,34 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 code="backend_crashed",
             )
 
+        redacted_endpoint = _redact_url(context.endpoint)
+        log_extra = {
+            "renderer": self.name,
+            "mode": context.mode,
+            "endpoint": redacted_endpoint,
+            "bytes_written": written,
+            "source_path": str(source),
+            "destination_path": str(destination),
+            "timeout_s": context.timeout_s,
+            "verify_tls": context.verify_tls,
+            "field": context.field,
+        }
         logger.info(
-            "Rendered PPTX via HTTP provider",
-            extra={
-                "renderer": self.name,
-                "mode": context.mode,
-                "endpoint": context.endpoint,
-                "bytes": written,
-            },
+            "Rendered %s to %s via HTTP provider (%.1f KiB)",
+            source,
+            destination,
+            written / 1024,
+            extra=log_extra,
+        )
+        logger.debug(
+            "HTTP provider context for %s: mode=%s, endpoint=%s, timeout=%s, verify_tls=%s, field=%s",
+            source,
+            context.mode,
+            redacted_endpoint,
+            context.timeout_s,
+            context.verify_tls,
+            context.field,
+            extra=log_extra,
         )
 
         return str(destination)
