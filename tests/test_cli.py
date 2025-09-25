@@ -485,6 +485,29 @@ def test_convert_value_handles_custom_class() -> None:
     assert result == "HELLO"
 
 
+def test_convert_value_reports_int_conversion_error() -> None:
+    with pytest.raises(cli.CliError) as excinfo:
+        cli._convert_value("oops", int)
+
+    assert "invalid literal" in str(excinfo.value)
+
+
+def test_convert_value_reports_custom_class_error() -> None:
+    class FailingError(RuntimeError):
+        def __init__(self) -> None:
+            super().__init__("bad value")
+
+    class Failing:
+        def __init__(self, value: str) -> None:
+            del value
+            raise FailingError()
+
+    with pytest.raises(cli.CliError) as excinfo:
+        cli._convert_value("value", Failing)
+
+    assert "bad value" in str(excinfo.value)
+
+
 def test_convert_literal_supports_bool_int_and_float() -> None:
     assert cli._convert_literal("true", (True, False)) is True
     assert cli._convert_literal("2", (1, 2)) == 2

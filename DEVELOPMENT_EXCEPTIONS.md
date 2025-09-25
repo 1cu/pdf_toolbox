@@ -4,10 +4,6 @@
 
 | File                                             | Rule                         | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------- | -------- |
-| src/pdf_toolbox/cli.py:92                        | pragma: no cover             | delegate help/usage exit codes to argparse                            | -        |
-| src/pdf_toolbox/cli.py:102                       | pragma: no cover             | runtime errors bubble up to stderr for CLI users                      | -        |
-| src/pdf_toolbox/cli.py:460                       | pragma: no cover             | preserve conversion error text for numeric parameters                 | -        |
-| src/pdf_toolbox/cli.py:475                       | pragma: no cover             | surface constructor failures from custom annotations                  | -        |
 | src/pdf_toolbox/gui/\_\_init\_\_.py:24           | pragma: no cover             | typing-only import guard                                              | -        |
 | src/pdf_toolbox/gui/\_\_init\_\_.py:28           | pragma: no cover             | runtime fallback for typing                                           | -        |
 | src/pdf_toolbox/gui/main_window.py:111           | PLR0915                      | constructor sets up many widgets                                      | -        |
