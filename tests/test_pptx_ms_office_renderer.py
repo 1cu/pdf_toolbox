@@ -11,6 +11,37 @@ from pdf_toolbox.renderers.pptx import UnsupportedOptionError
 from pdf_toolbox.renderers.pptx_base import RenderOptions
 
 
+class _BaseRuntimeError(RuntimeError):
+    message = ""
+
+    def __str__(self) -> str:
+        return self.message
+
+
+class _InitFailureError(_BaseRuntimeError):
+    message = "init fail"
+
+
+class _DispatchFailureError(_BaseRuntimeError):
+    message = "dispatch exploded"
+
+
+class _GenericFailureError(_BaseRuntimeError):
+    message = "fail"
+
+
+class _BoomError(_BaseRuntimeError):
+    message = "boom"
+
+
+class _SaveFailedError(_BaseRuntimeError):
+    message = "save failed"
+
+
+class _ExportFailedError(_BaseRuntimeError):
+    message = "export failed"
+
+
 class DummyPythonCom:
     """Track COM initialisation lifecycle for tests."""
 
@@ -262,7 +293,7 @@ def test_open_presentation_requires_collection():
 def test_dispatch_powerpoint_wraps_exceptions():
     class FailingClient:
         def Dispatch(self, _prog_id: str) -> None:  # noqa: N802  # pdf-toolbox: COM style name | issue:-
-            raise RuntimeError("fail")
+            raise _GenericFailureError()
 
     with pytest.raises(PptxRenderingError) as excinfo:
         ms_office._dispatch_powerpoint(FailingClient())
@@ -328,7 +359,7 @@ def test_probe_false_when_dispatch_fails(setup_com, monkeypatch):
     monkeypatch.setattr(ms_office.logger, "info", record)
 
     def boom(_prog_id: str) -> None:
-        raise RuntimeError("boom")
+        raise _BoomError()
 
     monkeypatch.setattr(env.client, "DispatchEx", boom)
 
@@ -345,7 +376,7 @@ def test_probe_handles_com_initialisation_failure(setup_com, monkeypatch):
         messages.append(msg % args if args else msg)
 
     def boom() -> None:
-        raise RuntimeError("init fail")
+        raise _InitFailureError()
 
     monkeypatch.setattr(ms_office.logger, "info", record)
     monkeypatch.setattr(env.pythoncom, "CoInitialize", boom)
@@ -356,14 +387,14 @@ def test_probe_handles_com_initialisation_failure(setup_com, monkeypatch):
 
 
 def test_probe_handles_unexpected_errors(setup_com, monkeypatch):
-    env = setup_com()
+    setup_com()
     messages: list[str] = []
 
     def record(msg: str, *args: object, **_kwargs: object) -> None:
         messages.append(msg % args if args else msg)
 
     def boom(_client: DummyClient) -> None:
-        raise RuntimeError("dispatch exploded")
+        raise _DispatchFailureError()
 
     monkeypatch.setattr(ms_office.logger, "info", record)
     monkeypatch.setattr(ms_office, "_dispatch_powerpoint", boom)
@@ -455,7 +486,7 @@ def test_to_pdf_missing_input(tmp_path):
 def test_open_presentation_wraps_errors():
     class BrokenPresentations:
         def Open(self, *_args: object, **_kwargs: object) -> None:  # noqa: N802  # pdf-toolbox: COM style name | issue:-
-            raise RuntimeError("boom")
+            raise _BoomError()
 
     app = SimpleNamespace(Presentations=BrokenPresentations())
 
@@ -578,13 +609,12 @@ def test_powerpoint_session_wraps_initialisation_failures(setup_com, monkeypatch
     env = setup_com()
 
     def boom() -> None:
-        raise RuntimeError("fail")
+        raise _GenericFailureError()
 
     monkeypatch.setattr(env.pythoncom, "CoInitialize", boom)
 
-    with pytest.raises(PptxRenderingError) as excinfo:
-        with ms_office._powerpoint_session():
-            pass
+    with pytest.raises(PptxRenderingError) as excinfo, ms_office._powerpoint_session():
+        pass
 
     assert excinfo.value.code == "backend_crashed"
 
@@ -595,7 +625,7 @@ def test_to_pdf_wraps_export_errors(tmp_path, setup_com, monkeypatch):
     src.write_text("pptx")
 
     def boom(_self: DummyPresentation, *_args: object, **_kwargs: object) -> None:
-        raise RuntimeError("save failed")
+        raise _SaveFailedError()
 
     monkeypatch.setattr(env.presentation, "SaveAs", boom)
 
@@ -614,7 +644,7 @@ def test_to_images_wraps_export_errors(tmp_path, setup_com, monkeypatch):
     src.write_text("pptx")
 
     def boom(_self: DummySlide, *_args: object, **_kwargs: object) -> None:
-        raise RuntimeError("export failed")
+        raise _ExportFailedError()
 
     monkeypatch.setattr(env.slides[0], "Export", boom)
 

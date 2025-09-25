@@ -21,7 +21,6 @@ def _load_pywin32(
     importer: Callable[[str], Any] = import_module,
 ) -> tuple[Any | None, Any | None]:
     """Return the optional pywin32 modules when available."""
-
     if not IS_WINDOWS:
         return None, None
 

@@ -64,7 +64,7 @@ def pytest_runtest_call(item: pytest.Item):
     error: Exception | None = None
     try:
         outcome.get_result()
-    except Exception as exc:  # pragma: no cover  # pdf-toolbox: preserve test failures while recording duration | issue:-
+    except Exception as exc:  # pdf-toolbox: re-raise after tracking duration | issue:-
         error = exc
     finally:
         item.user_properties.append((_PROP_DURATION, duration))

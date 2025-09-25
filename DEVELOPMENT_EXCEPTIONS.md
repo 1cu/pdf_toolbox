@@ -42,17 +42,17 @@
 | tests/test_gui_import.py:111                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:240                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:245                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
-| tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                | -        |
-| tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                | -        |
-| tests/test_pptx_ms_office_renderer.py:47         | N802                         | COM style method name                                                 | -        |
-| tests/test_pptx_ms_office_renderer.py:72         | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:53         | N802                         | mirror COM method name                                                | -        |
+| tests/test_pptx_ms_office_renderer.py:57         | N802                         | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:78         | N802                         | COM style method name                                                 | -        |
-| tests/test_pptx_ms_office_renderer.py:91         | N802                         | COM style method name                                                 | -        |
-| tests/test_pptx_ms_office_renderer.py:108        | N802                         | COM style method name                                                 | -        |
-| tests/test_pptx_ms_office_renderer.py:121        | N802                         | COM style method name                                                 | -        |
-| tests/test_pptx_ms_office_renderer.py:126        | N802                         | COM style method name                                                 | -        |
-| tests/test_pptx_ms_office_renderer.py:264        | N802                         | COM style name                                                        | -        |
-| tests/test_pptx_ms_office_renderer.py:457        | N802                         | COM style name                                                        | -        |
+| tests/test_pptx_ms_office_renderer.py:103        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:109        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:122        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:139        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:152        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:157        | N802                         | COM style method name                                                 | -        |
+| tests/test_pptx_ms_office_renderer.py:295        | N802                         | COM style name                                                        | -        |
+| tests/test_pptx_ms_office_renderer.py:488        | N802                         | COM style name                                                        | -        |
 
 <!-- mdformat on -->
 
