@@ -58,7 +58,6 @@
 | tests/test_gui_import.py:111                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:238                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:243                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
-| tests/test_miro.py:251                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                           | -        |
 | tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:47         | N802                         | COM style method name                                                 | -        |
