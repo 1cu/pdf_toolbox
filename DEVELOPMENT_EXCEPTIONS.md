@@ -4,8 +4,6 @@
 
 | File                                             | Rule                         | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------- | -------- |
-| src/pdf_toolbox/gui/\_\_init\_\_.py:24           | pragma: no cover             | typing-only import guard                                              | -        |
-| src/pdf_toolbox/gui/\_\_init\_\_.py:28           | pragma: no cover             | runtime fallback for typing                                           | -        |
 | src/pdf_toolbox/gui/main_window.py:111           | PLR0915                      | constructor sets up many widgets                                      | -        |
 | src/pdf_toolbox/gui/main_window.py:274           | PLR0912, PLR0915             | dynamic form builder is inherently complex                            | -        |
 | src/pdf_toolbox/gui/main_window.py:526           | TRY004                       | GUI handler expects ValueError                                        | -        |
@@ -57,8 +55,9 @@
 | tests/gui/test_widgets.py:194                    | N802                         | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                             | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
-| tests/test_gui_import.py:127                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
-| tests/test_gui_import.py:132                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
+| tests/test_gui_import.py:111                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
+| tests/test_gui_import.py:238                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
+| tests/test_gui_import.py:243                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_miro.py:251                           | pragma: no cover             | ensure dummy renderer keeps simple coverage                           | -        |
 | tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                | -        |

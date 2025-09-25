@@ -48,7 +48,7 @@ def test_gui_import_handles_missing_qt(
     assert module.QT_AVAILABLE is False
     assert isinstance(module.QT_IMPORT_ERROR, Exception)
     assert "PySide6" in str(module.QT_IMPORT_ERROR)
-    assert "Qt import failed" in caplog.text
+    assert any("Qt import failed" in message for message in caplog.messages)
 
 
 @pytest.mark.qt_noop
@@ -96,6 +96,117 @@ def test_gui_import_logs_stub_failure(
     assert module.MainWindow.__module__ == "pdf_toolbox.gui"
     assert "MainWindow stub import failed" in caplog.text
     assert any(record.exc_info for record in caplog.records)
+
+
+def test_load_qt_success(caplog: pytest.LogCaptureFixture) -> None:
+    """Return the ``QApplication`` class when Qt widgets can be imported."""
+    module = importlib.import_module("pdf_toolbox.gui")
+
+    class DummyApp:
+        pass
+
+    def _fake_import(name: str, _package: str | None = None) -> ModuleType:
+        assert name == "PySide6.QtWidgets"
+        qt_module = ModuleType(name)
+        qt_module.QApplication = DummyApp  # type: ignore[attr-defined]  # pdf-toolbox: stub Qt module for tests | issue:-
+        return qt_module
+
+    caplog.clear()
+    available, error, app_cls = module._load_qt(_fake_import)
+
+    assert available is True
+    assert error is None
+    assert app_cls is DummyApp
+    assert "Qt import failed" not in caplog.text
+
+
+def test_load_qt_failure_logs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Log the import failure when Qt widgets cannot be imported."""
+    module = importlib.import_module("pdf_toolbox.gui")
+
+    def _fake_import(_name: str, _package: str | None = None) -> ModuleType:
+        raise ImportError("boom")
+
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def _fake_warning(message: str, *_args: object, **kwargs: object) -> None:
+        calls.append((message, dict(kwargs)))
+
+    monkeypatch.setattr(module.logger, "warning", _fake_warning)
+
+    available, error, app_cls = module._load_qt(_fake_import)
+
+    assert available is False
+    assert isinstance(error, ImportError)
+    assert app_cls is None
+    assert calls
+    assert calls[-1][0] == "Qt import failed"
+    assert calls[-1][1].get("exc_info") is True
+
+
+def test_load_qt_missing_qapplication(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Report a helpful error if ``QApplication`` is missing from the module."""
+    module = importlib.import_module("pdf_toolbox.gui")
+
+    def _fake_import(_name: str, _package: str | None = None) -> ModuleType:
+        return ModuleType(_name)
+
+    calls: list[str] = []
+
+    def _fake_warning(message: str, *_args: object, **_kwargs: object) -> None:
+        calls.append(message)
+
+    monkeypatch.setattr(module.logger, "warning", _fake_warning)
+
+    available, error, app_cls = module._load_qt(_fake_import)
+
+    assert available is False
+    assert isinstance(error, RuntimeError)
+    assert app_cls is None
+    assert "QApplication missing" in str(error)
+    assert calls == ["PySide6.QtWidgets.QApplication missing from Qt module"]
+
+
+def test_load_main_window_success() -> None:
+    """Return the Qt ``MainWindow`` class when it can be imported."""
+    module = importlib.import_module("pdf_toolbox.gui")
+
+    stub_module = cast(Any, ModuleType("pdf_toolbox.gui.main_window"))
+
+    class DummyMainWindow:
+        pass
+
+    stub_module.MainWindow = DummyMainWindow
+
+    def _fake_import(name: str, _package: str | None = None) -> ModuleType:
+        assert name == "pdf_toolbox.gui.main_window"
+        return stub_module
+
+    loaded = module._load_main_window(_fake_import)
+
+    assert loaded is DummyMainWindow
+
+
+def test_load_main_window_logs_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Return the stub ``MainWindow`` when the import raises."""
+    module = importlib.import_module("pdf_toolbox.gui")
+
+    def _fake_import(_name: str, _package: str | None = None) -> ModuleType:
+        raise RuntimeError("boom")
+
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def _fake_warning(message: str, *_args: object, **kwargs: object) -> None:
+        calls.append((message, dict(kwargs)))
+
+    monkeypatch.setattr(module.logger, "warning", _fake_warning)
+
+    loaded = module._load_main_window(_fake_import)
+
+    assert loaded is module._StubMainWindow
+    assert calls
+    assert calls[-1][0] == "MainWindow stub import failed"
+    assert isinstance(calls[-1][1].get("exc_info"), tuple)
 
 
 def test_gui_main_uses_sys_argv(monkeypatch: pytest.MonkeyPatch) -> None:
