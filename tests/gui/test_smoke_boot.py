@@ -7,9 +7,9 @@ import os
 os.environ.setdefault("QT_OPENGL", "software")
 
 import pytest
-from PySide6.QtWidgets import QPlainTextEdit
 
 from pdf_toolbox.gui.main_window import MainWindow
+from pdf_toolbox.gui.widgets import LogDisplay
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 
@@ -27,7 +27,7 @@ def test_main_window_boots_and_exposes_core_widgets(qtbot):
     assert window.windowTitle().strip()
     assert window.tree.topLevelItemCount() > 0
 
-    log_widgets = window.findChildren(QPlainTextEdit)
+    log_widgets = window.findChildren(LogDisplay)
     assert window.log in log_widgets
     assert not window.log.isVisible()
     assert window.action_about in window.settings_menu.actions()

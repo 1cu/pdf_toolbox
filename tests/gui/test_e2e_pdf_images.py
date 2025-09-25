@@ -74,7 +74,7 @@ def test_pdf_to_images_via_ui(
         window.on_run()
         qtbot.waitUntil(lambda: window.worker is None)
         qtbot.waitUntil(
-            lambda: window.status_key == "done" and bool(window.log.toPlainText()),
+            lambda: window.status_key == "done" and bool(window.log.entries()),
             timeout=3000,
         )
 
@@ -86,7 +86,8 @@ def test_pdf_to_images_via_ui(
 
         log_lines = [
             line.strip()
-            for line in window.log.toPlainText().splitlines()
+            for entry in window.log.entries()
+            for line in entry.message.splitlines()
             if line.strip()
         ]
         extracted_paths: list[Path] = []
