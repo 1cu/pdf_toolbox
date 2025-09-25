@@ -15,20 +15,21 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, cast
 
 import pdf_toolbox.config as _config
 from pdf_toolbox.actions import Action, list_actions
 from pdf_toolbox.utils import logger
 
-if TYPE_CHECKING:  # pragma: no cover  # pdf-toolbox: typing-only import guard | issue:-
-    from pdf_toolbox.gui.main_window import MainWindow
-else:
+ImportModule = Callable[..., ModuleType]
 
-    class MainWindow:  # pragma: no cover  # pdf-toolbox: runtime fallback for typing | issue:-
-        """Placeholder replaced with the Qt-backed window at runtime."""
 
-        ...
+class _StubMainWindow:
+    """Placeholder replaced with the Qt-backed window at runtime."""
+
+    ...
 
 
 # Re-export config with indirection so tests can monkeypatch gui.CONFIG_PATH
@@ -46,37 +47,54 @@ def save_config(cfg: dict) -> None:
     _config.save_config_at(CONFIG_PATH, cfg)
 
 
-try:  # Detect Qt availability for headless error handling tests
-    from PySide6.QtWidgets import QApplication
+def _load_qt(
+    import_module: ImportModule = importlib.import_module,
+) -> tuple[bool, Exception | None, type[Any] | None]:
+    """Attempt to import Qt widgets and expose ``QApplication`` for runtime use."""
+    try:
+        qt_widgets = import_module("PySide6.QtWidgets")
+    except (ImportError, OSError, RuntimeError) as exc:
+        logger.warning("Qt import failed", exc_info=True)
+        return False, exc, None
 
-    QT_AVAILABLE = True
-    QT_IMPORT_ERROR: Exception | None = None
-except (ImportError, OSError, RuntimeError) as _qt_exc:
-    QT_AVAILABLE = False
-    QT_IMPORT_ERROR = _qt_exc
-    logger.warning("Qt import failed", exc_info=True)
+    qt_application = getattr(qt_widgets, "QApplication", None)
+    if qt_application is None:
+        message = "PySide6.QtWidgets.QApplication missing from Qt module"
+        logger.warning(message)
+        return False, RuntimeError(message), None
 
-if not TYPE_CHECKING:
-    if QT_AVAILABLE:
-        from pdf_toolbox.gui.main_window import MainWindow as _LoadedMainWindow
+    return True, None, qt_application
 
-        MainWindow = _LoadedMainWindow
-    else:
-        try:
-            _main_window_mod = importlib.import_module("pdf_toolbox.gui.main_window")
-        except (
-            ImportError,
-            OSError,
-            RuntimeError,
-        ) as _stub_exc:
-            logger.warning(
-                "MainWindow stub import failed",
-                exc_info=(type(_stub_exc), _stub_exc, _stub_exc.__traceback__),
-            )
-        else:
-            stub_cls = getattr(_main_window_mod, "MainWindow", None)
-            if isinstance(stub_cls, type):
-                MainWindow = stub_cls
+
+def _load_main_window(
+    import_module: ImportModule = importlib.import_module,
+) -> type[Any]:
+    """Resolve the GUI ``MainWindow`` class, falling back to a stub when Qt is missing."""
+    try:
+        module = import_module("pdf_toolbox.gui.main_window")
+    except (ImportError, OSError, RuntimeError) as exc:
+        logger.warning(
+            "MainWindow stub import failed",
+            exc_info=(type(exc), exc, exc.__traceback__),
+        )
+        return _StubMainWindow
+
+    main_window_cls = getattr(module, "MainWindow", None)
+    if isinstance(main_window_cls, type):
+        return main_window_cls
+
+    return _StubMainWindow
+
+
+QT_AVAILABLE, QT_IMPORT_ERROR, _QApplication = _load_qt()
+QApplication: type[Any] | None = (
+    cast(type[Any], _QApplication) if QT_AVAILABLE else None
+)
+
+if TYPE_CHECKING:
+    from pdf_toolbox.gui.main_window import MainWindow as MainWindow
+else:
+    MainWindow: type[Any] = _load_main_window()
 
 
 def main() -> None:
@@ -84,7 +102,8 @@ def main() -> None:
     if not QT_AVAILABLE:
         raise QT_IMPORT_ERROR or RuntimeError("Qt libraries not available")
 
-    app = QApplication(sys.argv)
+    qt_app = cast(type[Any], QApplication)
+    app = qt_app(sys.argv)
     _win = MainWindow()
     sys.exit(app.exec())
 

@@ -246,9 +246,7 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
             target.write_bytes(Path(sample_pdf).read_bytes())
             return str(target)
 
-        def to_images(
-            self, *args, **kwargs
-        ):  # pragma: no cover - not used here  # pdf-toolbox: ensure dummy renderer keeps simple coverage | issue:-
+        def to_images(self, *args, **kwargs):
             raise NotImplementedError
 
     original_loader = pptx_module._load_via_registry
@@ -259,6 +257,9 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
         return original_loader(name)
 
     monkeypatch.setattr(pptx_module, "_load_via_registry", loader)
+    dummy_renderer = loader("dummy")
+    with pytest.raises(NotImplementedError):
+        dummy_renderer.to_images("deck.pptx")
     cfg_path = tmp_path / "pptx.json"
     cfg_path.write_text(json.dumps({"pptx_renderer": "dummy"}))
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)

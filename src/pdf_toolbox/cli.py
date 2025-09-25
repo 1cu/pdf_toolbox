@@ -89,7 +89,7 @@ def main(argv: t.Sequence[str] | None = None) -> int:
     parser = _create_parser()
     try:
         args, extra = parser.parse_known_args(argv)
-    except SystemExit as exc:  # pragma: no cover - argparse handles usage exits  # pdf-toolbox: delegate help/usage exit codes to argparse | issue:-
+    except SystemExit as exc:
         code = exc.code
         return code if isinstance(code, int) else 1
 
@@ -99,7 +99,7 @@ def main(argv: t.Sequence[str] | None = None) -> int:
     except CliError as exc:
         _write_line(sys.stderr, str(exc))
         return 2
-    except Exception as exc:  # pragma: no cover - exercised in integration tests  # pdf-toolbox: runtime errors bubble up to stderr for CLI users | issue:-
+    except Exception as exc:
         _write_line(sys.stderr, f"Error: {exc}")
         return 1
 
@@ -457,7 +457,7 @@ def _resolve_converter(annotation: t.Any) -> t.Callable[[str], t.Any] | None:
 def _convert_int(value: str) -> int:
     try:
         return int(value)
-    except ValueError as exc:  # pragma: no cover - exercised via literal unions  # pdf-toolbox: preserve conversion error text for numeric parameters | issue:-
+    except ValueError as exc:
         raise CliError.conversion_error(str(exc)) from exc
 
 
@@ -472,7 +472,7 @@ def _convert_custom_type(value: str, annotation: type[t.Any]) -> t.Any:
     # Fallback for other classes - rely on string constructor if available.
     try:
         return annotation(value)
-    except Exception as exc:  # pragma: no cover - depends on user types  # pdf-toolbox: surface constructor failures from custom annotations | issue:-
+    except Exception as exc:
         raise CliError.conversion_error(str(exc)) from exc
 
 
