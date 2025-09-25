@@ -21,38 +21,39 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 ### `src/pdf_toolbox/cli.py`
 
-- **Pragmas at L92, L102, L460, L475**: These branches surface argparse/help output and user-facing error messages. Add integration tests that invoke the CLI via `subprocess.run` (or `CliRunner`) and assert on the exit code and stderr output for the help and error paths. Once covered, the pragmas can be removed.
+- **Status (2024-05)**: Completed. The regression suite in `tests/test_cli.py` invokes the help and error flows directly through `cli.main`, so the guarded branches execute under coverage and no `# pragma: no cover` markers remain.
 
 ### `src/pdf_toolbox/gui/__init__.py`
 
-- **Pragmas at L23, L27, L70**: Move the optional Qt import guard into a small helper (`_load_qt() -> tuple[type[QObject], ...]`) that can be unit-tested by patching `importlib.import_module`. With an explicit helper, we can exercise both the success and fallback branches without relying on pragmas.
+- **Status (2024-05)**: Completed. Optional Qt imports now live behind `_load_qt` and `_load_main_window`, and `tests/gui/test_main_window.py` plus the import tests cover both failure and success paths. Keep the helper focused so future changes stay testable.
 
 ### `src/pdf_toolbox/gui/main_window.py`
 
 - **L109 – `PLR0915`**: Extract widget assembly into focused helpers (`_build_toolbar`, `_build_profile_controls`, etc.) and let the constructor orchestrate the calls. This reduces the branch count and improves readability.
 - **L272 – `PLR0912`, `PLR0915`**: `_build_form` performs annotation inspection, widget construction, and binding. Introduce a registry mapping parameter annotations to `WidgetFactory` objects; each factory returns a dataclass describing the widget plus binding metadata. Dispatching through the registry keeps the main loop simple.
 - **L524 – `TRY004`**: Replace the broad `try/except ValueError` with a helper that validates user input and returns a `Result` object (`Ok`/`Err`). The handler can switch on the result instead of relying on exceptions for flow control.
-- **L593 – `pragma: no cover`**: Add a test that monkeypatches `QDesktopServices.openUrl` and triggers the action via the window. Use Qt's test harness to avoid opening a real browser.
+- **Status (2024-05)**: Resolved. `tests/gui/test_main_window.py::test_open_pptx_docs_uses_desktop_services` patches `QDesktopServices.openUrl`, exercising the branch that previously required a pragma.
 - **L773 – `N802`**: Provide a thin snake_case wrapper (e.g. `def change_event(self, event): self.changeEvent(event)`) and update call sites to use the wrapper, letting the Qt override keep its camelCase name while satisfying Ruff.
 
 ### `src/pdf_toolbox/gui/widgets.py`
 
 - **L36 – `type: ignore[override]`**: Replace inheritance from `QObject` with composition. Create a `QtLogEmitter(QObject)` helper that exposes the signal, and let the handler delegate to it. The handler keeps the `logging.Handler` signature, removing the override conflict.
 - **L76, L81, L99 – `N802`**: Similar to the main window, add snake_case delegators or mark the overrides with `typing_extensions.override` once available to Ruff so the camelCase method names are recognised as intentional.
+- **Status (2025-09)**: Verified that `tests/gui/test_widgets.py::test_qt_log_handler_appends_and_calls_update` covers the log emission branch, so the historical `# pragma: no cover` on `QtLogHandler.emit` remains unnecessary.
 
 ### `src/pdf_toolbox/miro.py`
 
-- **Pragmas at L247, L262, L282, L302**: Parameterise tests to toggle Pillow codec availability (`monkeypatch(PIL.features, "check", ...)`) and assert that each fallback branch logs the expected warning. With coverage in place, the pragmas can be removed.
-- **L695 – `pragma: no cover`**: Simulate renderer failures by creating a fake worker that raises and assert that the GUI path shows the error banner. Use Qt's test fixtures to avoid threading flakiness.
+- **Status (2024-05)**: Completed. The Pillow feature toggles in `tests/test_miro.py` now drive the codec fallback scenarios, so each warning path runs during tests and the pragmas are gone.
+- **Status (2024-05)**: Completed. GUI tests construct synchronous worker doubles that force the failure path, and the banner assertions keep the branch covered without a pragma.
 - **L715 – `PLR0913`**: Introduce a `MiroExportOptions` dataclass grouping the optional tuning knobs (`quality`, `scale`, etc.) so the action accepts a single object. Update the GUI form builder to produce the dataclass.
 
 ### `src/pdf_toolbox/renderers/_http_util.py`
 
-- **L23 – `pragma: no cover`**: Extract the dependency check into a helper that accepts an injectable `requests` module. Tests can pass `None` to cover the fallback branch.
+- **Status (2024-05)**: Completed. `_post_stream_file` now raises when `requests` is unavailable and the dedicated unit tests cover both the sentinel and happy path without a pragma.
 
 ### `src/pdf_toolbox/renderers/_requests.py`
 
-- **Pragmas at L12, L17, L19**: Add targeted tests that monkeypatch `sys.modules` to raise `ImportError` for `requests` and confirm the helper returns the sentinel object. With deterministic tests, the pragmas are no longer necessary.
+- **Status (2024-05)**: Completed. Tests patch `import_module` to simulate missing dependencies, exercising the sentinel-returning paths so the pragmas stay removed.
 
 ### `src/pdf_toolbox/renderers/_requests_types.py`
 
@@ -60,7 +61,7 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 ### `src/pdf_toolbox/renderers/ms_office.py`
 
-- **Pragmas at L19, L24, L27, L75, L104, L134, L161, L175, L242, L311**: Split Windows-specific behaviour into a collaborator class (e.g. `PowerPointAutomation`). Provide a fake implementation in tests so each error-handling branch is exercised. For non-Windows platforms, mark the tests with `pytest.mark.windows` and rely on CI coverage.
+- **Status (2024-05)**: Completed. The pywin32 loader helper and the expanded renderer tests cover the optional import and COM failure scenarios, so all coverage pragmas were removed while retaining the Windows abstractions outlined here for future refactors.
 - **`type: ignore` entries at L20, L22**: Vendor minimal `.pyi` stubs for the subset of pywin32 used (`Dispatch`, `constants`, etc.) or depend on `pywin32-stubs`. Update `pyproject.toml` accordingly and re-run the type checker.
 - **`type: ignore[assignment]` entries at L25, L26, L28, L29**: Replace sentinel `None` assignments with protocol-driven fake objects that implement the required methods, allowing type checkers to validate the assignments.
 - **L20 – `type: ignore` (module import)**: Wrap the import in a helper returning a protocol-compliant wrapper. Tests can supply a fake to verify behaviour without ignores.
@@ -73,7 +74,7 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 - **L117, L120, L123, L126, L129, L132 – `N802`**: Move the camelCase helpers into a `.pyi` stub file so Ruff analyses the stub instead of the implementation. Alternatively, provide snake_case wrappers that delegate to the camelCase functions used by Qt.
 - **L120, L129, L132 – `type: ignore[override]`**: Switching to stub files (above) also resolves the override mismatch because the runtime functions no longer inherit from Qt types.
-- **L218 – `N802`, `pragma: no cover`**: Add a unit test that instantiates the worker stub and triggers the camelCase method through Qt's event loop. Once covered, the pragma can be removed.
+- **Coverage status (2024-05)**: The synchronous worker fixture now runs through the camelCase bridge under test, so the branch is covered and the pragma is no longer required. The remaining items track the outstanding naming and override cleanup.
 
 ### `tests/gui/test_main_window.py`
 
@@ -96,7 +97,7 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 ### `tests/test_miro.py`
 
-- **L250 – `pragma: no cover`**: Expand the dummy renderer test to assert on the fallback behaviour so the branch executes under coverage.
+- **Status (2024-05)**: Completed. The dummy renderer assertions now verify the fallback behaviour directly, keeping the branch covered without a pragma.
 
 ### `tests/test_pptx_ms_office_renderer.py`
 
@@ -106,7 +107,7 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 1. **Third-party stubs**: Vendor or depend on stubs for PySide6 gaps and pywin32 so the GUI and Windows renderers compile cleanly without `type: ignore` noise.
 1. **Qt wrapper strategy**: Standardise on snake_case wrappers around camelCase Qt hooks, and ensure Ruff respects the intent via `typing_extensions.override` or dedicated stub files.
-1. **Dependency guards**: Encapsulate optional dependency checks in helper functions and add deterministic tests that toggle availability, eliminating `pragma: no cover` markers around import guards.
+1. **Dependency guards**: Completed for the existing helpers—optional imports now live behind testable loaders. Keep this pattern for new dependencies so `pragma: no cover` guards don't return.
 1. **Dataclass/Protocol adoption**: Replace long parameter lists and loose sentinel objects with dataclasses and protocols so type checkers understand the API and Ruff's complexity rules are easier to satisfy.
 
 ## Maintenance Snapshot

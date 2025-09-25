@@ -11,6 +11,37 @@ from pdf_toolbox.renderers.pptx import UnsupportedOptionError
 from pdf_toolbox.renderers.pptx_base import RenderOptions
 
 
+class _BaseRuntimeError(RuntimeError):
+    message = ""
+
+    def __str__(self) -> str:
+        return self.message
+
+
+class _InitFailureError(_BaseRuntimeError):
+    message = "init fail"
+
+
+class _DispatchFailureError(_BaseRuntimeError):
+    message = "dispatch exploded"
+
+
+class _GenericFailureError(_BaseRuntimeError):
+    message = "fail"
+
+
+class _BoomError(_BaseRuntimeError):
+    message = "boom"
+
+
+class _SaveFailedError(_BaseRuntimeError):
+    message = "save failed"
+
+
+class _ExportFailedError(_BaseRuntimeError):
+    message = "export failed"
+
+
 class DummyPythonCom:
     """Track COM initialisation lifecycle for tests."""
 
@@ -188,6 +219,44 @@ def test_ensure_com_environment_requires_pywin32(monkeypatch):
     assert excinfo.value.code == "unavailable"
 
 
+def test_load_pywin32_skips_non_windows(monkeypatch):
+    monkeypatch.setattr(ms_office, "IS_WINDOWS", False)
+
+    pythoncom_mod, client_mod = ms_office._load_pywin32()
+
+    assert pythoncom_mod is None
+    assert client_mod is None
+
+
+def test_load_pywin32_import_failure(monkeypatch):
+    monkeypatch.setattr(ms_office, "IS_WINDOWS", True)
+
+    def boom(name: str) -> None:
+        raise RuntimeError(name)
+
+    pythoncom_mod, client_mod = ms_office._load_pywin32(importer=boom)
+
+    assert pythoncom_mod is None
+    assert client_mod is None
+
+
+def test_load_pywin32_import_success(monkeypatch):
+    monkeypatch.setattr(ms_office, "IS_WINDOWS", True)
+
+    modules: dict[str, object] = {
+        "pythoncom": object(),
+        "win32com.client": object(),
+    }
+
+    def fake_import(name: str) -> object:
+        return modules[name]
+
+    pythoncom_mod, client_mod = ms_office._load_pywin32(importer=fake_import)
+
+    assert pythoncom_mod is modules["pythoncom"]
+    assert client_mod is modules["win32com.client"]
+
+
 def test_get_dispatch_requires_callable():
     class Empty:
         pass
@@ -219,6 +288,18 @@ def test_open_presentation_requires_collection():
         ms_office._open_presentation(Dummy(), Path("deck.pptx"))
 
     assert excinfo.value.code == "backend_crashed"
+
+
+def test_dispatch_powerpoint_wraps_exceptions():
+    class FailingClient:
+        def Dispatch(self, _prog_id: str) -> None:  # noqa: N802  # pdf-toolbox: COM style name | issue:-
+            raise _GenericFailureError()
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._dispatch_powerpoint(FailingClient())
+
+    assert excinfo.value.code == "backend_crashed"
+    assert "fail" in str(excinfo.value.detail)
 
 
 def test_probe_true_when_com_available(setup_com, monkeypatch):
@@ -278,13 +359,48 @@ def test_probe_false_when_dispatch_fails(setup_com, monkeypatch):
     monkeypatch.setattr(ms_office.logger, "info", record)
 
     def boom(_prog_id: str) -> None:
-        raise RuntimeError("boom")
+        raise _BoomError()
 
     monkeypatch.setattr(env.client, "DispatchEx", boom)
 
     assert PptxMsOfficeRenderer.probe() is False
     assert env.pythoncom.uninit_calls == 1
     assert any("PowerPoint automation failed" in message for message in messages)
+
+
+def test_probe_handles_com_initialisation_failure(setup_com, monkeypatch):
+    env = setup_com()
+    messages: list[str] = []
+
+    def record(msg: str, *args: object, **_kwargs: object) -> None:
+        messages.append(msg % args if args else msg)
+
+    def boom() -> None:
+        raise _InitFailureError()
+
+    monkeypatch.setattr(ms_office.logger, "info", record)
+    monkeypatch.setattr(env.pythoncom, "CoInitialize", boom)
+
+    assert PptxMsOfficeRenderer.probe() is False
+    assert env.pythoncom.uninit_calls == 0
+    assert any("COM initialisation failed" in message for message in messages)
+
+
+def test_probe_handles_unexpected_errors(setup_com, monkeypatch):
+    setup_com()
+    messages: list[str] = []
+
+    def record(msg: str, *args: object, **_kwargs: object) -> None:
+        messages.append(msg % args if args else msg)
+
+    def boom(_client: DummyClient) -> None:
+        raise _DispatchFailureError()
+
+    monkeypatch.setattr(ms_office.logger, "info", record)
+    monkeypatch.setattr(ms_office, "_dispatch_powerpoint", boom)
+
+    assert PptxMsOfficeRenderer.probe() is False
+    assert any("unexpected error" in message for message in messages)
 
 
 def test_to_pdf_exports_selected_slides(tmp_path, setup_com):
@@ -365,6 +481,20 @@ def test_to_pdf_missing_input(tmp_path):
         renderer.to_pdf(str(tmp_path / "missing.pptx"))
 
     assert excinfo.value.code == "unavailable"
+
+
+def test_open_presentation_wraps_errors():
+    class BrokenPresentations:
+        def Open(self, *_args: object, **_kwargs: object) -> None:  # noqa: N802  # pdf-toolbox: COM style name | issue:-
+            raise _BoomError()
+
+    app = SimpleNamespace(Presentations=BrokenPresentations())
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        ms_office._open_presentation(app, Path("deck.pptx"))
+
+    assert excinfo.value.code == "backend_crashed"
+    assert excinfo.value.detail == "boom"
 
 
 def test_can_handle_delegates_to_probe(monkeypatch):
@@ -473,3 +603,55 @@ def test_to_images_propagates_renderer_errors(monkeypatch, tmp_path, setup_com):
         renderer.to_images(str(src))
 
     assert excinfo.value.code == "backend_crashed"
+
+
+def test_powerpoint_session_wraps_initialisation_failures(setup_com, monkeypatch):
+    env = setup_com()
+
+    def boom() -> None:
+        raise _GenericFailureError()
+
+    monkeypatch.setattr(env.pythoncom, "CoInitialize", boom)
+
+    with pytest.raises(PptxRenderingError) as excinfo, ms_office._powerpoint_session():
+        pass
+
+    assert excinfo.value.code == "backend_crashed"
+
+
+def test_to_pdf_wraps_export_errors(tmp_path, setup_com, monkeypatch):
+    env = setup_com(slide_count=1)
+    src = tmp_path / "deck.pptx"
+    src.write_text("pptx")
+
+    def boom(_self: DummyPresentation, *_args: object, **_kwargs: object) -> None:
+        raise _SaveFailedError()
+
+    monkeypatch.setattr(env.presentation, "SaveAs", boom)
+
+    renderer = PptxMsOfficeRenderer()
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        renderer.to_pdf(str(src))
+
+    assert excinfo.value.code == "backend_crashed"
+    assert "save failed" in str(excinfo.value.detail)
+
+
+def test_to_images_wraps_export_errors(tmp_path, setup_com, monkeypatch):
+    env = setup_com(slide_count=1)
+    src = tmp_path / "deck.pptx"
+    src.write_text("pptx")
+
+    def boom(_self: DummySlide, *_args: object, **_kwargs: object) -> None:
+        raise _ExportFailedError()
+
+    monkeypatch.setattr(env.slides[0], "Export", boom)
+
+    renderer = PptxMsOfficeRenderer()
+
+    with pytest.raises(PptxRenderingError) as excinfo:
+        renderer.to_images(str(src))
+
+    assert excinfo.value.code == "backend_crashed"
+    assert "export failed" in str(excinfo.value.detail)

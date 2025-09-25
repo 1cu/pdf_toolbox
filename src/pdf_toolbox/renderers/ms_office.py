@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import sys
 from collections.abc import Callable, Iterator
+from importlib import import_module
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -15,18 +16,26 @@ from pdf_toolbox.utils import logger, parse_page_spec
 
 IS_WINDOWS = sys.platform.startswith("win")
 
-if IS_WINDOWS:
-    try:  # pragma: no cover - optional dependency import guarded for Windows only  # pdf-toolbox: PowerPoint automation relies on pywin32 | issue:-
-        import pythoncom  # type: ignore  # pdf-toolbox: pywin32 is optional and lacks type hints | issue:-
-        from win32com import (
-            client as win32_client,  # type: ignore  # pdf-toolbox: pywin32 is optional and lacks type hints | issue:-
-        )
-    except Exception:  # pragma: no cover - handled in runtime checks  # pdf-toolbox: gracefully degrade without pywin32 | issue:-
-        pythoncom = None  # type: ignore[assignment]  # pdf-toolbox: treat missing pywin32 as absent backend | issue:-
-        win32_client = None  # type: ignore[assignment]  # pdf-toolbox: treat missing pywin32 as absent backend | issue:-
-else:  # pragma: no cover - import guard for non-Windows platforms  # pdf-toolbox: PowerPoint COM only available on Windows | issue:-
-    pythoncom = None  # type: ignore[assignment]  # pdf-toolbox: COM unsupported on non-Windows platforms | issue:-
-    win32_client = None  # type: ignore[assignment]  # pdf-toolbox: COM unsupported on non-Windows platforms | issue:-
+
+def _load_pywin32(
+    importer: Callable[[str], Any] = import_module,
+) -> tuple[Any | None, Any | None]:
+    """Return the optional pywin32 modules when available."""
+    if not IS_WINDOWS:
+        return None, None
+
+    try:
+        pythoncom_mod = importer("pythoncom")
+        client_mod = importer("win32com.client")
+    except Exception:
+        return None, None
+
+    return pythoncom_mod, client_mod
+
+
+pythoncom: Any | None
+win32_client: Any | None
+pythoncom, win32_client = _load_pywin32()
 
 _POWERPOINT_PROG_ID = "PowerPoint.Application"
 _PP_SAVE_AS_PDF = 32  # ppSaveAsPDF
@@ -72,7 +81,7 @@ def _dispatch_powerpoint(client_mod: Any) -> Any:
     dispatch = _get_dispatch(client_mod)
     try:
         return dispatch(_POWERPOINT_PROG_ID)
-    except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: surface COM automation failure | issue:-
+    except Exception as exc:
         raise PptxRenderingError(
             _ERR_AUTOMATION_FAILED,
             code="backend_crashed",
@@ -101,7 +110,7 @@ def _powerpoint_session() -> Iterator[Any]:
     pythoncom_mod, client_mod = _ensure_com_environment()
     try:
         pythoncom_mod.CoInitialize()
-    except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM initialisation failure | issue:-
+    except Exception as exc:
         raise PptxRenderingError(
             _ERR_COM_INIT_FAILED,
             code="backend_crashed",
@@ -131,7 +140,7 @@ def _open_presentation(app: Any, path: Path) -> Any:
         raise PptxRenderingError(msg, code="backend_crashed")
     try:
         return presentations.Open(str(path), True, False, False)
-    except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate PowerPoint open failure | issue:-
+    except Exception as exc:
         raise PptxRenderingError(
             _ERR_OPEN_PRESENTATION_FAILED,
             code="backend_crashed",
@@ -158,7 +167,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
         client_mod = win32_client
         try:
             pythoncom_mod.CoInitialize()
-        except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM initialisation failure | issue:-
+        except Exception as exc:
             return _log_probe_result(
                 renderer_name,
                 False,
@@ -172,7 +181,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
             app = _dispatch_powerpoint(client_mod)
         except PptxRenderingError as exc:
             detail = str(exc)
-        except Exception as exc:  # pragma: no cover - defensive fallback  # pdf-toolbox: guard unexpected COM errors | issue:-
+        except Exception as exc:
             detail = f"unexpected error: {exc}"
         else:
             available = True
@@ -239,7 +248,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                 presentation.SaveAs(str(out), self._PP_SAVE_AS_PDF)
             except PptxRenderingError:
                 raise
-            except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM export failure | issue:-
+            except Exception as exc:
                 raise PptxRenderingError(
                     _ERR_EXPORT_PDF_FAILED,
                     code="backend_crashed",
@@ -308,7 +317,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
                 logger.info("Exported %d image(s) to %s", count, out)
             except PptxRenderingError:
                 raise
-            except Exception as exc:  # pragma: no cover - depends on Windows COM  # pdf-toolbox: propagate COM export failure | issue:-
+            except Exception as exc:
                 raise PptxRenderingError(
                     _ERR_EXPORT_IMAGES_FAILED,
                     code="backend_crashed",
