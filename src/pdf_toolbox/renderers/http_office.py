@@ -85,6 +85,22 @@ def _normalise_headers(headers: object) -> Mapping[str, str]:
     return dict(result)
 
 
+def _redact_url(url: str) -> str:
+    """Return ``url`` without user info, query parameters, or fragments."""
+    parsed = urlparse(url)
+    if not parsed.hostname:
+        return url
+    hostname = parsed.hostname
+    if parsed.port:
+        hostname = f"{hostname}:{parsed.port}"
+    redacted = parsed._replace(
+        netloc=hostname,
+        query="",
+        fragment="",
+    )
+    return urlunparse(redacted)
+
+
 @dataclass(frozen=True, slots=True)
 class HttpOfficeSection:
     """Configuration block for the HTTP renderer."""
@@ -350,19 +366,20 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 code="backend_crashed",
             )
 
+        redacted_endpoint = _redact_url(context.endpoint)
         log_extra = {
             "renderer": self.name,
             "mode": context.mode,
-            "endpoint": context.endpoint,
-            "bytes": written,
-            "source": str(source),
-            "destination": str(destination),
+            "endpoint": redacted_endpoint,
+            "bytes_written": written,
+            "source_path": str(source),
+            "destination_path": str(destination),
             "timeout_s": context.timeout_s,
             "verify_tls": context.verify_tls,
             "field": context.field,
         }
         logger.info(
-            "Rendered %s to %s via HTTP provider (%.1f kB)",
+            "Rendered %s to %s via HTTP provider (%.1f KiB)",
             source,
             destination,
             written / 1024,
@@ -372,7 +389,7 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
             "HTTP provider context for %s: mode=%s, endpoint=%s, timeout=%s, verify_tls=%s, field=%s",
             source,
             context.mode,
-            context.endpoint,
+            redacted_endpoint,
             context.timeout_s,
             context.verify_tls,
             context.field,

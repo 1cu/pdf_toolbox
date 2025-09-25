@@ -479,7 +479,7 @@ def _render_raster_page(
     else:
         details = _write_raster_with_limit(image, plan, out_path, cancel=cancel)
     size_bytes = out_path.stat().st_size
-    size_out = size_bytes / 1024
+    size_out_kib = size_bytes / 1024
     scale_factor = details.scale if details.scale is not None else 1
     final_width = int(image.width * scale_factor)
     final_height = int(image.height * scale_factor)
@@ -494,33 +494,35 @@ def _render_raster_page(
     detail_str = ", ".join(summary)
     log_extra = {
         "page": page_no,
-        "output": str(out_path),
-        "bytes": size_bytes,
+        "path": str(out_path),
+        "source_path": plan.input_path,
+        "bytes_written": size_bytes,
+        "dimensions": f"{final_width}x{final_height}",
         "width": final_width,
         "height": final_height,
         "dpi": final_dpi,
+        "format": plan.image_format,
         "scale": details.scale,
         "quality": details.quality,
         "compress_level": details.compress_level,
         "max_size_mb": plan.max_size_mb,
         "limit_bytes": plan.max_bytes,
-        "image_format": plan.image_format,
     }
     if plan.max_size_mb is None:
         logger.info(
-            "Saved page %d to %s (%.1f kB)",
+            "Saved page %d to %s (%.1f KiB)",
             page_no,
             str(out_path),
-            size_out,
+            size_out_kib,
             extra=log_extra,
         )
     else:
         logger.info(
-            "Saved page %d to %s within %.2f MB limit (%.1f kB)",
+            "Saved page %d to %s within %.2f MB limit (%.1f KiB)",
             page_no,
             str(out_path),
             plan.max_size_mb,
-            size_out,
+            size_out_kib,
             extra=log_extra,
         )
     logger.debug(
