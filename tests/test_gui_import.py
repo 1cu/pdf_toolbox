@@ -120,28 +120,29 @@ def test_load_qt_success(caplog: pytest.LogCaptureFixture) -> None:
     assert "Qt import failed" not in caplog.text
 
 
-def test_load_qt_failure_logs(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_qt_failure_logs(caplog: pytest.LogCaptureFixture) -> None:
     """Log the import failure when Qt widgets cannot be imported."""
     module = importlib.import_module("pdf_toolbox.gui")
 
     def _fake_import(_name: str, _package: str | None = None) -> ModuleType:
         raise ImportError("boom")
 
-    calls: list[tuple[str, dict[str, object]]] = []
-
-    def _fake_warning(message: str, *_args: object, **kwargs: object) -> None:
-        calls.append((message, dict(kwargs)))
-
-    monkeypatch.setattr(module.logger, "warning", _fake_warning)
-
-    available, error, app_cls = module._load_qt(_fake_import)
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.WARNING, logger="pdf_toolbox")
+    try:
+        available, error, app_cls = module._load_qt(_fake_import)
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
 
     assert available is False
     assert isinstance(error, ImportError)
     assert app_cls is None
-    assert calls
-    assert calls[-1][0] == "Qt import failed"
-    assert calls[-1][1].get("exc_info") is True
+    assert any(
+        record.getMessage() == "Qt import failed" and record.exc_info
+        for record in caplog.records
+    )
 
 
 def test_load_qt_missing_qapplication(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -187,26 +188,27 @@ def test_load_main_window_success() -> None:
     assert loaded is DummyMainWindow
 
 
-def test_load_main_window_logs_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_main_window_logs_failure(caplog: pytest.LogCaptureFixture) -> None:
     """Return the stub ``MainWindow`` when the import raises."""
     module = importlib.import_module("pdf_toolbox.gui")
 
     def _fake_import(_name: str, _package: str | None = None) -> ModuleType:
         raise RuntimeError("boom")
 
-    calls: list[tuple[str, dict[str, object]]] = []
-
-    def _fake_warning(message: str, *_args: object, **kwargs: object) -> None:
-        calls.append((message, dict(kwargs)))
-
-    monkeypatch.setattr(module.logger, "warning", _fake_warning)
-
-    loaded = module._load_main_window(_fake_import)
+    caplog.clear()
+    pdf_logger = logging.getLogger("pdf_toolbox")
+    pdf_logger.addHandler(caplog.handler)
+    caplog.set_level(logging.WARNING, logger="pdf_toolbox")
+    try:
+        loaded = module._load_main_window(_fake_import)
+    finally:
+        pdf_logger.removeHandler(caplog.handler)
 
     assert loaded is module._StubMainWindow
-    assert calls
-    assert calls[-1][0] == "MainWindow stub import failed"
-    assert isinstance(calls[-1][1].get("exc_info"), tuple)
+    assert any(
+        record.getMessage() == "MainWindow stub import failed" and record.exc_info
+        for record in caplog.records
+    )
 
 
 def test_gui_main_uses_sys_argv(monkeypatch: pytest.MonkeyPatch) -> None:

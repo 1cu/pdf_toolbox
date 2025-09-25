@@ -56,8 +56,8 @@
 | tests/gui/test_widgets.py:204                    | N802                         | stub mirrors Qt event API                                             | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
 | tests/test_gui_import.py:111                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
-| tests/test_gui_import.py:238                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
-| tests/test_gui_import.py:243                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
+| tests/test_gui_import.py:240                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
+| tests/test_gui_import.py:245                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_pptx_ms_office_renderer.py:22         | N802                         | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:26         | N802                         | mirror COM method name                                                | -        |
 | tests/test_pptx_ms_office_renderer.py:47         | N802                         | COM style method name                                                 | -        |

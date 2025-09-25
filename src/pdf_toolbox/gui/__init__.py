@@ -68,7 +68,7 @@ def _load_qt(
 
 def _load_main_window(
     import_module: ImportModule = importlib.import_module,
-) -> type[_StubMainWindow]:
+) -> type[Any]:
     """Resolve the GUI ``MainWindow`` class, falling back to a stub when Qt is missing."""
     try:
         module = import_module("pdf_toolbox.gui.main_window")
@@ -94,7 +94,7 @@ QApplication: type[Any] | None = (
 if TYPE_CHECKING:
     from pdf_toolbox.gui.main_window import MainWindow as MainWindow
 else:
-    MainWindow = _load_main_window()
+    MainWindow: type[Any] = _load_main_window()
 
 
 def main() -> None:
