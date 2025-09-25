@@ -39,6 +39,7 @@ This document reviews every entry in [`DEVELOPMENT_EXCEPTIONS.md`](../DEVELOPMEN
 
 - **L36 – `type: ignore[override]`**: Replace inheritance from `QObject` with composition. Create a `QtLogEmitter(QObject)` helper that exposes the signal, and let the handler delegate to it. The handler keeps the `logging.Handler` signature, removing the override conflict.
 - **L76, L81, L99 – `N802`**: Similar to the main window, add snake_case delegators or mark the overrides with `typing_extensions.override` once available to Ruff so the camelCase method names are recognised as intentional.
+- **Status (2025-09)**: Verified that `tests/gui/test_widgets.py::test_qt_log_handler_appends_and_calls_update` covers the log emission branch, so the historical `# pragma: no cover` on `QtLogHandler.emit` remains unnecessary.
 
 ### `src/pdf_toolbox/miro.py`
 
