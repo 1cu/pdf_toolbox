@@ -15,6 +15,7 @@ from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.utils import logger
 
 _REGISTRY: dict[str, type[BasePptxRenderer]] = {}
+_INSTANCE_CACHE: dict[type[BasePptxRenderer], BasePptxRenderer] = {}
 _ENTRY_POINT_STATE = {"loaded": False}
 _ENTRY_POINT_GROUP = "pdf_toolbox.pptx_renderers"
 _AUTO_PRIORITY = ("ms_office", "http_office")
@@ -51,6 +52,7 @@ def register(renderer_cls: type[BasePptxRenderer]) -> type[BasePptxRenderer]:
         raise ValueError(msg)
 
     _REGISTRY[key] = renderer_cls
+    _INSTANCE_CACHE.pop(renderer_cls, None)
     return renderer_cls
 
 
@@ -70,7 +72,7 @@ def available_renderers() -> list[str]:
 
     names: list[str] = []
     for key, renderer_cls in _REGISTRY.items():
-        _instance, can_handle = _assess_renderer(renderer_cls)
+        _instance, can_handle = _assess_renderer(renderer_cls, use_cache=False)
         if can_handle:
             names.append(key)
     return names
@@ -273,33 +275,51 @@ def _evaluate_can_handle(
 
 def _assess_renderer(
     renderer_cls: type[BasePptxRenderer],
+    *,
+    use_cache: bool,
 ) -> tuple[BasePptxRenderer | None, bool]:
     """Return an instance and whether ``renderer_cls`` can handle rendering."""
-    instance: BasePptxRenderer | None = None
+    if use_cache:
+        cached = _INSTANCE_CACHE.get(renderer_cls)
+        if cached is not None:
+            return cached, True
 
+    instance: BasePptxRenderer | None = None
     candidate: Any | None = getattr(renderer_cls, "can_handle", None)
     if candidate is None:
         instance = _ensure_instance(renderer_cls, instance)
         if instance is None:
+            _INSTANCE_CACHE.pop(renderer_cls, None)
             return None, False
+        if use_cache:
+            _INSTANCE_CACHE[renderer_cls] = instance
         return instance, True
 
     available, instance = _evaluate_can_handle(renderer_cls, candidate, instance)
     if not available:
+        _INSTANCE_CACHE.pop(renderer_cls, None)
         return None, False
 
     instance = _ensure_instance(renderer_cls, instance)
     if instance is None:
+        _INSTANCE_CACHE.pop(renderer_cls, None)
         return None, False
+
+    if use_cache:
+        _INSTANCE_CACHE[renderer_cls] = instance
     return instance, True
 
 
-def _resolve_renderer(name: str) -> BasePptxRenderer | None:
+def _resolve_renderer(
+    name: str,
+    *,
+    use_cache: bool,
+) -> BasePptxRenderer | None:
     """Return an instantiated renderer for ``name`` when available."""
     renderer_cls = _REGISTRY.get(name)
     if renderer_cls is None:
         return None
-    instance, available = _assess_renderer(renderer_cls)
+    instance, available = _assess_renderer(renderer_cls, use_cache=use_cache)
     if not available:
         return None
     return instance
@@ -316,13 +336,13 @@ def select(name: str) -> BasePptxRenderer | None:
     if lookup == "auto":
         for candidate in _AUTO_PRIORITY:
             _ensure_builtin_registered(candidate)
-            renderer = _resolve_renderer(candidate)
+            renderer = _resolve_renderer(candidate, use_cache=False)
             if renderer is not None:
                 return renderer
         return None
 
     _ensure_builtin_registered(lookup)
-    return _resolve_renderer(lookup)
+    return _resolve_renderer(lookup, use_cache=True)
 
 
 def ensure(name: str | None = None) -> BasePptxRenderer:

@@ -10,9 +10,14 @@ import pytest
 pytest.importorskip("PySide6.QtWidgets")
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QPlainTextEdit
 
-from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
+from pdf_toolbox.gui.widgets import (
+    ClickableLabel,
+    FileEdit,
+    LogDisplay,
+    LogEntry,
+    QtLogHandler,
+)
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 
@@ -224,18 +229,20 @@ def test_clickable_label_emits_signal(qtbot) -> None:
 
 def test_qt_log_handler_appends_and_calls_update(qtbot) -> None:
     """Log messages surface in the widget and trigger callbacks."""
-    widget = QPlainTextEdit()
+    widget = LogDisplay()
     widget.setVisible(False)
-    updates: list[str] = []
-    handler = QtLogHandler(widget, lambda: updates.append(widget.toPlainText()))
+    updates: list[list[LogEntry]] = []
+    handler = QtLogHandler(widget, lambda: updates.append(widget.entries()))
 
     record = logging.makeLogRecord(
         {"msg": "Hello", "levelno": logging.INFO, "levelname": "INFO"}
     )
     handler.emit(record)
 
-    qtbot.waitUntil(lambda: "Hello" in widget.toPlainText())
+    qtbot.waitUntil(
+        lambda: widget.entries() and widget.entries()[-1].message == "Hello"
+    )
 
     assert widget.isVisible()
     assert updates
-    assert widget.toPlainText().rstrip().endswith("Hello")
+    assert widget.entries()[-1].message == "Hello"

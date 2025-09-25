@@ -925,7 +925,8 @@ def test_on_finished_handles_iterable_results(qtbot) -> None:
     try:
         window.log.clear()
         window.on_finished(["one", "two"])
-        assert "one\ntwo" in window.log.toPlainText()
+        assert window.log.entries()
+        assert window.log.entries()[-1].message == "one\ntwo"
         assert window.status_key == "done"
     finally:
         window.close()
@@ -935,10 +936,65 @@ def test_on_finished_appends_existing_log(qtbot) -> None:
     """Existing log text is preserved when new results arrive."""
     window = _make_window(qtbot)
     try:
-        window.log.setPlainText("baseline")
+        window.log.add_entry("baseline", level="INFO", source="test")
         window.on_finished("extra")
-        assert "baseline" in window.log.toPlainText()
-        assert "extra" in window.log.toPlainText()
+        messages = [entry.message for entry in window.log.entries()]
+        assert "baseline" in messages[0]
+        assert messages[-1] == "extra"
+    finally:
+        window.close()
+
+
+def test_on_finished_shows_open_output_button(
+    monkeypatch: pytest.MonkeyPatch, qtbot, tmp_path: Path
+) -> None:
+    """Successful runs expose a shortcut to the output directory."""
+    import pdf_toolbox.gui.main_window as mw
+
+    output_file = tmp_path / "result.pdf"
+    output_file.write_text("content")
+
+    urls: list[QUrl] = []
+
+    def fake_open(url: QUrl) -> bool:
+        urls.append(url)
+        return True
+
+    monkeypatch.setattr(mw.QDesktopServices, "openUrl", fake_open)
+
+    window = _make_window(qtbot)
+    try:
+        window.on_finished(str(output_file))
+        assert window.open_output_btn.isVisible()
+        assert window.open_output_btn.isEnabled()
+        window.on_open_output()
+    finally:
+        window.close()
+
+    assert urls
+    assert urls[0].toLocalFile() == str(output_file.parent.resolve())
+
+
+def test_on_finished_hides_output_button_for_missing_files(qtbot) -> None:
+    """Non-existent outputs do not surface the quick access button."""
+    window = _make_window(qtbot)
+    try:
+        window.on_finished("/nonexistent/path/file.txt")
+        assert not window.open_output_btn.isVisible()
+    finally:
+        window.close()
+
+
+def test_on_error_clears_output_targets(qtbot, tmp_path: Path) -> None:
+    """Errors reset any previously collected output locations."""
+    window = _make_window(qtbot)
+    try:
+        existing = tmp_path / "file.txt"
+        existing.write_text("x")
+        window.on_finished(str(existing))
+        assert window.open_output_btn.isVisible()
+        window.on_error("boom")
+        assert not window.open_output_btn.isVisible()
     finally:
         window.close()
 
@@ -947,10 +1003,12 @@ def test_on_error_appends_existing_log(qtbot) -> None:
     """Error messages append when log output already exists."""
     window = _make_window(qtbot)
     try:
-        window.log.setPlainText("baseline")
+        window.log.add_entry("baseline", level="INFO", source="test")
         window.on_error("failure")
         assert window.log.isVisible()
-        assert window.log.toPlainText().endswith("baseline\nfailure")
+        messages = [entry.message for entry in window.log.entries()]
+        assert messages[-2] == "baseline"
+        assert messages[-1] == "failure"
     finally:
         window.close()
 
@@ -1166,7 +1224,8 @@ def test_format_error_message_plain_string(qtbot) -> None:
     window = _make_window(qtbot)
     try:
         window.on_error("plain failure")
-        assert window.log.toPlainText().strip().endswith("plain failure")
+        assert window.log.entries()
+        assert window.log.entries()[-1].message == "plain failure"
     finally:
         window.close()
 

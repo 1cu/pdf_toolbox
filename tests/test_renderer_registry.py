@@ -33,6 +33,7 @@ def _reset_registry(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(registry, "_REGISTRY", {})
     monkeypatch.setitem(registry._ENTRY_POINT_STATE, "loaded", True)
     monkeypatch.setattr(registry, "_BUILTIN_MODULES", {})
+    monkeypatch.setattr(registry, "_INSTANCE_CACHE", {})
 
 
 def test_register_and_available(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -390,6 +391,52 @@ def test_assess_renderer_handles_can_handle_exception(
 
     registry.register(ExplodingRenderer)
     assert registry.available_renderers() == []
+
+
+def test_select_caches_successful_assessment(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+
+    calls: list[int] = [0]
+
+    class CachingRenderer(_BaseStub):
+        name = "caching"
+
+        @classmethod
+        def can_handle(cls) -> bool:
+            calls[0] += 1
+            return True
+
+    registry.register(CachingRenderer)
+
+    first = registry.select("caching")
+    assert isinstance(first, CachingRenderer)
+    assert calls == [1]
+
+    second = registry.select("caching")
+    assert second is first
+    assert calls == [1]
+
+
+def test_select_retries_failed_assessment(monkeypatch: pytest.MonkeyPatch) -> None:
+    _reset_registry(monkeypatch)
+
+    calls: list[int] = [0]
+
+    class FailingRenderer(_BaseStub):
+        name = "failing"
+
+        @classmethod
+        def can_handle(cls) -> bool:
+            calls[0] += 1
+            return False
+
+    registry.register(FailingRenderer)
+
+    assert registry.select("failing") is None
+    assert calls == [1]
+
+    assert registry.select("failing") is None
+    assert calls == [2]
 
 
 def test_ensure_error_messages(monkeypatch: pytest.MonkeyPatch) -> None:

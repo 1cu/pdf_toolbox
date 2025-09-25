@@ -6,9 +6,10 @@ import html
 import inspect
 import sys
 import types
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from importlib import metadata
+from pathlib import Path
 from typing import Any, Literal, Union, get_args, get_origin
 
 from PySide6.QtCore import Qt, QUrl
@@ -28,7 +29,6 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenu,
     QMessageBox,
-    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QSpinBox,
@@ -42,7 +42,7 @@ from PySide6.QtWidgets import (
 
 from pdf_toolbox.actions import Action, Param
 from pdf_toolbox.config import CONFIG_PATH, load_config, save_config
-from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, QtLogHandler
+from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, LogDisplay, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
             "options.quality",
         }
         self.worker: Worker | None = None
+        self._output_targets: list[Path] = []
         self.resize(900, 480)
         self.base_height = self.height()
 
@@ -159,10 +160,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(splitter)
         bottom = QHBoxLayout()
         layout.addLayout(bottom)
-        self.log = QPlainTextEdit()
-        self.log.setReadOnly(True)
+        self.log = LogDisplay()
         self.log.setVisible(False)
-        self.log.setMaximumBlockCount(10)
+        self.log.set_maximum_entries(200)
         self.log.setFixedHeight(self.log.fontMetrics().height() * 10 + 10)
         layout.addWidget(self.log)
         self.status_key = "ready"
@@ -199,6 +199,13 @@ class MainWindow(QMainWindow):
         self.run_btn = QPushButton(tr("start"))
         self.progress = QProgressBar()
         self.status = ClickableLabel("")
+        self.open_output_btn = QPushButton(tr("open_output_location"))
+        self.open_output_btn.setAutoDefault(False)
+        self.open_output_btn.setDefault(False)
+        self.open_output_btn.setEnabled(False)
+        self.open_output_btn.setVisible(False)
+        self.open_output_btn.clicked.connect(self.on_open_output)
+        bottom.addWidget(self.open_output_btn)
         bottom.addWidget(self.status)
         bottom.addWidget(self.progress, 1)
         bottom.addWidget(self.run_btn)
@@ -611,6 +618,68 @@ class MainWindow(QMainWindow):
         choice = str(raw if raw else "auto").strip() or "auto"
         return pptx_registry.select(choice)
 
+    def _result_to_text(self, result: object) -> str | None:
+        """Render *result* as plain text for the log panel."""
+        if result is None:
+            return None
+        if isinstance(result, list | tuple | set):
+            return "\n".join(map(str, result))
+        return str(result)
+
+    def _extract_output_paths(self, result: object) -> list[Path]:
+        """Return filesystem paths referenced by *result*."""
+        candidates: list[str] = []
+        if isinstance(result, list | tuple | set):
+            for item in result:
+                if isinstance(item, Path):
+                    candidates.append(str(item))
+                elif isinstance(item, str):
+                    candidates.extend(
+                        line.strip() for line in item.splitlines() if line.strip()
+                    )
+        elif isinstance(result, Path):
+            candidates.append(str(result))
+        elif isinstance(result, str):
+            candidates.extend(
+                line.strip() for line in result.splitlines() if line.strip()
+            )
+
+        paths: list[Path] = []
+        for item in candidates:
+            path = Path(item)
+            try:
+                resolved = path.resolve()
+            except OSError:
+                continue
+            if resolved.exists():
+                paths.append(resolved)
+        return paths
+
+    def _set_output_targets(self, paths: Iterable[Path]) -> None:
+        """Show or hide the output button for *paths*."""
+        valid: list[Path] = []
+        for path in paths:
+            try:
+                resolved = path.resolve()
+            except OSError:
+                continue
+            if resolved.exists():
+                valid.append(resolved)
+        self._output_targets = valid
+        has_targets = bool(valid)
+        self.open_output_btn.setVisible(has_targets)
+        self.open_output_btn.setEnabled(has_targets)
+
+    def on_open_output(self) -> None:
+        """Open the directory containing the rendered outputs."""
+        if not self._output_targets:
+            return
+        target = self._output_targets[0]
+        open_path = target if target.is_dir() else target.parent
+        if not open_path.exists():
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(open_path)))
+
     def _set_row_visible(self, name: str, visible: bool) -> None:
         """Show or hide the form row for parameter *name*."""
         widget = self.field_rows.get(name)
@@ -657,6 +726,7 @@ class MainWindow(QMainWindow):
 
     def on_run(self) -> None:
         """Execute the current action or cancel the running worker."""
+        self._set_output_targets(())
         if not self.current_action:
             return
         try:
@@ -710,30 +780,24 @@ class MainWindow(QMainWindow):
 
         status_key = "done"
         status = tr("done")
-        text: str | None = None
-        if result is not None:
-            if isinstance(result, list | tuple):
-                text = "\n".join(map(str, result))
-            else:
-                text = str(result)
+        text = self._result_to_text(result)
+        outputs = self._extract_output_paths(result)
+        self._set_output_targets(outputs)
 
         self.update_status(status, status_key)
         if text:
             self.log.setVisible(True)
-            if self.log.toPlainText():
-                self.log.appendPlainText(text)
-            else:
-                self.log.setPlainText(text)
+            source = self.current_action.name if self.current_action else ""
+            self.log.add_entry(text, level="RESULT", source=source)
         self.worker = None
 
     def on_error(self, error: object) -> None:
         """Handle errors emitted by the worker thread."""
+        self._set_output_targets(())
         message = self._format_error_message(error)
         self.log.setVisible(True)
-        if self.log.toPlainText():
-            self.log.appendPlainText(message)
-        else:
-            self.log.setPlainText(message)
+        source = self.current_action.name if self.current_action else ""
+        self.log.add_entry(message, level="ERROR", source=source)
         self.progress.setRange(0, 1)
         self.progress.setValue(0)
         self.run_btn.setText(tr("start"))
