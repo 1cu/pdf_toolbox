@@ -414,7 +414,7 @@ def test_select_caches_successful_assessment(monkeypatch: pytest.MonkeyPatch) ->
 
     second = registry.select("caching")
     assert second is first
-    assert calls == [1]
+    assert calls == [2]
 
 
 def test_select_retries_failed_assessment(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -279,29 +279,36 @@ def _assess_renderer(
     use_cache: bool,
 ) -> tuple[BasePptxRenderer | None, bool]:
     """Return an instance and whether ``renderer_cls`` can handle rendering."""
+    cached_instance: BasePptxRenderer | None = None
     if use_cache:
-        cached = _INSTANCE_CACHE.get(renderer_cls)
-        if cached is not None:
-            return cached, True
+        cached_instance = _INSTANCE_CACHE.get(renderer_cls)
 
-    instance: BasePptxRenderer | None = None
     candidate: Any | None = getattr(renderer_cls, "can_handle", None)
-    if candidate is None:
-        instance = _ensure_instance(renderer_cls, instance)
-        if instance is None:
+    if cached_instance is not None:
+        if candidate is None:
+            return cached_instance, True
+        available, validated = _evaluate_can_handle(
+            renderer_cls, candidate, cached_instance
+        )
+        if not available:
             _INSTANCE_CACHE.pop(renderer_cls, None)
             return None, False
-        if use_cache:
-            _INSTANCE_CACHE[renderer_cls] = instance
-        return instance, True
+        chosen = validated or cached_instance
+        _INSTANCE_CACHE[renderer_cls] = chosen
+        return chosen, True
 
-    available, instance = _evaluate_can_handle(renderer_cls, candidate, instance)
-    if not available:
-        _INSTANCE_CACHE.pop(renderer_cls, None)
-        return None, False
+    instance: BasePptxRenderer | None = None
+    available = True
 
-    instance = _ensure_instance(renderer_cls, instance)
-    if instance is None:
+    if candidate is None:
+        instance = _ensure_instance(renderer_cls, None)
+        available = instance is not None
+    else:
+        available, instance = _evaluate_can_handle(renderer_cls, candidate, None)
+        if available:
+            instance = _ensure_instance(renderer_cls, instance)
+
+    if not available or instance is None:
         _INSTANCE_CACHE.pop(renderer_cls, None)
         return None, False
 

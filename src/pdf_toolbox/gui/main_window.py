@@ -940,6 +940,7 @@ class MainWindow(QMainWindow):
             self.action_about.setText(tr("about"))
             self.banner_label.setText(tr("pptx_banner_message"))
             self.banner_button.setText(tr("pptx_open_docs"))
+            self.open_output_btn.setText(tr("open_output_location"))
             self.tree.clear()
             self._populate_actions()
             self.update_status(tr(self.status_key), self.status_key)

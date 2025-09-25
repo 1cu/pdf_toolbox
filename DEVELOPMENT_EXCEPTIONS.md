@@ -9,10 +9,10 @@
 | src/pdf_toolbox/gui/main_window.py:533           | TRY004                       | GUI handler expects ValueError                                        | -        |
 | src/pdf_toolbox/gui/main_window.py:837           | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:38                | type: ignore[override]       | QObject method signature differs from logging.Handler.emit            | -        |
-| src/pdf_toolbox/gui/widgets.py:132               | N802                         | QSyntaxHighlighter requires camelCase hook name                       | -        |
-| src/pdf_toolbox/gui/widgets.py:295               | N802                         | Qt requires camelCase event name                                      | -        |
-| src/pdf_toolbox/gui/widgets.py:300               | N802                         | Qt requires camelCase event name                                      | -        |
-| src/pdf_toolbox/gui/widgets.py:318               | N802                         | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/widgets.py:147               | N802                         | QSyntaxHighlighter requires camelCase hook name                       | -        |
+| src/pdf_toolbox/gui/widgets.py:310               | N802                         | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/widgets.py:315               | N802                         | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/widgets.py:333               | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/miro.py:715                      | PLR0913                      | export pipeline exposes optional tuning knobs                         | -        |
 | src/pdf_toolbox/renderers/\_requests_types.py:28 | PLR0913                      | mirror requests.post signature for accuracy                           | -        |
 | src/pdf_toolbox/renderers/registry.py:85         | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
@@ -32,13 +32,13 @@
 | tests/gui/test_main_window.py:746                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
 | tests/gui/test_main_window.py:750                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
 | tests/gui/test_main_window.py:1238               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
-| tests/gui/test_widgets.py:129                    | N802                         | stub mirrors Qt URL API                                               | -        |
-| tests/gui/test_widgets.py:136                    | N802                         | stub mirrors Qt MIME API                                              | -        |
-| tests/gui/test_widgets.py:147                    | N802                         | stub mirrors Qt event API                                             | -        |
-| tests/gui/test_widgets.py:150                    | N802                         | stub mirrors Qt event API                                             | -        |
-| tests/gui/test_widgets.py:192                    | N802                         | stub mirrors Qt URL API                                               | -        |
-| tests/gui/test_widgets.py:199                    | N802                         | stub mirrors Qt MIME API                                              | -        |
-| tests/gui/test_widgets.py:209                    | N802                         | stub mirrors Qt event API                                             | -        |
+| tests/gui/test_widgets.py:130                    | N802                         | stub mirrors Qt URL API                                               | -        |
+| tests/gui/test_widgets.py:137                    | N802                         | stub mirrors Qt MIME API                                              | -        |
+| tests/gui/test_widgets.py:148                    | N802                         | stub mirrors Qt event API                                             | -        |
+| tests/gui/test_widgets.py:151                    | N802                         | stub mirrors Qt event API                                             | -        |
+| tests/gui/test_widgets.py:193                    | N802                         | stub mirrors Qt URL API                                               | -        |
+| tests/gui/test_widgets.py:200                    | N802                         | stub mirrors Qt MIME API                                              | -        |
+| tests/gui/test_widgets.py:210                    | N802                         | stub mirrors Qt event API                                             | -        |
 | tests/gui/test_worker.py:40                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
 | tests/test_gui_import.py:111                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:240                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |

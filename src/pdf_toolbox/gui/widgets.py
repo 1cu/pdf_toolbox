@@ -39,11 +39,26 @@ class QtLogHandler(QObject, logging.Handler):
         """Forward a log record to the GUI thread."""
         self.message.emit(record)
 
+    def _format_record_message(self, record: logging.LogRecord) -> str:
+        """Return the log *record* message including exception details."""
+        message = record.getMessage()
+        formatter = self.formatter or logging.Formatter()
+        exc_text = getattr(record, "exc_text", None)
+        if record.exc_info and not exc_text:
+            exc_text = formatter.formatException(record.exc_info)
+        if exc_text:
+            message = f"{message}\n{exc_text}" if message else exc_text
+        if record.stack_info:
+            stack_text = formatter.formatStack(record.stack_info)
+            if stack_text:
+                message = f"{message}\n{stack_text}" if message else stack_text
+        return message
+
     def _append(self, record: logging.LogRecord) -> None:
         self.widget.setVisible(True)
         if isinstance(self.widget, LogDisplay):
             self.widget.add_entry(
-                record.getMessage(),
+                self._format_record_message(record),
                 level=record.levelname,
                 source=record.name,
                 timestamp=datetime.fromtimestamp(record.created),

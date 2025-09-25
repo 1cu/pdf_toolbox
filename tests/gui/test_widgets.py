@@ -246,3 +246,35 @@ def test_qt_log_handler_appends_and_calls_update(qtbot) -> None:
     assert widget.isVisible()
     assert updates
     assert widget.entries()[-1].message == "Hello"
+
+
+def test_qt_log_handler_preserves_exception_traces(qtbot) -> None:
+    """Exception tracebacks remain attached to structured log entries."""
+    widget = LogDisplay()
+    widget.setVisible(False)
+    handler = QtLogHandler(widget, lambda: None)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        raise RuntimeError("boom")
+
+    record = logging.makeLogRecord(
+        {
+            "msg": "failure",
+            "levelno": logging.ERROR,
+            "levelname": "ERROR",
+            "name": "tests.gui.widgets",
+            "exc_info": (
+                RuntimeError,
+                excinfo.value,
+                excinfo.value.__traceback__,
+            ),
+        }
+    )
+
+    handler.emit(record)
+
+    qtbot.waitUntil(lambda: bool(widget.entries()))
+
+    message = widget.entries()[-1].message
+    assert "failure" in message
+    assert "RuntimeError: boom" in message
