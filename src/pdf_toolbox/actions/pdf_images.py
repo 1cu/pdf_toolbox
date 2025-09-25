@@ -508,23 +508,27 @@ def _render_raster_page(
     }
     if plan.max_size_mb is None:
         logger.info(
-            "Page %d rendered %s to %s (%.1f kB)",
+            "Saved page %d to %s (%.1f kB)",
             page_no,
-            detail_str,
             str(out_path),
             size_out,
             extra=log_extra,
         )
     else:
         logger.info(
-            "Page %d saved %s within %.2f MB limit to %s (%.1f kB)",
+            "Saved page %d to %s within %.2f MB limit (%.1f kB)",
             page_no,
-            detail_str,
-            plan.max_size_mb,
             str(out_path),
+            plan.max_size_mb,
             size_out,
             extra=log_extra,
         )
+    logger.debug(
+        "Page %d render details: %s",
+        page_no,
+        detail_str,
+        extra={**log_extra, "details": detail_str},
+    )
     return str(out_path)
 
 
@@ -619,25 +623,32 @@ def pdf_to_images(
         if plan.batch_size:
             detail_parts.append(f"batch_size={plan.batch_size}")
         detail_str = ", ".join(detail_parts)
+        log_extra = {
+            "input": input_pdf,
+            "output_dir": str(plan.out_dir),
+            "pages": plan.page_numbers,
+            "page_count": doc.page_count,
+            "image_format": plan.image_format,
+            "dpi": plan.dpi,
+            "quality": plan.quality,
+            "max_size_mb": plan.max_size_mb,
+            "target_width": opts.width,
+            "target_height": opts.height,
+            "batch_size": plan.batch_size,
+        }
         logger.info(
-            "Rendering %d page(s) from %s to %s (%s)",
+            "Rendering %d page(s) from %s to %s as %s",
             len(plan.page_numbers),
             input_pdf,
             plan.out_dir,
+            plan.image_format,
+            extra=log_extra,
+        )
+        logger.debug(
+            "Render plan for %s: %s",
+            input_pdf,
             detail_str,
-            extra={
-                "input": input_pdf,
-                "output_dir": str(plan.out_dir),
-                "pages": plan.page_numbers,
-                "page_count": doc.page_count,
-                "image_format": plan.image_format,
-                "dpi": plan.dpi,
-                "quality": plan.quality,
-                "max_size_mb": plan.max_size_mb,
-                "target_width": opts.width,
-                "target_height": opts.height,
-                "batch_size": plan.batch_size,
-            },
+            extra={**log_extra, "render_plan": detail_str},
         )
         return _render_batches(
             doc,

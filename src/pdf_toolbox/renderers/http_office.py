@@ -350,22 +350,33 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
                 code="backend_crashed",
             )
 
+        log_extra = {
+            "renderer": self.name,
+            "mode": context.mode,
+            "endpoint": context.endpoint,
+            "bytes": written,
+            "source": str(source),
+            "destination": str(destination),
+            "timeout_s": context.timeout_s,
+            "verify_tls": context.verify_tls,
+            "field": context.field,
+        }
         logger.info(
-            "Rendered %s via HTTP provider to %s (%.1f kB)",
+            "Rendered %s to %s via HTTP provider (%.1f kB)",
             source,
             destination,
             written / 1024,
-            extra={
-                "renderer": self.name,
-                "mode": context.mode,
-                "endpoint": context.endpoint,
-                "bytes": written,
-                "source": str(source),
-                "destination": str(destination),
-                "timeout_s": context.timeout_s,
-                "verify_tls": context.verify_tls,
-                "field": context.field,
-            },
+            extra=log_extra,
+        )
+        logger.debug(
+            "HTTP provider context for %s: mode=%s, endpoint=%s, timeout=%s, verify_tls=%s, field=%s",
+            source,
+            context.mode,
+            context.endpoint,
+            context.timeout_s,
+            context.verify_tls,
+            context.field,
+            extra=log_extra,
         )
 
         return str(destination)
