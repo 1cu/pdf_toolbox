@@ -8,8 +8,13 @@ os.environ.setdefault("QT_OPENGL", "software")
 
 import pytest
 
-from pdf_toolbox.gui.main_window import MainWindow
-from pdf_toolbox.gui.widgets import LogDisplay
+try:
+    from pdf_toolbox.gui.main_window import MainWindow
+    from pdf_toolbox.gui.widgets import LogDisplay
+except (
+    ImportError
+):  # pragma: no cover  # pdf-toolbox: skip smoke test when PySide6 missing | issue:-
+    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 

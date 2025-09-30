@@ -6,8 +6,12 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("PySide6.QtWidgets")
-from PySide6.QtCore import Qt
+try:
+    from PySide6.QtCore import Qt
+except (
+    ModuleNotFoundError
+):  # pragma: no cover  # pdf-toolbox: skip GUI tests when PySide6 missing | issue:-
+    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
 
 from pdf_toolbox import gui
 

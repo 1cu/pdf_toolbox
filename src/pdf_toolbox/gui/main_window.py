@@ -94,15 +94,29 @@ class ComboBoxWithSpin:
     spin_box: QSpinBox
 
 
-WidgetValue = (
-    QLineEdit
-    | QComboBox
-    | QCheckBox
-    | QSpinBox
-    | QDoubleSpinBox
-    | FileEdit
-    | ComboBoxWithSpin
+type WidgetValue = (
+    QLineEdit | QComboBox | QCheckBox | QSpinBox | QDoubleSpinBox | FileEdit | ComboBoxWithSpin
 )
+
+
+@dataclass
+class _HttpWidgets:
+    group: QGroupBox
+    type_combo: QComboBox
+    endpoint: QLineEdit
+    timeout: QDoubleSpinBox
+    verify: QCheckBox
+    header_name: QLineEdit
+    header_value: QLineEdit
+    original_header_key: str | None
+
+
+@dataclass
+class _RendererDialogState:
+    dialog: QDialog
+    combo: QComboBox
+    http_cfg: dict[str, object]
+    http_widgets: _HttpWidgets
 
 
 class MainWindow(QMainWindow):
@@ -145,9 +159,7 @@ class MainWindow(QMainWindow):
         banner_layout.setSpacing(8)
         self.banner_label = QLabel(tr("pptx_banner_message"))
         self.banner_label.setWordWrap(True)
-        self.banner_label.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
+        self.banner_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         banner_layout.addWidget(self.banner_label, 1)
         self.banner_button = QPushButton(tr("pptx_open_docs"))
         self.banner_button.setAutoDefault(False)
@@ -190,9 +202,7 @@ class MainWindow(QMainWindow):
 
         self.form_widget = QWidget()
         self.form_layout = QFormLayout(self.form_widget)
-        self.form_layout.setFieldGrowthPolicy(
-            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
-        )
+        self.form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         splitter.addWidget(self.form_widget)
         splitter.setSizes([250, 650])
 
@@ -215,19 +225,13 @@ class MainWindow(QMainWindow):
         self.settings_btn.setText("⚙")
         settings_menu = QMenu(self)
         self.action_author = settings_menu.addAction(tr("author"), self.on_author)
-        self.action_log_level = settings_menu.addAction(
-            tr("log_level"), self.on_log_level
-        )
+        self.action_log_level = settings_menu.addAction(tr("log_level"), self.on_log_level)
         self.action_language = settings_menu.addAction(tr("language"), self.on_language)
-        self.action_renderer = settings_menu.addAction(
-            "PPTX Renderer", self.on_pptx_renderer
-        )
+        self.action_renderer = settings_menu.addAction("PPTX Renderer", self.on_pptx_renderer)
         cfg_menu = settings_menu.addMenu(tr("settings_file"))
         cfg_menu.addAction(
             tr("open_folder"),
-            lambda: QDesktopServices.openUrl(
-                QUrl.fromLocalFile(str(CONFIG_PATH.parent))
-            ),
+            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(CONFIG_PATH.parent))),
         )
         cfg_menu.addAction(
             tr("copy_path"), lambda: QApplication.clipboard().setText(str(CONFIG_PATH))
@@ -278,169 +282,18 @@ class MainWindow(QMainWindow):
             self.build_form(act)
             self.info_btn.setEnabled(bool(getattr(act, "help", "")))
 
-    def build_form(self, action: Action) -> None:  # noqa: PLR0912, PLR0915  # pdf-toolbox: dynamic form builder is inherently complex | issue:-
+    def build_form(self, action: Action) -> None:
         """Create input widgets for the given action parameters."""
-        while self.form_layout.rowCount():
-            self.form_layout.removeRow(0)
-        self.current_widgets.clear()
-        self.field_rows = {}
-        self.profile_help_label = None
-        self.profile_combo = None
-        self.banner.setVisible(False)
+        self._reset_form_state()
         profile_initial_value: str | None = None
 
-        for param in action.form_params:
-            if param.name in {"cancel", "progress_callback"}:
+        for param in self._iter_form_params(action):
+            profile_value = self._handle_profile_param(param)
+            if profile_value is not None:
+                profile_initial_value = profile_value
                 continue
-            widget: WidgetValue
-            ann = param.annotation
-            lower = param.name.lower()
-
-            if param.name == "export_profile":
-                combo_box = QComboBox()
-                combo_box.addItem(
-                    tr("gui_export_profile_custom"),
-                    userData="custom",
-                )
-                combo_box.addItem(
-                    tr("gui_export_profile_miro"),
-                    userData="miro",
-                )
-                saved = self.cfg.get("last_export_profile", "miro")
-                if saved not in {"custom", "miro"}:
-                    saved = "miro"
-                index = combo_box.findData(saved)
-                combo_box.setCurrentIndex(max(index, 0))
-                combo_box.currentIndexChanged.connect(
-                    lambda _idx, combo=combo_box: self._apply_profile_ui(
-                        combo.currentData() or combo.currentText()
-                    )
-                )
-                help_label = QLabel(tr("gui_export_profile_miro_help"))
-                help_label.setWordWrap(True)
-                help_label.setVisible(False)
-                self.form_layout.addRow(tr("gui_export_profile_label"), combo_box)
-                self.form_layout.addRow("", help_label)
-                self.current_widgets[param.full_name] = combo_box
-                self.profile_help_label = help_label
-                self.profile_combo = combo_box
-                self._remember_field(param.full_name, combo_box)
-                profile_initial_value = (
-                    combo_box.currentData() or combo_box.currentText()
-                )
-                continue
-
-            union_type = getattr(types, "UnionType", None)
-            if get_origin(ann) in (Union, union_type) and int in get_args(ann):
-                literal = next(
-                    (
-                        arg
-                        for arg in get_args(ann)
-                        if getattr(arg, "__origin__", None) is Literal
-                    ),
-                    None,
-                )
-                if literal:
-                    combo_box = QComboBox()
-                    spin_box = QSpinBox()
-                    spin_box.setMinimum(0)
-                    spin_box.setMaximum(10_000)
-                    choices = list(get_args(literal))
-                    for ch in choices:
-                        combo_box.addItem(str(ch), ch)
-                    combo_box.addItem(tr("gui_custom"), _CUSTOM_CHOICE_SENTINEL)
-                    if isinstance(param.default, str) and param.default in choices:
-                        idx = combo_box.findData(param.default)
-                        combo_box.setCurrentIndex(max(idx, 0))
-                        spin_box.setVisible(False)
-                    elif isinstance(param.default, int):
-                        idx = combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
-                        combo_box.setCurrentIndex(max(idx, 0))
-                        spin_box.setValue(param.default)
-                        spin_box.setVisible(True)
-                    else:
-                        spin_box.setVisible(
-                            combo_box.currentData() == _CUSTOM_CHOICE_SENTINEL
-                        )
-                    combo_box.currentIndexChanged.connect(
-                        lambda _i, cb=combo_box, sb=spin_box: sb.setVisible(
-                            cb.currentData() == _CUSTOM_CHOICE_SENTINEL
-                        )
-                    )
-                    widget = ComboBoxWithSpin(combo_box=combo_box, spin_box=spin_box)
-                else:
-                    spin_box = QSpinBox()
-                    spin_box.setMinimum(0)
-                    spin_box.setMaximum(10_000)
-                    if isinstance(param.default, int):
-                        spin_box.setValue(param.default)
-                    widget = spin_box
-            elif getattr(ann, "__origin__", None) is Literal:
-                combo_box = QComboBox()
-                choices = list(get_args(ann))
-                combo_box.addItems(choices)
-                if isinstance(param.default, str) and param.default in choices:
-                    combo_box.setCurrentText(param.default)
-                widget = combo_box
-            elif lower in {
-                "input_pdf",
-                "input_pptx",
-                "input_path",
-                "pptx_path",
-                "path",
-            }:
-                widget = FileEdit(self.cfg)
-            elif lower in {"out_dir", "output_dir"}:
-                widget = FileEdit(self.cfg, directory=True)
-            elif lower in {"paths", "files"}:
-                widget = FileEdit(self.cfg, multi=True)
-            elif lower in {"max_size_mb"}:
-                double_spin = QDoubleSpinBox()
-                double_spin.setMinimum(0)
-                double_spin.setMaximum(10_000)
-                widget = double_spin
-            elif lower in {"split_pages", "pages_per_file"}:
-                spin_box = QSpinBox()
-                spin_box.setMinimum(1)
-                spin_box.setMaximum(9999)
-                spin_box.setValue(int(self.cfg.get("split_pages", 1)))
-                widget = spin_box
-            elif isinstance(param.default, bool):
-                check_box = QCheckBox()
-                check_box.setChecked(bool(param.default))
-                widget = check_box
-            else:
-                widget = QLineEdit()
-
-            # Wrap composite/file widgets in a container with a button/row
-            field_widget: QWidget
-            if isinstance(widget, ComboBoxWithSpin):
-                container = QWidget()
-                layout = QHBoxLayout(container)
-                layout.setContentsMargins(0, 0, 0, 0)
-                layout.addWidget(widget.combo_box)
-                layout.addWidget(widget.spin_box)
-                layout.setStretch(0, 1)
-                self.form_layout.addRow(self._pretty_label(param.name), container)
-                field_widget = container
-            elif isinstance(widget, FileEdit):
-                container = QWidget()
-                layout = QHBoxLayout(container)
-                layout.setContentsMargins(0, 0, 0, 0)
-                widget.setMinimumWidth(400)
-                layout.addWidget(widget)
-                btn = QPushButton("...")
-                btn.clicked.connect(widget.browse)
-                layout.addWidget(btn)
-                layout.setStretch(0, 1)
-                self.form_layout.addRow(self._pretty_label(param.name), container)
-                field_widget = container
-            else:
-                self.form_layout.addRow(
-                    self._pretty_label(param.name),
-                    widget,
-                )
-                field_widget = widget
+            widget = self._create_widget_for_param(param)
+            field_widget = self._add_field_to_layout(param, widget)
             self.current_widgets[param.full_name] = widget
             self._remember_field(param.full_name, field_widget)
 
@@ -448,9 +301,179 @@ class MainWindow(QMainWindow):
             self._apply_profile_ui(profile_initial_value, persist=False)
 
         provider: BasePptxRenderer | None = None
-        if self.current_action and self.current_action.requires_pptx_renderer:
+        if action.requires_pptx_renderer:
             provider = self._select_pptx_provider()
         self._update_pptx_banner(provider)
+
+    def _reset_form_state(self) -> None:
+        """Clear previously rendered widgets before rebuilding the form."""
+        while self.form_layout.rowCount():
+            self.form_layout.removeRow(0)
+        self.current_widgets.clear()
+        self.field_rows = {}
+        self.profile_help_label = None
+        self.profile_combo = None
+        self.banner.setVisible(False)
+
+    def _iter_form_params(self, action: Action) -> Iterable[Param]:
+        """Yield form parameters excluding control arguments."""
+        for param in action.form_params:
+            if param.name in {"cancel", "progress_callback"}:
+                continue
+            yield param
+
+    def _handle_profile_param(self, param: Param) -> str | None:
+        """Render the export profile selector if applicable."""
+        if param.name != "export_profile":
+            return None
+        combo_box = QComboBox()
+        combo_box.addItem(tr("gui_export_profile_custom"), userData="custom")
+        combo_box.addItem(tr("gui_export_profile_miro"), userData="miro")
+        saved = self.cfg.get("last_export_profile", "miro")
+        if saved not in {"custom", "miro"}:
+            saved = "miro"
+        index = combo_box.findData(saved)
+        combo_box.setCurrentIndex(max(index, 0))
+        combo_box.currentIndexChanged.connect(
+            lambda _idx, combo=combo_box: self._apply_profile_ui(
+                combo.currentData() or combo.currentText()
+            )
+        )
+        help_label = QLabel(tr("gui_export_profile_miro_help"))
+        help_label.setWordWrap(True)
+        help_label.setVisible(False)
+        self.form_layout.addRow(tr("gui_export_profile_label"), combo_box)
+        self.form_layout.addRow("", help_label)
+        self.current_widgets[param.full_name] = combo_box
+        self.profile_help_label = help_label
+        self.profile_combo = combo_box
+        self._remember_field(param.full_name, combo_box)
+        return combo_box.currentData() or combo_box.currentText()
+
+    def _create_widget_for_param(self, param: Param) -> WidgetValue:
+        """Return the most appropriate widget for ``param``."""
+        for factory in (
+            self._maybe_create_union_widget,
+            self._maybe_create_literal_widget,
+            self._maybe_create_file_widget,
+            self._maybe_create_numeric_widget,
+            self._maybe_create_bool_widget,
+        ):
+            widget = factory(param)
+            if widget is not None:
+                return widget
+        return QLineEdit()
+
+    def _maybe_create_union_widget(self, param: Param) -> WidgetValue | None:
+        ann = param.annotation
+        union_type = getattr(types, "UnionType", None)
+        if get_origin(ann) not in (Union, union_type) or int not in get_args(ann):
+            return None
+        literal = next(
+            (arg for arg in get_args(ann) if getattr(arg, "__origin__", None) is Literal),
+            None,
+        )
+        if literal is None:
+            spin_box = QSpinBox()
+            spin_box.setMinimum(0)
+            spin_box.setMaximum(10_000)
+            if isinstance(param.default, int):
+                spin_box.setValue(param.default)
+            return spin_box
+        combo_box = QComboBox()
+        spin_box = QSpinBox()
+        spin_box.setMinimum(0)
+        spin_box.setMaximum(10_000)
+        choices = list(get_args(literal))
+        for choice in choices:
+            combo_box.addItem(str(choice), choice)
+        combo_box.addItem(tr("gui_custom"), _CUSTOM_CHOICE_SENTINEL)
+        if isinstance(param.default, str) and param.default in choices:
+            idx = combo_box.findData(param.default)
+            combo_box.setCurrentIndex(max(idx, 0))
+            spin_box.setVisible(False)
+        elif isinstance(param.default, int):
+            idx = combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
+            combo_box.setCurrentIndex(max(idx, 0))
+            spin_box.setValue(param.default)
+            spin_box.setVisible(True)
+        else:
+            spin_box.setVisible(combo_box.currentData() == _CUSTOM_CHOICE_SENTINEL)
+        combo_box.currentIndexChanged.connect(
+            lambda _i, cb=combo_box, sb=spin_box: sb.setVisible(
+                cb.currentData() == _CUSTOM_CHOICE_SENTINEL
+            )
+        )
+        return ComboBoxWithSpin(combo_box=combo_box, spin_box=spin_box)
+
+    def _maybe_create_literal_widget(self, param: Param) -> WidgetValue | None:
+        ann = param.annotation
+        if getattr(ann, "__origin__", None) is not Literal:
+            return None
+        combo_box = QComboBox()
+        choices = list(get_args(ann))
+        combo_box.addItems(choices)
+        if isinstance(param.default, str) and param.default in choices:
+            combo_box.setCurrentText(param.default)
+        return combo_box
+
+    def _maybe_create_file_widget(self, param: Param) -> WidgetValue | None:
+        lower = param.name.lower()
+        if lower in {"input_pdf", "input_pptx", "input_path", "pptx_path", "path"}:
+            return FileEdit(self.cfg)
+        if lower in {"out_dir", "output_dir"}:
+            return FileEdit(self.cfg, directory=True)
+        if lower in {"paths", "files"}:
+            return FileEdit(self.cfg, multi=True)
+        return None
+
+    def _maybe_create_numeric_widget(self, param: Param) -> WidgetValue | None:
+        lower = param.name.lower()
+        if lower == "max_size_mb":
+            double_spin = QDoubleSpinBox()
+            double_spin.setMinimum(0)
+            double_spin.setMaximum(10_000)
+            return double_spin
+        if lower in {"split_pages", "pages_per_file"}:
+            spin_box = QSpinBox()
+            spin_box.setMinimum(1)
+            spin_box.setMaximum(9999)
+            spin_box.setValue(int(self.cfg.get("split_pages", 1)))
+            return spin_box
+        return None
+
+    def _maybe_create_bool_widget(self, param: Param) -> WidgetValue | None:
+        if isinstance(param.default, bool):
+            check_box = QCheckBox()
+            check_box.setChecked(bool(param.default))
+            return check_box
+        return None
+
+    def _add_field_to_layout(self, param: Param, widget: WidgetValue) -> QWidget:
+        """Insert ``widget`` into the form layout and return the visible QWidget."""
+        if isinstance(widget, ComboBoxWithSpin):
+            container = QWidget()
+            layout = QHBoxLayout(container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.addWidget(widget.combo_box)
+            layout.addWidget(widget.spin_box)
+            layout.setStretch(0, 1)
+            self.form_layout.addRow(self._pretty_label(param.name), container)
+            return container
+        if isinstance(widget, FileEdit):
+            container = QWidget()
+            layout = QHBoxLayout(container)
+            layout.setContentsMargins(0, 0, 0, 0)
+            widget.setMinimumWidth(400)
+            layout.addWidget(widget)
+            btn = QPushButton("...")
+            btn.clicked.connect(widget.browse)
+            layout.addWidget(btn)
+            layout.setStretch(0, 1)
+            self.form_layout.addRow(self._pretty_label(param.name), container)
+            return container
+        self.form_layout.addRow(self._pretty_label(param.name), widget)
+        return widget
 
     def collect_args(self) -> dict[str, Any]:
         """Gather user input from the form into keyword arguments."""
@@ -539,9 +562,7 @@ class MainWindow(QMainWindow):
             return int(widget.spin_box.value())
         return data if data is not None else widget.combo_box.currentText()
 
-    def _value_from_file_edit(
-        self, widget: FileEdit, optional: bool, label_key: str
-    ) -> Any:
+    def _value_from_file_edit(self, widget: FileEdit, optional: bool, label_key: str) -> Any:
         text = widget.text().strip()
         if widget.multi:
             paths = [file_path for file_path in text.split(";") if file_path]
@@ -552,9 +573,7 @@ class MainWindow(QMainWindow):
             raise self._field_empty_error(label_key)
         return text or None
 
-    def _value_from_line_edit(
-        self, widget: QLineEdit, optional: bool, label_key: str
-    ) -> Any:
+    def _value_from_line_edit(self, widget: QLineEdit, optional: bool, label_key: str) -> Any:
         value = widget.text().strip()
         if not value and not optional:
             raise self._field_empty_error(label_key)
@@ -585,9 +604,7 @@ class MainWindow(QMainWindow):
             words: list[str] = []
             for part in parts:
                 low = part.lower()
-                words.append(
-                    low.upper() if low in up else (part.capitalize() if part else part)
-                )
+                words.append(low.upper() if low in up else (part.capitalize() if part else part))
             label = " ".join(words)
         return tr(label)
 
@@ -634,15 +651,11 @@ class MainWindow(QMainWindow):
                 if isinstance(item, Path):
                     candidates.append(str(item))
                 elif isinstance(item, str):
-                    candidates.extend(
-                        line.strip() for line in item.splitlines() if line.strip()
-                    )
+                    candidates.extend(line.strip() for line in item.splitlines() if line.strip())
         elif isinstance(result, Path):
             candidates.append(str(result))
         elif isinstance(result, str):
-            candidates.extend(
-                line.strip() for line in result.splitlines() if line.strip()
-            )
+            candidates.extend(line.strip() for line in result.splitlines() if line.strip())
 
         paths: list[Path] = []
         for item in candidates:
@@ -712,11 +725,7 @@ class MainWindow(QMainWindow):
         if not self.current_action:
             return
         text = inspect.cleandoc(self.current_action.help or "No description available.")
-        html_text = (
-            "<p>"
-            + "<br>".join(html.escape(line) for line in text.splitlines())
-            + "</p>"
-        )
+        html_text = "<p>" + "<br>".join(html.escape(line) for line in text.splitlines()) + "</p>"
         msg = QMessageBox(self)
         msg.setWindowTitle(self.current_action.name)
         msg.setTextFormat(Qt.TextFormat.RichText)
@@ -747,9 +756,7 @@ class MainWindow(QMainWindow):
             return
 
         provider = (
-            self._select_pptx_provider()
-            if self.current_action.requires_pptx_renderer
-            else None
+            self._select_pptx_provider() if self.current_action.requires_pptx_renderer else None
         )
         if self.current_action.requires_pptx_renderer and provider is None:
             self._update_pptx_banner(provider)
@@ -852,9 +859,7 @@ class MainWindow(QMainWindow):
             self.resize(self.width(), self.base_height)
         else:
             self.log.setVisible(True)
-            self.log.verticalScrollBar().setValue(
-                self.log.verticalScrollBar().maximum()
-            )
+            self.log.verticalScrollBar().setValue(self.log.verticalScrollBar().maximum())
             self.resize(self.width(), self.base_height + self.log.height())
         self.update_status(tr(self.status_key), self.status_key)
 
@@ -1033,93 +1038,10 @@ class MainWindow(QMainWindow):
         self,
     ) -> None:
         """Configure PPTX renderer and show config path."""
-        cfg = self.cfg
-        dlg = QDialog(self)
-        dlg.setWindowTitle("PPTX Renderer")
-        form = QFormLayout(dlg)
-        combo = QComboBox()
-        options = [
-            ("Automatic (detect installed providers)", "auto"),
-            ("Disabled (show provider banner)", "none"),
-            ("Microsoft PowerPoint (COM automation)", "ms_office"),
-            (
-                "Microsoft Office Online (HTTP service, e.g. Stirling or Gotenberg)",
-                "http_office",
-            ),
-            ("Lightweight sample renderer", "lightweight"),
-        ]
-        for label_text, value in options:
-            combo.addItem(label_text, value)
-        current = (cfg.get("pptx_renderer") or "auto").strip() or "auto"
-        index = combo.findData(current)
-        combo.setCurrentIndex(max(index, 0))
-        form.addRow("PPTX Renderer", combo)
-
-        raw_http_cfg = cfg.get("http_office")
-        http_cfg: dict[str, object] = (
-            dict(raw_http_cfg) if isinstance(raw_http_cfg, dict) else {}
-        )
-
-        (
-            http_group,
-            http_type,
-            http_endpoint,
-            http_timeout,
-            http_verify,
-            http_header_name,
-            http_header_value,
-            http_header_original_key,
-        ) = self._create_http_office_group(http_cfg)
-
-        form.addRow(http_group)
-
-        def _update_http_visibility() -> None:
-            http_group.setVisible(combo.currentData() == "http_office")
-
-        combo.currentIndexChanged.connect(lambda _index: _update_http_visibility())
-        _update_http_visibility()
-
-        renderer = self._select_pptx_provider()
-        if renderer is None:
-            eff = QLabel(tr("pptx.no_provider"))
-        else:
-            eff = QLabel(type(renderer).__name__)
-        form.addRow("Effective renderer", eff)
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        )
-        form.addWidget(buttons)
-        buttons.accepted.connect(dlg.accept)
-        buttons.rejected.connect(dlg.reject)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            value = combo.currentData()
-            cfg["pptx_renderer"] = str(value) if value else "auto"
-            headers: dict[str, str] = {}
-            existing_headers = http_cfg.get("headers")
-            if isinstance(existing_headers, Mapping):
-                for key, value in existing_headers.items():
-                    if key is None:
-                        continue
-                    candidate = str(key).strip()
-                    if not candidate:
-                        continue
-                    headers[candidate] = "" if value is None else str(value)
-            header_name = http_header_name.text().strip()
-            if http_header_original_key and (
-                not header_name or header_name != http_header_original_key
-            ):
-                headers.pop(http_header_original_key, None)
-            if header_name:
-                headers[header_name] = http_header_value.text()
-            http_payload: dict[str, object] = {
-                "mode": http_type.currentData() or "auto",
-                "endpoint": http_endpoint.text().strip(),
-                "timeout_s": float(http_timeout.value()),
-                "verify_tls": http_verify.isChecked(),
-                "headers": headers,
-            }
-            cfg["http_office"] = http_payload
-            save_config(cfg)
+        state = self._create_renderer_dialog(self.cfg)
+        if state.dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        self._apply_renderer_selection(state)
 
     def on_about(
         self,
@@ -1148,6 +1070,104 @@ class MainWindow(QMainWindow):
                 tr("config_missing_author_email"),
             )
             self.on_author()
+
+    def _create_renderer_dialog(self, cfg: dict[str, object]) -> _RendererDialogState:
+        """Return the dialog and widgets used to configure PPTX rendering."""
+        dlg = QDialog(self)
+        dlg.setWindowTitle("PPTX Renderer")
+        form = QFormLayout(dlg)
+        combo = QComboBox()
+        options = [
+            ("Automatic (detect installed providers)", "auto"),
+            ("Disabled (show provider banner)", "none"),
+            ("Microsoft PowerPoint (COM automation)", "ms_office"),
+            (
+                "Microsoft Office Online (HTTP service, e.g. Stirling or Gotenberg)",
+                "http_office",
+            ),
+            ("Lightweight sample renderer", "lightweight"),
+        ]
+        for label_text, value in options:
+            combo.addItem(label_text, value)
+        current_value = cfg.get("pptx_renderer")
+        current = current_value.strip() if isinstance(current_value, str) else "auto"
+        if not current:
+            current = "auto"
+        index = combo.findData(current)
+        combo.setCurrentIndex(max(index, 0))
+        form.addRow("PPTX Renderer", combo)
+
+        raw_http_cfg = cfg.get("http_office")
+        http_cfg: dict[str, object] = dict(raw_http_cfg) if isinstance(raw_http_cfg, dict) else {}
+        http_group = self._create_http_office_group(http_cfg)
+        http_widgets = _HttpWidgets(*http_group)
+        form.addRow(http_widgets.group)
+
+        def _update_http_visibility() -> None:
+            http_widgets.group.setVisible(combo.currentData() == "http_office")
+
+        combo.currentIndexChanged.connect(lambda _index: _update_http_visibility())
+        _update_http_visibility()
+
+        renderer = self._select_pptx_provider()
+        effective_label = QLabel(
+            tr("pptx.no_provider") if renderer is None else type(renderer).__name__
+        )
+        form.addRow("Effective renderer", effective_label)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        form.addWidget(buttons)
+        buttons.accepted.connect(dlg.accept)
+        buttons.rejected.connect(dlg.reject)
+
+        return _RendererDialogState(
+            dialog=dlg,
+            combo=combo,
+            http_cfg=http_cfg,
+            http_widgets=http_widgets,
+        )
+
+    def _apply_renderer_selection(self, state: _RendererDialogState) -> None:
+        """Persist the renderer configuration chosen in the dialog."""
+        value = state.combo.currentData()
+        self.cfg["pptx_renderer"] = str(value) if value else "auto"
+        headers = self._build_http_headers(state.http_cfg, state.http_widgets)
+        widgets = state.http_widgets
+        http_payload: dict[str, object] = {
+            "mode": widgets.type_combo.currentData() or "auto",
+            "endpoint": widgets.endpoint.text().strip(),
+            "timeout_s": float(widgets.timeout.value()),
+            "verify_tls": widgets.verify.isChecked(),
+            "headers": headers,
+        }
+        self.cfg["http_office"] = http_payload
+        save_config(self.cfg)
+
+    def _build_http_headers(
+        self,
+        http_cfg: dict[str, object],
+        widgets: _HttpWidgets,
+    ) -> dict[str, str]:
+        """Merge existing HTTP headers with the values entered in the dialog."""
+        headers: dict[str, str] = {}
+        existing_headers = http_cfg.get("headers")
+        if isinstance(existing_headers, Mapping):
+            for key, value in existing_headers.items():
+                if key is None:
+                    continue
+                candidate = str(key).strip()
+                if not candidate:
+                    continue
+                headers[candidate] = "" if value is None else str(value)
+        header_name = widgets.header_name.text().strip()
+        original_key = widgets.original_header_key
+        if original_key and (not header_name or header_name != original_key):
+            headers.pop(original_key, None)
+        if header_name:
+            headers[header_name] = widgets.header_value.text()
+        return headers
 
 
 __all__ = ["MainWindow"]

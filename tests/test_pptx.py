@@ -143,9 +143,7 @@ def test_renderer_config(monkeypatch, tmp_path, simple_pptx):
         captured_images["out_dir"] = out_dir_str
         captured_images["width"] = options.width
         captured_images["height"] = options.height
-        out_dir_path = (
-            Path(out_dir_str) if out_dir_str is not None else Path(tmp_path, "images")
-        )
+        out_dir_path = Path(out_dir_str) if out_dir_str is not None else Path(tmp_path, "images")
         out_dir_path.mkdir(parents=True, exist_ok=True)
         image_path = out_dir_path / "slide-001.jpeg"
         image_path.write_text("image")
@@ -274,9 +272,7 @@ def test_pptx_to_images_returns_out_dir_when_empty(monkeypatch, simple_pptx, tmp
             range_spec: str | None = None,
         ) -> str:
             del notes, handout, range_spec
-            target = (
-                Path(output_path) if output_path else tmp_path / "fallback-empty.pdf"
-            )
+            target = Path(output_path) if output_path else tmp_path / "fallback-empty.pdf"
             target.write_text("pdf")
             return str(target)
 
@@ -339,9 +335,7 @@ def test_pptx_to_images_returns_temp_dir_when_empty(monkeypatch, simple_pptx, tm
             range_spec: str | None = None,
         ) -> str:
             del notes, handout, range_spec
-            target = (
-                Path(output_path) if output_path else tmp_path / "fallback-temp.pdf"
-            )
+            target = Path(output_path) if output_path else tmp_path / "fallback-temp.pdf"
             target.write_text("pdf")
             return str(target)
 
@@ -408,9 +402,7 @@ def test_convert_pptx_to_pdf_cleans_up(monkeypatch, simple_pptx, tmp_path):
 
     monkeypatch.setattr(pptx_registry, "_REGISTRY", {})
     pptx_registry.register(DummyRenderer)
-    monkeypatch.setattr(
-        pptx_registry, "get_pptx_renderer_choice", lambda _cfg=None: "dummy"
-    )
+    monkeypatch.setattr(pptx_registry, "get_pptx_renderer_choice", lambda _cfg=None: "dummy")
 
     with pptx_registry.convert_pptx_to_pdf(simple_pptx) as pdf_path:
         path_obj = Path(pdf_path)

@@ -1,4 +1,65 @@
 repos:
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.3
+    hooks:
+      - id: ruff
+        name: "lint: ruff"
+        args: ["--fix"]
+        alias: lint
+        stages: [pre-commit, pre-push, manual]
+      - id: ruff-format
+        name: "format: ruff"
+        alias: format
+        stages: [pre-commit, pre-push, manual]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        name: "lint: mypy"
+        args: ["--config-file=pyproject.toml", "src", "scripts"]
+        alias: lint
+        pass_filenames: false
+        stages: [pre-commit, pre-push, manual]
+        additional_dependencies:
+          - types-requests>=2.32.0.20240914
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        name: "lint: bandit"
+        args: ["-q", "-r", "src", "scripts"]
+        alias: lint
+        pass_filenames: false
+        stages: [pre-commit, pre-push, manual]
+
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.7.22
+    hooks:
+      - id: mdformat
+        name: "format: mdformat"
+        alias: format
+        stages: [pre-commit, pre-push, manual]
+        additional_dependencies:
+          - mdformat-gfm>=0.4.1
+
+  - repo: https://github.com/macisamuele/pre-commit-hooks
+    rev: v2.9.0
+    hooks:
+      - id: pretty-format-yaml
+        name: "format: pretty-format-yaml"
+        args: ["--autofix", "--indent", "2", "--offset", "2", "--preserve-quotes"]
+        alias: format
+        stages: [pre-commit, pre-push, manual]
+        additional_dependencies:
+          - setuptools
+
   - repo: local
     hooks:
       - id: generate-exception-overview
@@ -10,32 +71,6 @@ repos:
         alias: lint
         stages: [pre-commit, pre-push, manual]
 
-      - id: ruff
-        name: "lint: ruff"
-        entry: ruff check --fix
-        language: system
-        types: [python]
-        alias: lint
-        stages: [pre-commit, pre-push, manual]
-
-      - id: mypy
-        name: "lint: mypy"
-        entry: mypy --config-file=pyproject.toml .
-        language: system
-        types: [python]
-        pass_filenames: false
-        alias: lint
-        stages: [pre-commit, pre-push, manual]
-
-      - id: bandit
-        name: "lint: bandit"
-        entry: bandit -q -r src scripts
-        language: system
-        types: [python]
-        pass_filenames: false
-        alias: lint
-        stages: [pre-commit, pre-push, manual]
-
       - id: check-locales
         name: "lint: check-locales"
         entry: python scripts/check_locales.py
@@ -43,30 +78,6 @@ repos:
         types: [json]
         pass_filenames: false
         alias: lint
-        stages: [pre-commit, pre-push, manual]
-
-      - id: ruff-format
-        name: "format: ruff"
-        entry: ruff format
-        language: system
-        types: [python]
-        alias: format
-        stages: [pre-commit, pre-push, manual]
-
-      - id: mdformat
-        name: "format: mdformat"
-        entry: mdformat
-        language: system
-        types: [markdown]
-        alias: format
-        stages: [pre-commit, pre-push, manual]
-
-      - id: pretty-format-yaml
-        name: "format: pretty-format-yaml"
-        entry: pretty-format-yaml --autofix --indent 2 --offset 2 --preserve-quotes
-        language: system
-        types: [yaml]
-        alias: format
         stages: [pre-commit, pre-push, manual]
 
       - id: format-locales
@@ -81,7 +92,10 @@ repos:
 
       - id: pytest
         name: "tests: pytest"
-        entry: pytest -n auto -q --timeout=120 --maxfail=1 --durations=0 --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml --cov-report=term-missing
+        entry: >-
+          pytest -n auto -q --timeout=120 --maxfail=1 --durations=0
+          --durations-min=0.75 --cov=pdf_toolbox --cov-report=xml
+          --cov-report=term-missing
         language: system
         types: [python]
         pass_filenames: false

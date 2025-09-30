@@ -87,12 +87,10 @@ def _load_main_window(
 
 
 QT_AVAILABLE, QT_IMPORT_ERROR, _QApplication = _load_qt()
-QApplication: type[Any] | None = (
-    cast(type[Any], _QApplication) if QT_AVAILABLE else None
-)
+QApplication: type[Any] | None = cast(type[Any], _QApplication) if QT_AVAILABLE else None
 
 if TYPE_CHECKING:
-    from pdf_toolbox.gui.main_window import MainWindow as MainWindow
+    from pdf_toolbox.gui.main_window import MainWindow
 else:
     MainWindow: type[Any] = _load_main_window()
 

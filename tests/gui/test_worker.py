@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("PySide6.QtCore")
-
-from pdf_toolbox.gui.worker import Worker
+try:
+    from pdf_toolbox.gui.worker import Worker
+except (
+    ImportError
+):  # pragma: no cover  # pdf-toolbox: skip worker tests when PySide6 missing | issue:-
+    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 

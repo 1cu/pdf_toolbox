@@ -113,9 +113,7 @@ def test_pptx_to_pdf_e2e(
     monkeypatch.setattr(pptx_actions, "require_pptx_renderer", lambda: DummyRenderer())
 
     explicit_path = tmp_path / "slides.pdf"
-    result_path = Path(
-        pptx_to_pdf(simple_pptx, pages="2-3", output_path=str(explicit_path))
-    )
+    result_path = Path(pptx_to_pdf(simple_pptx, pages="2-3", output_path=str(explicit_path)))
     assert result_path == explicit_path
     with fitz.open(result_path) as doc:
         assert doc.page_count == 2

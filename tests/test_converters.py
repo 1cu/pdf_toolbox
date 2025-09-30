@@ -37,9 +37,7 @@ def test_pdf_to_images_tiff(sample_pdf, tmp_path):
 
 def test_pdf_to_images_default_outdir(sample_pdf):
     outputs = pdf_to_images(sample_pdf, PdfImageOptions(dpi="Low (72 dpi)"))
-    assert all(
-        Path(output_path).parent == Path(sample_pdf).parent for output_path in outputs
-    )
+    assert all(Path(output_path).parent == Path(sample_pdf).parent for output_path in outputs)
 
 
 def test_unlock_pdf(sample_pdf, tmp_path):

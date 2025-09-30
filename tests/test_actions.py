@@ -89,15 +89,9 @@ def test_dataclass_parameters_exposed():
     act = actions.build_action(sample, name="sample")
 
     assert act.dataclass_params["options"] is SampleOptions
-    assert any(
-        param.name == "path" and param.parent is None for param in act.form_params
-    )
-    assert any(
-        param.name == "mode" and param.parent == "options" for param in act.form_params
-    )
-    assert any(
-        param.name == "limit" and param.parent == "options" for param in act.form_params
-    )
+    assert any(param.name == "path" and param.parent is None for param in act.form_params)
+    assert any(param.name == "mode" and param.parent == "options" for param in act.form_params)
+    assert any(param.name == "limit" and param.parent == "options" for param in act.form_params)
 
 
 def test_register_module_skips_undocumented():

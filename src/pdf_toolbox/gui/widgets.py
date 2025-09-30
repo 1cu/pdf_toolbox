@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,7 @@ from PySide6.QtGui import (
     QFontDatabase,
     QSyntaxHighlighter,
     QTextCharFormat,
+    QTextDocument,
 )
 from PySide6.QtWidgets import QFileDialog, QLabel, QLineEdit, QPlainTextEdit
 
@@ -27,7 +29,7 @@ class QtLogHandler(QObject, logging.Handler):
 
     message = Signal(object)
 
-    def __init__(self, widget: QPlainTextEdit, on_update):
+    def __init__(self, widget: QPlainTextEdit, on_update: Callable[[], None]):
         """Initialize with target widget and update callback."""
         QObject.__init__(self)
         logging.Handler.__init__(self)
@@ -35,7 +37,7 @@ class QtLogHandler(QObject, logging.Handler):
         self.on_update = on_update
         self.message.connect(self._append)
 
-    def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]  # pdf-toolbox: QObject method signature differs from logging.Handler.emit | issue:-
+    def emit(self, record: logging.LogRecord) -> None:
         """Forward a log record to the GUI thread."""
         self.message.emit(record)
 
@@ -66,9 +68,7 @@ class QtLogHandler(QObject, logging.Handler):
             self.widget.scroll_to_bottom()
         else:
             self.widget.appendPlainText(self.format(record))
-            self.widget.verticalScrollBar().setValue(
-                self.widget.verticalScrollBar().maximum()
-            )
+            self.widget.verticalScrollBar().setValue(self.widget.verticalScrollBar().maximum())
         self.on_update()
 
 
@@ -87,11 +87,9 @@ class _LogHighlighter(QSyntaxHighlighter):
 
     _MIN_SEGMENTS = 3
 
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: QPlainTextEdit | QTextDocument) -> None:
         super().__init__(parent)
-        self._level_styles: dict[
-            str, tuple[QTextCharFormat | None, QTextCharFormat]
-        ] = {}
+        self._level_styles: dict[str, tuple[QTextCharFormat | None, QTextCharFormat]] = {}
         self._header_format = QTextCharFormat()
         self._header_format.setFontWeight(QFont.Weight.Bold)
         self._register_style("DEBUG", line_fg="#607D8B")
@@ -287,9 +285,7 @@ class FileEdit(QLineEdit):
         """Open a file or directory selection dialog."""
         initial = self.cfg.get("last_open_dir", str(Path.home()))
         if self.directory:
-            path = QFileDialog.getExistingDirectory(
-                self, tr("select_directory"), initial
-            )
+            path = QFileDialog.getExistingDirectory(self, tr("select_directory"), initial)
             if path:
                 self.setText(path)
                 self.cfg["last_open_dir"] = path

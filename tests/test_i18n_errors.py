@@ -25,9 +25,6 @@ def test_load_handles_json_errors(monkeypatch):
 def test_tr_format_error():
     i18n.set_language("en")
     try:
-        assert (
-            i18n.tr("Field '{name}' cannot be empty.")
-            == "Field '{name}' cannot be empty."
-        )
+        assert i18n.tr("Field '{name}' cannot be empty.") == "Field '{name}' cannot be empty."
     finally:
         i18n.set_language("en")

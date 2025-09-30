@@ -82,12 +82,8 @@ def extract_manual_comments(comment_blob: str) -> list[str]:
     """
     if not comment_blob:
         return []
-    tokens = [
-        match.group(1).strip() for match in COMMENT_TOKEN_PATTERN.finditer(comment_blob)
-    ]
-    manuals = [
-        token for token in tokens if token and not PINNED_COMMENT_PATTERN.match(token)
-    ]
+    tokens = [match.group(1).strip() for match in COMMENT_TOKEN_PATTERN.finditer(comment_blob)]
+    manuals = [token for token in tokens if token and not PINNED_COMMENT_PATTERN.match(token)]
     return _deduplicate(manuals)
 
 
@@ -239,9 +235,7 @@ def resolve_tag_to_commit(api: GitHubClient, owner: str, repo: str, tag: str) ->
     ref_obj: JsonDict | None
     if isinstance(data, list):
         refs = _ensure_list(data, context="git tag refs")
-        ref_obj = next(
-            (item for item in refs if item.get("ref") == f"refs/tags/{tag}"), None
-        )
+        ref_obj = next((item for item in refs if item.get("ref") == f"refs/tags/{tag}"), None)
         if ref_obj is None:
             message = f"Unable to resolve tag {tag} for {owner}/{repo}"
             raise RuntimeError(message)
@@ -266,11 +260,7 @@ def get_latest_release(api: GitHubClient, owner: str, repo: str) -> dict | None:
         api.get(f"/repos/{owner}/{repo}/releases", params={"per_page": "100"}),
         context="releases",
     )
-    stable = [
-        rel
-        for rel in releases_raw
-        if not rel.get("draft") and not rel.get("prerelease")
-    ]
+    stable = [rel for rel in releases_raw if not rel.get("draft") and not rel.get("prerelease")]
     if not stable:
         return None
     stable.sort(
@@ -282,14 +272,10 @@ def get_latest_release(api: GitHubClient, owner: str, repo: str) -> dict | None:
 
 def get_repo_metadata(api: GitHubClient, owner: str, repo: str) -> dict:
     """Return repository metadata required for release resolution."""
-    return _ensure_dict(
-        api.get(f"/repos/{owner}/{repo}"), context="repository metadata"
-    )
+    return _ensure_dict(api.get(f"/repos/{owner}/{repo}"), context="repository metadata")
 
 
-def resolve_action(
-    api: GitHubClient, repo: str, previous_refs: Sequence[str]
-) -> ActionResolution:
+def resolve_action(api: GitHubClient, repo: str, previous_refs: Sequence[str]) -> ActionResolution:
     """Resolve the newest stable release (or default branch) for an action."""
     owner, name = repo.split("/", 1)
     metadata = get_repo_metadata(api, owner, name)
@@ -316,9 +302,7 @@ def resolve_action(
         )
     default_branch = metadata.get("default_branch", "main")
     commit = _ensure_dict(
-        api.get(
-            f"/repos/{owner}/{name}/commits/{parse.quote(default_branch, safe='')}"
-        ),
+        api.get(f"/repos/{owner}/{name}/commits/{parse.quote(default_branch, safe='')}"),
         context="default branch commit",
     )
     commit_sha = commit["sha"]
@@ -418,21 +402,14 @@ def build_summary(resolutions: dict[str, ActionResolution]) -> str:
                 res.published_date,
             ]
         )
-    widths = [
-        max(len(str(row[idx])) for row in [headers, *rows])
-        for idx in range(len(headers))
-    ]
+    widths = [max(len(str(row[idx])) for row in [headers, *rows]) for idx in range(len(headers))]
     lines = [
-        "| "
-        + " | ".join(f"{headers[idx]:<{widths[idx]}}" for idx in range(len(headers)))
-        + " |",
+        "| " + " | ".join(f"{headers[idx]:<{widths[idx]}}" for idx in range(len(headers))) + " |",
         "| " + " | ".join("-" * widths[idx] for idx in range(len(headers))) + " |",
     ]
     for row in rows:
         lines.append(
-            "| "
-            + " | ".join(f"{row[idx]!s:<{widths[idx]}}" for idx in range(len(headers)))
-            + " |"
+            "| " + " | ".join(f"{row[idx]!s:<{widths[idx]}}" for idx in range(len(headers))) + " |"
         )
     return "\n".join(lines)
 

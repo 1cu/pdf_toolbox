@@ -18,8 +18,7 @@ _PY_FILES = _python_sources()
 _GROUPS = 8
 _CHUNK_SIZE = max(1, ceil(len(_PY_FILES) / _GROUPS))
 _FILE_GROUPS = [
-    _PY_FILES[index : index + _CHUNK_SIZE]
-    for index in range(0, len(_PY_FILES), _CHUNK_SIZE)
+    _PY_FILES[index : index + _CHUNK_SIZE] for index in range(0, len(_PY_FILES), _CHUNK_SIZE)
 ]
 if not _FILE_GROUPS:
     _FILE_GROUPS = [[]]

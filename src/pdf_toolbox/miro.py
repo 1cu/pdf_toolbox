@@ -322,48 +322,42 @@ def _encode_raster(
 ) -> tuple[bytes, str, PageExportAttempt, list[PageExportAttempt], bool]:
     """Encode ``image`` using preferred formats under ``max_bytes``."""
     working_image = apply_unsharp_mask(image) if apply_unsharp else image
+    candidates = _iter_raster_candidates(working_image, allow_transparency)
+    return _select_raster_candidate(candidates, max_bytes)
+
+
+def _iter_raster_candidates(
+    image: Image.Image,
+    allow_transparency: bool,
+) -> Iterator[tuple[str, bytes, PageExportAttempt]]:
+    """Yield candidate encodings for ``image`` in preference order."""
+    yield from _iter_webp_candidates(image)
+    palette = image.mode not in {"RGBA", "LA"}
+    yield from _iter_png_candidates(image, palette)
+    if not allow_transparency:
+        yield from _iter_jpeg_candidates(image)
+
+
+def _select_raster_candidate(
+    candidates: Iterator[tuple[str, bytes, PageExportAttempt]],
+    max_bytes: int,
+) -> tuple[bytes, str, PageExportAttempt, list[PageExportAttempt], bool]:
+    """Return the best encoding from ``candidates`` within ``max_bytes``."""
     attempts: list[PageExportAttempt] = []
     best: tuple[int, bytes, str, PageExportAttempt] | None = None
-
-    def record_candidate(
-        fmt: str,
-        data: bytes,
-        attempt: PageExportAttempt,
-    ) -> tuple[bytes, str, PageExportAttempt, list[PageExportAttempt], bool] | None:
-        nonlocal best
-
+    for fmt, data, attempt in candidates:
         size = len(data)
         attempt.size_bytes = size
         attempts.append(attempt)
         if size <= max_bytes:
-            return data, fmt, attempt, list(attempts), True
+            return data, fmt, attempt, attempts.copy(), True
         if best is None or size < best[0]:
             best = (size, data, fmt, attempt)
-        return None
-
-    for fmt, data, attempt in _iter_webp_candidates(working_image):
-        result = record_candidate(fmt, data, attempt)
-        if result is not None:
-            return result
-
-    palette = working_image.mode not in {"RGBA", "LA"}
-    for fmt, data, attempt in _iter_png_candidates(working_image, palette):
-        result = record_candidate(fmt, data, attempt)
-        if result is not None:
-            return result
-
-    if not allow_transparency:
-        for fmt, data, attempt in _iter_jpeg_candidates(working_image):
-            result = record_candidate(fmt, data, attempt)
-            if result is not None:
-                return result
-
     if best is None:
         raise RuntimeError(NO_RASTER_ENCODER_MSG)
-
     size, data, fmt, attempt = best
     attempt.size_bytes = size
-    return data, fmt, attempt, attempts, False
+    return data, fmt, attempt, attempts.copy(), False
 
 
 def _binary_search_dpi_candidates(
@@ -396,9 +390,7 @@ def _binary_search_dpi_candidates(
         attempts.extend(encode_attempts)
         size = len(data)
         if within:
-            best_within_dpi = (
-                dpi if best_within_dpi is None else max(best_within_dpi, dpi)
-            )
+            best_within_dpi = dpi if best_within_dpi is None else max(best_within_dpi, dpi)
             low = dpi + 25
         else:
             if (
