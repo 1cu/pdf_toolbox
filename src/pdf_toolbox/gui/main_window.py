@@ -1061,15 +1061,15 @@ class MainWindow(QMainWindow):
 
     def check_author(self) -> None:
         """Warn when author/email config is missing."""
-        try:
-            _load_author_info()
-        except RuntimeError:
-            QMessageBox.warning(
-                self,
-                tr("warning"),
-                tr("config_missing_author_email"),
-            )
-            self.on_author()
+        author, email = _load_author_info()
+        if author and email:
+            return
+        QMessageBox.warning(
+            self,
+            tr("warning"),
+            tr("config_missing_author_email"),
+        )
+        self.on_author()
 
     def _create_renderer_dialog(self, cfg: dict[str, object]) -> _RendererDialogState:
         """Return the dialog and widgets used to configure PPTX rendering."""

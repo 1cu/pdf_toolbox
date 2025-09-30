@@ -77,15 +77,22 @@
     "warning": "Hinweis"
   },
   "labels": {
+    "cancel": "Abbrechen",
+    "dpi": "DPI",
+    "export_profile": "Exportprofil",
+    "height": "Höhe",
+    "image_format": "Bildformat",
     "input_path": "Eingabedatei",
     "input_pdf": "Eingabe PDF",
     "input_pptx": "Eingabe-PPTX",
     "max_size_mb": "Maximale Größe (MB)",
     "out_dir": "Ausgabeverzeichnis",
-    "output_dir": "Ausgabeverzeichnis",
     "output_path": "Ausgabepfad",
     "pages": "Seiten",
-    "range_spec": "Bereichsspezifikation",
+    "pages_per_file": "Seiten pro Datei",
+    "password": "Passwort",
+    "quality": "Qualität",
+    "width": "Breite",
     "write_manifest": "Manifest schreiben (Debug)"
   }
 }
