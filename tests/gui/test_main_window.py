@@ -599,6 +599,7 @@ def test_collect_args_handles_composite_widgets(
         window.close()
 
 
+@pytest.mark.slow
 def test_collect_args_multi_file_requires_value(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Empty multi-file inputs raise a validation error."""
 
