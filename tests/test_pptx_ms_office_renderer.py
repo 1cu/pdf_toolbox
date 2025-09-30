@@ -533,9 +533,7 @@ def test_to_images_exports_all_slides(tmp_path, setup_com):
     assert [path.name for path in files] == ["slide-001.png", "slide-002.png"]
     assert [path.read_text() for path in files] == ["PNG", "PNG"]
     assert all(slide.exports for slide in env.slides[:2])
-    assert all(
-        export[2] == (640, 480) for slide in env.slides[:2] for export in slide.exports
-    )
+    assert all(export[2] == (640, 480) for slide in env.slides[:2] for export in slide.exports)
     assert env.presentation.closed is True
     assert env.app.quit_called is True
     assert env.pythoncom.uninit_calls == 1

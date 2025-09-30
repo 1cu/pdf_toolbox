@@ -26,6 +26,7 @@ _SECTIONS: tuple[str, ...] = ("strings", "labels")
 
 _CACHE: dict[str, dict[str, dict[str, str]]] = {}
 _STATE: dict[str, str] = {"lang": _DEFAULT_LANGUAGE}
+_LABEL_ALIASES: dict[str, str] = {"output_dir": "out_dir"}
 
 
 def _coerce_section(data: Any) -> dict[str, str]:
@@ -84,9 +85,7 @@ def _load(lang: str) -> dict[str, dict[str, str]]:
     filename = f"{lang}.json"
     try:
         raw = json.loads(
-            resources.files("pdf_toolbox.locales")
-            .joinpath(filename)
-            .read_text(encoding="utf-8")
+            resources.files("pdf_toolbox.locales").joinpath(filename).read_text(encoding="utf-8")
         )
     except Exception:
         raw = {}
@@ -114,8 +113,9 @@ def tr(key: str, **kwargs: Any) -> str:
 
 
 def label(name: str) -> str:
-    """Translate a parameter/field label by its canonical name."""
-    return _lookup("labels", name, name)
+    """Translate a parameter/field label by its canonical name or alias."""
+    canonical = _LABEL_ALIASES.get(name, name)
+    return _lookup("labels", canonical, name)
 
 
 __all__ = ["autodetect", "label", "set_language", "tr"]

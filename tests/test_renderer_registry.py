@@ -499,9 +499,7 @@ def test_ensure_successful_selection(monkeypatch: pytest.MonkeyPatch) -> None:
     assert registry.ensure("ready") is ready_instance
 
 
-def test_convert_pptx_to_pdf_uses_renderer(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_convert_pptx_to_pdf_uses_renderer(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _reset_registry(monkeypatch)
 
     class ConvertingRenderer(_BaseStub):

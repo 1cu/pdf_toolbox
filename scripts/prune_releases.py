@@ -50,9 +50,7 @@ def _call_with_retry[T](
         except GitHubAPIError as exc:
             if attempt == RETRIES - 1:
                 url = exc.url or fallback_url
-                raise RuntimeError(
-                    ERR_REQUEST_FAIL.format(method=method, url=url)
-                ) from exc
+                raise RuntimeError(ERR_REQUEST_FAIL.format(method=method, url=url)) from exc
             time.sleep(2**attempt)
     raise RuntimeError(ERR_REQUEST_FAIL.format(method=method, url=fallback_url))
 

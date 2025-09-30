@@ -61,13 +61,14 @@ where = ["src"]
 "pdf_toolbox.locales" = ["*.json"]
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 target-version = "py313"
 
 [tool.ruff.lint]
 extend-select = [
   "W",
   "B",
+  "C90",
   "UP",
   "N",
   "I",
@@ -97,10 +98,18 @@ ban-relative-imports = "all"
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
 [tool.mypy]
 ignore_missing_imports = true
 exclude = ["build/"]
 mypy_path = ["typings"]
+python_version = "3.13"
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
 
 [tool.coverage.run]
 source = ["pdf_toolbox"]

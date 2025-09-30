@@ -36,10 +36,7 @@ def register(renderer_cls: type[BasePptxRenderer]) -> type[BasePptxRenderer]:
     """Register ``renderer_cls`` under its ``name`` attribute."""
     name = getattr(renderer_cls, "name", "")
     if not isinstance(name, str) or not name.strip():
-        msg = (
-            f"Renderer class {renderer_cls.__name__} must define a non-empty 'name'"
-            " attribute."
-        )
+        msg = f"Renderer class {renderer_cls.__name__} must define a non-empty 'name' attribute."
         raise ValueError(msg)
 
     key = name.strip().lower()
@@ -133,9 +130,7 @@ def _load_renderer_from_entry(
                 )
             else:
                 candidate = getattr(module, attr or "", None)
-                if isinstance(candidate, type) and issubclass(
-                    candidate, BasePptxRenderer
-                ):
+                if isinstance(candidate, type) and issubclass(candidate, BasePptxRenderer):
                     renderer_cls = candidate
 
     if renderer_cls is None:
@@ -287,9 +282,7 @@ def _assess_renderer(
     if cached_instance is not None:
         if candidate is None:
             return cached_instance, True
-        available, validated = _evaluate_can_handle(
-            renderer_cls, candidate, cached_instance
-        )
+        available, validated = _evaluate_can_handle(renderer_cls, candidate, cached_instance)
         if not available:
             _INSTANCE_CACHE.pop(renderer_cls, None)
             return None, False

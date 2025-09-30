@@ -52,9 +52,7 @@ def pptx_to_images(
     )
     fmt_literal = cast(Literal["PNG", "JPEG", "TIFF"], fmt)
     target_out_dir = (
-        Path(opts.out_dir)
-        if opts.out_dir is not None
-        else Path(input_pptx).resolve().parent
+        Path(opts.out_dir) if opts.out_dir is not None else Path(input_pptx).resolve().parent
     )
 
     with convert_pptx_to_pdf(input_pptx) as pdf_path:
@@ -73,9 +71,7 @@ def pptx_to_images(
 
 
 @action(category="PPTX", requires_pptx_renderer=True)
-def pptx_to_pdf(
-    input_pptx: str, pages: str | None = None, output_path: str | None = None
-) -> str:
+def pptx_to_pdf(input_pptx: str, pages: str | None = None, output_path: str | None = None) -> str:
     """Render a PPTX file to PDF using the configured provider."""
     renderer = require_pptx_renderer()
     return renderer.to_pdf(input_pptx, output_path=output_path, range_spec=pages)

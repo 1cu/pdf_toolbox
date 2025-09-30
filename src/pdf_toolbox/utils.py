@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import typing as t
 from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
@@ -117,40 +118,53 @@ def parse_page_spec(spec: str | None, total: int) -> list[int]:
         return list(range(1, total + 1))
 
     pages: set[int] = set()
-
-    def _resolve(token: str, default: int | None) -> int:
-        if not token:
-            if default is None:
-                raise ValueError(ERR_INVALID_PAGE_SPEC)
-            return default
-        if token.lower() == "n":
-            return total
-        try:
-            return int(token)
-        except ValueError as exc:
-            raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
-
     for raw_part in spec.split(","):
         part = raw_part.strip()
         if not part:
             continue
-        if "-" in part:
-            start_s, end_s = part.split("-", 1)
-            start = _resolve(start_s, 1)
-            end = _resolve(end_s, total)
-            if start < 1 or end > total:
-                raise ValueError(
-                    ERR_PAGE_RANGE.format(start=start, end=end, total=total)
-                )
-            if end < start:
-                raise ValueError(ERR_END_GTE_START)
-            pages.update(range(start, end + 1))
-        else:
-            page = _resolve(part, None)
-            if page < 1 or page > total:
-                raise ValueError(ERR_PAGE_OUT_OF_RANGE.format(page=page, total=total))
-            pages.add(page)
+        pages.update(_expand_page_part(part, total))
     return sorted(pages)
+
+
+def _expand_page_part(part: str, total: int) -> set[int]:
+    """Return the set of page numbers represented by ``part``."""
+    if "-" not in part:
+        page = _resolve_page_token(part, None, total)
+        _ensure_page_in_range(page, total)
+        return {page}
+    start_s, end_s = part.split("-", 1)
+    start = _resolve_page_token(start_s, 1, total)
+    end = _resolve_page_token(end_s, total, total)
+    _validate_range_bounds(start, end, total)
+    return set(range(start, end + 1))
+
+
+def _resolve_page_token(token: str, default: int | None, total: int) -> int:
+    """Resolve ``token`` to a page number, applying ``default`` when allowed."""
+    if not token:
+        if default is None:
+            raise ValueError(ERR_INVALID_PAGE_SPEC)
+        return default
+    if token.lower() == "n":
+        return total
+    try:
+        return int(token)
+    except ValueError as exc:
+        raise ValueError(ERR_INVALID_PAGE_SPEC) from exc
+
+
+def _ensure_page_in_range(page: int, total: int) -> None:
+    """Raise ``ValueError`` if ``page`` is outside ``1..total``."""
+    if page < 1 or page > total:
+        raise ValueError(ERR_PAGE_OUT_OF_RANGE.format(page=page, total=total))
+
+
+def _validate_range_bounds(start: int, end: int, total: int) -> None:
+    """Validate that a page range is within bounds and correctly ordered."""
+    if start < 1 or end > total:
+        raise ValueError(ERR_PAGE_RANGE.format(start=start, end=end, total=total))
+    if end < start:
+        raise ValueError(ERR_END_GTE_START)
 
 
 def sane_output_dir(base_path: str | Path, out_dir: str | Path | None) -> Path:
@@ -209,7 +223,7 @@ def save_pdf(
     out_path: str | Path,
     *,
     note: str | None = None,
-    **save_kwargs,
+    **save_kwargs: t.Any,
 ) -> None:
     """Save ``doc`` to ``out_path`` updating metadata and closing it."""
     update_metadata(doc, note)

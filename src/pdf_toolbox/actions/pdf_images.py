@@ -29,9 +29,7 @@ from pdf_toolbox.utils import (
 )
 
 ERR_UNKNOWN_DPI = "Unknown DPI preset '{dpi}'"
-ERR_UNSUPPORTED_FORMAT = (
-    "Unsupported image format '{image_format}'. Supported formats: {formats}"
-)
+ERR_UNSUPPORTED_FORMAT = "Unsupported image format '{image_format}'. Supported formats: {formats}"
 ERR_UNKNOWN_QUALITY = "Unknown quality preset '{quality}'"
 ERR_COULD_NOT_REDUCE = "Could not reduce image below max_size_mb"
 ERR_WIDTH_HEIGHT = "width and height must be provided together"
@@ -224,9 +222,7 @@ def _resolve_max_bytes(max_size_mb: float | None) -> int | None:
     return int(max_size_mb * 1024 * 1024)
 
 
-def _determine_batch_size(
-    page_numbers: list[int], batch_size: int | None
-) -> int | None:
+def _determine_batch_size(page_numbers: list[int], batch_size: int | None) -> int | None:
     if batch_size:
         return batch_size
     if len(page_numbers) > BATCH_THRESHOLD_PAGES:
@@ -234,9 +230,7 @@ def _determine_batch_size(
     return None
 
 
-def _chunk_pages(
-    page_numbers: list[int], batch_size: int | None
-) -> Iterator[list[int]]:
+def _chunk_pages(page_numbers: list[int], batch_size: int | None) -> Iterator[list[int]]:
     if not batch_size:
         yield page_numbers
         return
@@ -253,9 +247,7 @@ def _build_render_plan(
     fmt, quality_val, dpi_val = resolve_image_settings(
         options.image_format,
         options.quality,
-        None
-        if options.width is not None or options.height is not None
-        else options.dpi,
+        None if options.width is not None or options.height is not None else options.dpi,
     )
     dpi = _resolve_dpi(doc, dpi=dpi_val, width=options.width, height=options.height)
     out_dir = sane_output_dir(input_path, options.out_dir)
@@ -548,9 +540,7 @@ def _render_batches(
             if plan.image_format == "SVG":
                 outputs.append(_render_svg_page(page, plan, page_no=page_no))
                 continue
-            outputs.append(
-                _render_raster_page(page, plan, page_no=page_no, cancel=cancel)
-            )
+            outputs.append(_render_raster_page(page, plan, page_no=page_no, cancel=cancel))
     return outputs
 
 

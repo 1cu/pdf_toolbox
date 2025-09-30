@@ -6,8 +6,6 @@ import logging
 from pathlib import Path
 
 import pytest
-
-pytest.importorskip("PySide6.QtWidgets")
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
@@ -209,9 +207,7 @@ def test_file_edit_drop_multi_joins_paths(
         def mimeData(self) -> DummyMime:  # noqa: N802  # pdf-toolbox: stub mirrors Qt event API | issue:-
             return self._mime
 
-    widget.dropEvent(
-        DummyEvent([DummyUrl(str(dropped_one)), DummyUrl(str(dropped_two))])
-    )
+    widget.dropEvent(DummyEvent([DummyUrl(str(dropped_one)), DummyUrl(str(dropped_two))]))
 
     assert widget.text() == ";".join([str(dropped_one), str(dropped_two)])
     assert saved
@@ -234,14 +230,10 @@ def test_qt_log_handler_appends_and_calls_update(qtbot) -> None:
     updates: list[list[LogEntry]] = []
     handler = QtLogHandler(widget, lambda: updates.append(widget.entries()))
 
-    record = logging.makeLogRecord(
-        {"msg": "Hello", "levelno": logging.INFO, "levelname": "INFO"}
-    )
+    record = logging.makeLogRecord({"msg": "Hello", "levelno": logging.INFO, "levelname": "INFO"})
     handler.emit(record)
 
-    qtbot.waitUntil(
-        lambda: widget.entries() and widget.entries()[-1].message == "Hello"
-    )
+    qtbot.waitUntil(lambda: widget.entries() and widget.entries()[-1].message == "Hello")
 
     assert widget.isVisible()
     assert updates

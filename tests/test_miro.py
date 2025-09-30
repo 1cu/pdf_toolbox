@@ -126,9 +126,7 @@ def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):
         assert keep_alpha is True
         return DummyImage(dpi)
 
-    def fake_encode(
-        image, max_bytes: int, allow_transparency: bool, *, apply_unsharp: bool = True
-    ):
+    def fake_encode(image, max_bytes: int, allow_transparency: bool, *, apply_unsharp: bool = True):
         del allow_transparency, apply_unsharp
         size = image.width
         attempt = miro.PageExportAttempt(
@@ -150,9 +148,7 @@ def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):
     monkeypatch.setattr(miro, "render_page_image", fake_render)
     monkeypatch.setattr(miro, "_encode_raster", fake_encode)
     monkeypatch.setattr(miro, "_page_is_vector_heavy", lambda _page: False)
-    monkeypatch.setattr(
-        miro, "_clamp_image_to_limits", lambda image: (image, False, 1.0)
-    )
+    monkeypatch.setattr(miro, "_clamp_image_to_limits", lambda image: (image, False, 1.0))
     outcome = export_pdf_for_miro(
         sample_pdf,
         out_dir=str(tmp_path),
@@ -174,9 +170,7 @@ def test_finalise_candidate_clamps_to_miro_limits(monkeypatch):
         assert dpi == 800
         return Image.new("RGB", (400, 200))
 
-    def fake_encode(
-        image, max_bytes: int, allow_transparency: bool, *, apply_unsharp: bool = True
-    ):
+    def fake_encode(image, max_bytes: int, allow_transparency: bool, *, apply_unsharp: bool = True):
         del max_bytes
         assert allow_transparency is False
         assert apply_unsharp is True
@@ -343,14 +337,8 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     from pdf_toolbox.renderers import pptx as pptx_module
 
     class DummyRenderer:
-        def to_pdf(
-            self, input_pptx: str, output_path: str | None = None, **_kwargs
-        ) -> str:
-            target = (
-                Path(output_path)
-                if output_path
-                else Path(input_pptx).with_suffix(".pdf")
-            )
+        def to_pdf(self, input_pptx: str, output_path: str | None = None, **_kwargs) -> str:
+            target = Path(output_path) if output_path else Path(input_pptx).with_suffix(".pdf")
             target.write_bytes(Path(sample_pdf).read_bytes())
             return str(target)
 
@@ -373,9 +361,7 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     monkeypatch.setattr(config, "CONFIG_PATH", cfg_path)
     pptx_path = tmp_path / "deck.pptx"
     pptx_path.write_bytes(b"pptx")
-    outputs_default = miro_export(
-        str(pptx_path), MiroExportOptions(export_profile="miro")
-    )
+    outputs_default = miro_export(str(pptx_path), MiroExportOptions(export_profile="miro"))
     assert outputs_default
     assert all(Path(path).exists() for path in outputs_default)
     assert all(Path(path).parent == tmp_path for path in outputs_default)
@@ -554,9 +540,7 @@ def test_export_page_records_errors(monkeypatch, tmp_path, caplog):
     assert result.error == "raster boom"
     assert "Export failed: raster boom" in result.warnings
     assert result.output_path is None
-    assert any(
-        "Failed to export page 1" in record.getMessage() for record in caplog.records
-    )
+    assert any("Failed to export page 1" in record.getMessage() for record in caplog.records)
 
 
 def test_page_is_vector_heavy_only_images():
@@ -801,9 +785,7 @@ def test_encode_raster_returns_best_when_over_limit(monkeypatch):
     image = Image.new("RGB", (1, 1), color="orange")
 
     def fake_webp_candidates(_image):
-        attempt = miro.PageExportAttempt(
-            dpi=0, fmt="WEBP", size_bytes=0, encoder="webp"
-        )
+        attempt = miro.PageExportAttempt(dpi=0, fmt="WEBP", size_bytes=0, encoder="webp")
         yield "WEBP", b"w" * 20, attempt
 
     def fake_png_candidates(_image, _palette: bool):
@@ -865,9 +847,7 @@ def test_select_raster_output_refines_dpi(monkeypatch):
     def fake_finalise(page, _dpi: int, max_bytes: int, attempts):
         del page, max_bytes
         calls.append(_dpi)
-        data, fmt, attempt, within, clamped, effective_dpi, width, height = responses[
-            _dpi
-        ]
+        data, fmt, attempt, within, clamped, effective_dpi, width, height = responses[_dpi]
         attempt.size_bytes = len(data)
         attempts.append(attempt)
         return data, fmt, attempt, within, clamped, effective_dpi, width, height
@@ -908,9 +888,7 @@ def test_select_raster_output_reuses_existing_dpis(monkeypatch):
     def fake_finalise(page, dpi: int, max_bytes: int, attempts):
         _ = page, max_bytes
         recorded.append(dpi)
-        attempt = miro.PageExportAttempt(
-            dpi=dpi, fmt="WEBP", size_bytes=0, encoder="webp"
-        )
+        attempt = miro.PageExportAttempt(dpi=dpi, fmt="WEBP", size_bytes=0, encoder="webp")
         attempts.append(attempt)
         within = dpi <= 100
         data = bytes([dpi % 256])
@@ -949,9 +927,7 @@ def test_select_raster_output_reuses_existing_dpis(monkeypatch):
 def test_select_raster_output_refine_returns_fallback(monkeypatch):
     def fake_finalise(page, dpi: int, max_bytes: int, attempts):
         del page, max_bytes
-        attempt = miro.PageExportAttempt(
-            dpi=dpi, fmt="WEBP", size_bytes=0, encoder="webp"
-        )
+        attempt = miro.PageExportAttempt(dpi=dpi, fmt="WEBP", size_bytes=0, encoder="webp")
         attempts.append(attempt)
         if dpi == 900:
             return b"base", "WEBP", attempt, False, False, dpi, 100, 100
@@ -1032,9 +1008,7 @@ def test_rasterise_page_errors_without_candidates(monkeypatch):
     class DummyPage:
         rect = DummyRect()
 
-    monkeypatch.setattr(
-        miro, "_binary_search_dpi_candidates", lambda *_args, **_kwargs: []
-    )
+    monkeypatch.setattr(miro, "_binary_search_dpi_candidates", lambda *_args, **_kwargs: [])
     with pytest.raises(RuntimeError):
         miro._rasterise_page(
             page=DummyPage(),

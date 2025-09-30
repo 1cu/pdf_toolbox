@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip("PySide6.QtCore")
-
 from pdf_toolbox.gui.worker import Worker
 
 pytest_plugins = ("tests.gui.conftest_qt",)

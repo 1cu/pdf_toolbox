@@ -23,8 +23,7 @@ LOCALES = ROOT / "src" / "pdf_toolbox" / "locales"
 ERR_OBJECT = "{path} must be an object"
 ERR_MISSING = "{path} must define object '{key}'"
 ERR_KEY_FORMAT = (
-    "{path}:{group} key '{key}' must use lowercase letters, numbers, underscores,"
-    " or dots"
+    "{path}:{group} key '{key}' must use lowercase letters, numbers, underscores, or dots"
 )
 ERR_STRING = "{path}:{group} key '{key}' must map to string"
 
@@ -69,9 +68,64 @@ def referenced_keys() -> tuple[set[str], set[str]]:
                 sys.modules.pop(name)
         for act in actions_mod.list_actions():
             string_keys.add(act.key)
+            for param in act.form_params:
+                label_keys.add(param.name)
     finally:
         sys.path.remove(str(src))
     return string_keys, label_keys
+
+
+def _load_all_locales() -> dict[str, dict]:
+    """Return a mapping of language code to loaded locale data."""
+    return {p.stem: load_locale(p.stem) for p in LOCALES.glob("*.json")}
+
+
+def _validate_key_sets(locales: dict[str, dict]) -> bool:
+    """Ensure each locale matches the base key sets for strings and labels."""
+    ok = True
+    base_lang, base_data = next(iter(locales.items()))
+    for group in ("strings", "labels"):
+        base_keys = set(base_data[group].keys())
+        for lang, data in locales.items():
+            if lang == base_lang:
+                continue
+            keys = set(data[group].keys())
+            if keys != base_keys:
+                _log_locale_diff(lang, group, base_keys, keys)
+                ok = False
+    return ok
+
+
+def _validate_referenced_keys(locales: dict[str, dict], group: str, ref_keys: set[str]) -> bool:
+    """Validate that each locale's ``group`` keys equal the referenced set."""
+    ok = True
+    for lang, data in locales.items():
+        keys = set(data[group].keys())
+        if keys == ref_keys:
+            continue
+        extra = sorted(keys - ref_keys)
+        missing = sorted(ref_keys - keys)
+        if extra:
+            logging.error("%s.json obsolete %s keys: %s", lang, group, extra)
+        if missing:
+            logging.error("%s.json missing %s keys: %s", lang, group, missing)
+        ok = False
+    return ok
+
+
+def _log_locale_diff(
+    lang: str,
+    group: str,
+    base_keys: set[str],
+    keys: set[str],
+) -> None:
+    """Log differences between base locale keys and ``lang`` keys."""
+    missing = sorted(base_keys - keys)
+    extra = sorted(keys - base_keys)
+    if missing:
+        logging.error("%s.json missing %s keys: %s", lang, group, missing)
+    if extra:
+        logging.error("%s.json has extra %s keys: %s", lang, group, extra)
 
 
 def main() -> int:
@@ -80,35 +134,16 @@ def main() -> int:
     Returns 0 on success; non-zero on validation error.
     """
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-    locales = {p.stem: load_locale(p.stem) for p in LOCALES.glob("*.json")}
+    locales = _load_all_locales()
     if not locales:
         logging.error("no locales found")
         return 1
-    ok = True
-    ref_strings, _ = referenced_keys()
-    first = next(iter(locales.values()))
-    for group in ("strings", "labels"):
-        base = set(first[group].keys())
-        for lang, data in locales.items():
-            keys = set(data[group].keys())
-            if keys != base:
-                missing = sorted(base - keys)
-                extra = sorted(keys - base)
-                if missing:
-                    logging.error("%s.json missing %s keys: %s", lang, group, missing)
-                if extra:
-                    logging.error("%s.json has extra %s keys: %s", lang, group, extra)
-                ok = False
-    for lang, data in locales.items():
-        keys = set(data["strings"].keys())
-        if keys != ref_strings:
-            extra = sorted(keys - ref_strings)
-            missing = sorted(ref_strings - keys)
-            if extra:
-                logging.error("%s.json obsolete string keys: %s", lang, extra)
-            if missing:
-                logging.error("%s.json missing string keys: %s", lang, missing)
-            ok = False
+    ok = _validate_key_sets(locales)
+    ref_strings, ref_labels = referenced_keys()
+    if not _validate_referenced_keys(locales, "strings", ref_strings):
+        ok = False
+    if not _validate_referenced_keys(locales, "labels", ref_labels):
+        ok = False
     return 0 if ok else 1
 
 

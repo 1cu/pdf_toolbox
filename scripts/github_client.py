@@ -16,9 +16,7 @@ from urllib.parse import urlencode, urlsplit, urlunsplit
 class GitHubAPIError(RuntimeError):
     """Raised when a GitHub API request fails."""
 
-    def __init__(
-        self, message: str, *, status: int | None = None, url: str | None = None
-    ) -> None:
+    def __init__(self, message: str, *, status: int | None = None, url: str | None = None) -> None:
         """Initialise the error with optional status and URL metadata."""
         super().__init__(message)
         self.status = status
@@ -116,9 +114,7 @@ class GitHubClient:
             response = connection.getresponse()
             body = response.read().decode("utf-8")
             header_map = dict(response.getheaders())
-            return TransportResult(
-                status=response.status, body=body, headers=header_map
-            )
+            return TransportResult(status=response.status, body=body, headers=header_map)
         finally:
             connection.close()
 

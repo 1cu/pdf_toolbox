@@ -32,9 +32,7 @@ class _StubConfig:
 
 
 class _StubItem:
-    def __init__(
-        self, config: _StubConfig, *, markers: list[object] | None = None
-    ) -> None:
+    def __init__(self, config: _StubConfig, *, markers: list[object] | None = None) -> None:
         self.config = config
         self.user_properties: list[tuple[str, object]] = []
         self._markers = list(markers or [])

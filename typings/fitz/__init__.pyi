@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from os import PathLike
 from types import TracebackType
-from typing import Any, Mapping
-
+from typing import Any, overload
 
 class Matrix:
     a: float
@@ -13,16 +13,29 @@ class Matrix:
     e: float
     f: float
 
+    @overload
+    def __init__(self) -> None: ...
+    @overload
+    def __init__(self, other: Matrix, /) -> None: ...
+    @overload
+    def __init__(self, components: Sequence[float], /) -> None: ...
+    @overload
+    def __init__(self, angle: float, /) -> None: ...
+    @overload
+    def __init__(self, zoom_x: float, zoom_y: float, /) -> None: ...
+    @overload
+    def __init__(self, shear_x: float, shear_y: float, scale: float, /) -> None: ...
+    @overload
     def __init__(
         self,
-        a: float = ...,
-        b: float = ...,
-        c: float = ...,
-        d: float = ...,
-        e: float = ...,
-        f: float = ...,
-    ) -> None: ...
-
+        a: float,
+        b: float,
+        c: float,
+        d: float,
+        e: float,
+        f: float,
+        /,
+    ) -> None: ...  # pdf-toolbox: PyMuPDF signature requires six components | issue:-
 
 class Rect:
     width: float
@@ -36,13 +49,10 @@ class Rect:
         y1: float = ...,
     ) -> None: ...
 
-
 class Colorspace:
     n: int
 
-
-csRGB: Colorspace
-
+csRGB: Colorspace  # noqa: N816  # pdf-toolbox: preserve PyMuPDF constant casing | issue:-
 
 class Pixmap:
     width: int
@@ -52,7 +62,6 @@ class Pixmap:
     colorspace: Colorspace | None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...
-
 
 class Page:
     rect: Rect
@@ -74,7 +83,6 @@ class Page:
         stream: bytes | None = ...,
         **kwargs: Any,
     ) -> None: ...
-
 
 class Document:
     page_count: int
@@ -104,17 +112,11 @@ class Document:
     def load_page(self, index: int) -> Page: ...
     def new_page(self, *args: Any, **kwargs: Any) -> Page: ...
 
-
 PDF_ENCRYPT_NONE: int
 PDF_ENCRYPT_AES_256: int
 
-
-def open(*args: Any, **kwargs: Any) -> Document: ...
-
-
+def open(*args: Any, **kwargs: Any) -> Document: ...  # noqa: A001  # pdf-toolbox: stub matches PyMuPDF API | issue:-
 def configure_zapf_dingbats(check: bool) -> None: ...
-
-
 def Touch(  # noqa: N802  # pdf-toolbox: upstream camelCase API | issue:-
     doc: Document,
     *,

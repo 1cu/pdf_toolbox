@@ -155,7 +155,7 @@ def action(
     category: str | None = None,
     visible: bool = True,
     requires_pptx_renderer: bool = False,
-):
+) -> t.Callable[[t.Callable[..., t.Any]], t.Callable[..., t.Any]]:
     """Register *fn* as an action.
 
     Only functions decorated with :func:`action` are considered actions. The
@@ -163,7 +163,7 @@ def action(
     :func:`list_actions`.
     """
 
-    def deco(fn: t.Callable[..., t.Any]):
+    def deco(fn: t.Callable[..., t.Any]) -> t.Callable[..., t.Any]:
         _remember_definition(
             fn,
             name=name,
@@ -261,9 +261,7 @@ def build_action(
             form_params.append(param_meta)
     definition = _definition_for(fn)
     resolved_name = _resolve_attr(name, definition.name if definition else None)
-    resolved_category = _resolve_attr(
-        category, definition.category if definition else None
-    )
+    resolved_category = _resolve_attr(category, definition.category if definition else None)
     resolved_requires = _resolve_attr(
         requires_pptx_renderer,
         definition.requires_pptx_renderer if definition else False,
@@ -320,11 +318,7 @@ def _register_module(mod_name: str) -> None:
 def _prune_module_definitions(module: str, active_keys: set[str]) -> None:
     prefix = f"{module}."
     with _LOCK:
-        stale = [
-            key
-            for key in _definitions
-            if key.startswith(prefix) and key not in active_keys
-        ]
+        stale = [key for key in _definitions if key.startswith(prefix) and key not in active_keys]
         for key in stale:
             _definitions.pop(key, None)
 

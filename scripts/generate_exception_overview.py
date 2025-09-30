@@ -36,10 +36,7 @@ RUNTIME_EXCEPTIONS: list[RuntimeExceptionEntry] = [
             ("en", "src/pdf_toolbox/locales/en.json"),
             ("de", "src/pdf_toolbox/locales/de.json"),
         ],
-        "docs": (
-            "https://github.com/1cu/pdf_toolbox/blob/main/README.md#select-a-pptx-"
-            "renderer"
-        ),
+        "docs": ("https://github.com/1cu/pdf_toolbox/blob/main/README.md#select-a-pptx-renderer"),
         "docs_label": "PPTX_PROVIDER_DOCS_URL",
     }
 ]
@@ -73,9 +70,7 @@ def gather() -> tuple[list[tuple[str, str, str, str]], list[str]]:
 def _iter_comments(path: Path) -> Iterator[tuple[int, str]]:
     """Yield ``(lineno, comment)`` pairs from *path*."""
     with tokenize.open(path) as fh:
-        for tok_type, tok_string, (lineno, _), _, _ in tokenize.generate_tokens(
-            fh.readline
-        ):
+        for tok_type, tok_string, (lineno, _), _, _ in tokenize.generate_tokens(fh.readline):
             if tok_type == tokenize.COMMENT:
                 yield lineno, tok_string
 
@@ -156,11 +151,7 @@ def render_table(headers: list[str], rows: list[list[str]]) -> str:
 
     def fmt(row: list[str]) -> str:
         escaped = [cell.replace("_", "\\_") for cell in row]
-        return (
-            "| "
-            + " | ".join(escaped[i].ljust(widths[i]) for i in range(len(row)))
-            + " |"
-        )
+        return "| " + " | ".join(escaped[i].ljust(widths[i]) for i in range(len(row))) + " |"
 
     lines = [
         fmt(headers),
@@ -180,9 +171,7 @@ def main() -> int:
     if errors:
         logging.error("\n".join(errors))
         return 1
-    lint_table = render_table(
-        ["File", "Rule", "Reason", "Issue/PR"], [list(r) for r in rows]
-    )
+    lint_table = render_table(["File", "Rule", "Reason", "Issue/PR"], [list(r) for r in rows])
     runtime_rows: list[list[str]] = []
     for entry in RUNTIME_EXCEPTIONS:
         locales = ", ".join(f"[{code}]({path})" for code, path in entry["locales"])

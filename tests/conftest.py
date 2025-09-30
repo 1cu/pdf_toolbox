@@ -1,4 +1,5 @@
 import json
+from collections.abc import Iterator
 from pathlib import Path
 
 import fitz
@@ -46,11 +47,16 @@ def pdf_with_image(tmp_path_factory: pytest.TempPathFactory) -> str:
     return str(pdf_path)
 
 
-@pytest.fixture(autouse=True)
-def author_config(tmp_path, monkeypatch):
+@pytest.fixture(autouse=True, name="author_config")
+def _author_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     config = tmp_path / "pdf_toolbox_config.json"
     config.write_text(json.dumps({"author": "Tester", "email": "tester@example.com"}))
+    original_config = utils.CONFIG_FILE
     monkeypatch.setattr(utils, "CONFIG_FILE", config)
+    try:
+        yield
+    finally:
+        monkeypatch.setattr(utils, "CONFIG_FILE", original_config)
 
 
 @pytest.fixture
