@@ -24,8 +24,6 @@ class _FileCoverage:
 
     @property
     def rate(self) -> float:
-        if self.statements == 0:
-            return 0.0
         return self.covered / self.statements
 
 

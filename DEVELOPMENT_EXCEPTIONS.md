@@ -23,6 +23,7 @@
 | tests/gui/conftest_qt.py:208                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:217                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:220                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
+| tests/gui/test_e2e_pdf_images.py:11              | pragma: no cover             | skip when PySide6 missing                                             | -        |
 | tests/gui/test_main_window.py:514                | N802                         | mimic Qt worker API naming                                            | -        |
 | tests/gui/test_main_window.py:528                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
 | tests/gui/test_main_window.py:636                | N802                         | mimic Qt worker API naming                                            | -        |
