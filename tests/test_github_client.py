@@ -127,9 +127,7 @@ def test_default_transport_invoked(monkeypatch: pytest.MonkeyPatch) -> None:
             return [("Content-Type", "application/json")]
 
     class DummyConnection:
-        def __init__(
-            self, host: str, port: int | None, timeout: float, context
-        ) -> None:
+        def __init__(self, host: str, port: int | None, timeout: float, context) -> None:
             captured["init"] = (host, port, timeout, context)
 
         def request(self, method: str, target: str, headers: Mapping[str, str]) -> None:

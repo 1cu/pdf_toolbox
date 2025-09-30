@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable
 from threading import Event
 
 from PySide6.QtCore import QThread, Signal
@@ -14,7 +15,7 @@ class Worker(QThread):
     finished = Signal(object)
     error = Signal(object)
 
-    def __init__(self, func, kwargs: dict[str, object]):
+    def __init__(self, func: Callable[..., object], kwargs: dict[str, object]):
         """Initialize worker with the callable and keyword arguments."""
         super().__init__()
         self.func = func

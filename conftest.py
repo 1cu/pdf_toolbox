@@ -28,6 +28,30 @@ def _as_bool(value: str) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _coerce_duration(value: object) -> float | None:
+    """Convert *value* from user properties into a float duration if possible."""
+    if isinstance(value, Real):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _extract_report_metadata(report: pytest.TestReport) -> tuple[float | None, bool]:
+    """Return the duration and slow-marker flag from ``report`` user properties."""
+    duration: float | None = None
+    is_marked = False
+    for key, value in report.user_properties:
+        if key == _PROP_DURATION:
+            duration = _coerce_duration(value)
+        elif key == _PROP_MARKED:
+            is_marked = bool(value)
+    return duration, is_marked
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Expose slow-policy ini options for configuration."""
     parser.addini(
@@ -84,22 +108,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     if controller is None:
         return
 
-    duration: float | None = None
-    is_marked = False
-    for key, value in report.user_properties:
-        if key == _PROP_DURATION:
-            if isinstance(value, Real):
-                duration = float(value)
-            elif isinstance(value, str):
-                try:
-                    duration = float(value)
-                except ValueError:
-                    duration = None
-            else:
-                duration = None
-        elif key == _PROP_MARKED:
-            is_marked = bool(value)
-
+    duration, is_marked = _extract_report_metadata(report)
     threshold = controller.stash.get(THRESHOLD_KEY, 0.75)
     if duration is None or duration < threshold:
         return
@@ -111,9 +120,7 @@ def pytest_runtest_logreport(report: pytest.TestReport) -> None:
     records.append(_SlowRecord(report.nodeid, duration, is_marked))
 
 
-def pytest_terminal_summary(
-    terminalreporter: pytest.TerminalReporter, exitstatus: int
-) -> None:
+def pytest_terminal_summary(terminalreporter: pytest.TerminalReporter, exitstatus: int) -> None:
     """Render the slow-test summary and enforce the policy."""
     del exitstatus
     config = terminalreporter.config
@@ -125,13 +132,9 @@ def pytest_terminal_summary(
     terminalreporter.section(f"Slow tests (>= {threshold:.2f}s)")
     for record in sorted(slow_items, key=lambda entry: entry.duration, reverse=True):
         tag = "slow" if record.is_marked else "UNMARKED"
-        terminalreporter.write_line(
-            f"{record.duration:6.2f}s  {tag:9}  {record.nodeid}"
-        )
+        terminalreporter.write_line(f"{record.duration:6.2f}s  {tag:9}  {record.nodeid}")
 
-    if config.stash.get(STRICT_KEY, True) and any(
-        not record.is_marked for record in slow_items
-    ):
+    if config.stash.get(STRICT_KEY, True) and any(not record.is_marked for record in slow_items):
         terminalreporter.write_line(
             f"\nUnmarked slow tests detected (>= {threshold:.2f}s). "
             "Mark with @pytest.mark.slow or speed them up."

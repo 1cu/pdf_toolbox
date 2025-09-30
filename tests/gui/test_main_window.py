@@ -9,19 +9,23 @@ from typing import Literal, cast
 
 import pytest
 
-pytest.importorskip("PySide6.QtWidgets")
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QCloseEvent
-from PySide6.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QDialogButtonBox,
-    QDoubleSpinBox,
-    QLabel,
-    QLineEdit,
-    QSpinBox,
-)
+try:
+    from PySide6.QtCore import QUrl
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import (
+        QApplication,
+        QCheckBox,
+        QComboBox,
+        QDialogButtonBox,
+        QDoubleSpinBox,
+        QLabel,
+        QLineEdit,
+        QSpinBox,
+    )
+except (
+    ModuleNotFoundError
+):  # pragma: no cover  # pdf-toolbox: skip GUI tests when PySide6 missing | issue:-
+    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
 
 from pdf_toolbox import actions, gui
 from pdf_toolbox.gui.main_window import ComboBoxWithSpin
@@ -109,9 +113,7 @@ def test_main_raises_without_qt(monkeypatch: pytest.MonkeyPatch) -> None:
         gui.main()
 
 
-def test_build_form_handles_pep604_union(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_build_form_handles_pep604_union(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Union fields expose both combo box and spin box with toggling."""
 
     def sample(dpi: int | Literal["Low", "High"] = "High") -> None:
@@ -213,9 +215,7 @@ def test_build_form_skips_pptx_probe_for_unrelated_actions(
         window.close()
 
 
-def test_build_form_resets_form_between_actions(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_build_form_resets_form_between_actions(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Subsequent form builds clear previously added rows."""
 
     def action_one(path: str) -> None:
@@ -264,9 +264,7 @@ def test_build_form_unknown_saved_profile_defaults_to_miro(
         window.close()
 
 
-def test_build_form_union_without_literal(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_build_form_union_without_literal(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Union parameters without literals fall back to a spin box."""
 
     def sample(level: int | float = 2.5) -> None:
@@ -284,9 +282,7 @@ def test_build_form_union_without_literal(
         window.close()
 
 
-def test_build_form_creates_multi_file_field(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_build_form_creates_multi_file_field(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Parameters named ``paths`` enable the multi-file widget."""
     import pdf_toolbox.gui.main_window as mw
 
@@ -354,9 +350,7 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
         window.close()
 
 
-def test_pptx_error_messages_use_translations(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_pptx_error_messages_use_translations(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Renderer errors surface translated strings in the log dock."""
     import pdf_toolbox.gui.main_window as mw
     from pdf_toolbox.i18n import tr
@@ -386,9 +380,7 @@ def test_pptx_error_messages_use_translations(
         window.close()
 
 
-def test_on_run_fails_fast_without_pptx_provider(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_on_run_fails_fast_without_pptx_provider(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Running a PPTX action without a provider warns the user immediately."""
     import pdf_toolbox.gui.main_window as mw
     from pdf_toolbox.i18n import tr
@@ -467,9 +459,7 @@ def test_select_pptx_provider_handles_truthy_non_string(
         window.close()
 
 
-def test_set_row_visible_ignores_missing_field(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_set_row_visible_ignores_missing_field(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Calling ``_set_row_visible`` on unknown keys is a no-op."""
     monkeypatch.setattr(gui, "list_actions", lambda: [])
     window = _make_window(qtbot)
@@ -615,9 +605,7 @@ def test_collect_args_handles_composite_widgets(
         window.close()
 
 
-def test_collect_args_multi_file_requires_value(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_collect_args_multi_file_requires_value(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Empty multi-file inputs raise a validation error."""
 
     def sample(paths: list[str]) -> None:
@@ -699,9 +687,7 @@ def test_on_pptx_renderer_reports_renderer_name(
         window.close()
 
 
-def test_set_row_visible_toggles_label_visibility(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_set_row_visible_toggles_label_visibility(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Toggling a row hides both the widget and its label."""
 
     def sample(path: str) -> None:
@@ -726,9 +712,7 @@ def test_set_row_visible_toggles_label_visibility(
         window.close()
 
 
-def test_update_pptx_banner_hides_with_provider(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_update_pptx_banner_hides_with_provider(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """The PPTX banner disappears once a provider is available."""
 
     def sample(input_pptx: str) -> None:
@@ -760,9 +744,7 @@ def test_update_pptx_banner_hides_with_provider(
         window.close()
 
 
-def test_open_pptx_docs_uses_desktop_services(
-    monkeypatch: pytest.MonkeyPatch, qtbot
-) -> None:
+def test_open_pptx_docs_uses_desktop_services(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Opening the PPTX docs delegates to QDesktopServices."""
     import pdf_toolbox.gui.main_window as mw
 
@@ -862,9 +844,7 @@ def test_on_run_success_triggers_worker_lifecycle(
         window.close()
 
 
-def test_on_run_handles_worker_error(
-    monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker
-) -> None:
+def test_on_run_handles_worker_error(monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker) -> None:
     """Worker exceptions populate the log and reset the UI."""
 
     def sample() -> None:
@@ -885,9 +865,7 @@ def test_on_run_handles_worker_error(
         window.close()
 
 
-def test_on_run_cancel_running_worker(
-    monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker
-) -> None:
+def test_on_run_cancel_running_worker(monkeypatch: pytest.MonkeyPatch, qtbot, stub_worker) -> None:
     """Cancelling a running worker resets progress and status."""
     from pdf_toolbox.i18n import tr
 
@@ -1255,9 +1233,7 @@ def test_check_author_prompts_when_missing(
     """Missing author metadata triggers a warning and dialog."""
     import pdf_toolbox.gui.main_window as mw
 
-    monkeypatch.setattr(
-        mw, "_load_author_info", lambda: (_ for _ in ()).throw(RuntimeError())
-    )
+    monkeypatch.setattr(mw, "_load_author_info", lambda: (_ for _ in ()).throw(RuntimeError()))
     window = _make_window(qtbot)
     try:
         invoked: list[str] = []

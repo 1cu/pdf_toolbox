@@ -67,9 +67,7 @@ def _ensure_com_environment() -> tuple[Any, Any]:
 
 def _get_dispatch(client_mod: Any) -> Callable[[str], Any]:
     """Return the PowerPoint ``Dispatch`` callable from ``client_mod``."""
-    dispatch = getattr(client_mod, "DispatchEx", None) or getattr(
-        client_mod, "Dispatch", None
-    )
+    dispatch = getattr(client_mod, "DispatchEx", None) or getattr(client_mod, "Dispatch", None)
     if dispatch is None:
         msg = "PowerPoint COM dispatch is unavailable."
         raise PptxRenderingError(msg, code="backend_crashed")
@@ -212,11 +210,7 @@ class PptxMsOfficeRenderer(BasePptxRenderer):
             msg = "Notes and handout export cannot be combined."
             raise UnsupportedOptionError(msg, code="conflicting_options")
         if notes or handout:
-            msg = (
-                "Notes export is not supported."
-                if notes
-                else "Handout export is not supported."
-            )
+            msg = "Notes export is not supported." if notes else "Handout export is not supported."
             raise UnsupportedOptionError(msg)
 
         inp = Path(input_pptx).resolve()

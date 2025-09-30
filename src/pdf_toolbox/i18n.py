@@ -84,9 +84,7 @@ def _load(lang: str) -> dict[str, dict[str, str]]:
     filename = f"{lang}.json"
     try:
         raw = json.loads(
-            resources.files("pdf_toolbox.locales")
-            .joinpath(filename)
-            .read_text(encoding="utf-8")
+            resources.files("pdf_toolbox.locales").joinpath(filename).read_text(encoding="utf-8")
         )
     except Exception:
         raw = {}

@@ -25,9 +25,7 @@ def test_save_and_load_config(tmp_path, monkeypatch):
 def test_get_pptx_renderer_choice_normalises_values():
     assert cfg.get_pptx_renderer_choice({}) == "auto"
     assert cfg.get_pptx_renderer_choice({"pptx_renderer": "MS_OFFICE"}) == "ms_office"
-    assert (
-        cfg.get_pptx_renderer_choice({"pptx_renderer": "HTTP_OFFICE"}) == "http_office"
-    )
+    assert cfg.get_pptx_renderer_choice({"pptx_renderer": "HTTP_OFFICE"}) == "http_office"
     assert cfg.get_pptx_renderer_choice({"pptx_renderer": " none "}) == "none"
     assert cfg.get_pptx_renderer_choice({"pptx_renderer": None}) == "none"
     assert cfg.get_pptx_renderer_choice({"pptx_renderer": "unknown"}) == "unknown"

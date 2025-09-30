@@ -38,19 +38,13 @@ def test_validate_pdf_path_rejects_non_pdf(tmp_path):
 def test_validate_pdf_path_accepts_pptx(tmp_path):
     pptx_path = tmp_path / "deck.PPTX"
     pptx_path.write_text("data")
-    assert (
-        validate_pdf_path(pptx_path, allowed_suffixes={".pdf", ".pptx"})
-        == pptx_path.resolve()
-    )
+    assert validate_pdf_path(pptx_path, allowed_suffixes={".pdf", ".pptx"}) == pptx_path.resolve()
 
 
 def test_validate_pdf_path_normalises_suffixes(tmp_path):
     pptx_path = tmp_path / "deck.PPTX"
     pptx_path.write_text("data")
-    assert (
-        validate_pdf_path(pptx_path, allowed_suffixes={"pdf", "pptx"})
-        == pptx_path.resolve()
-    )
+    assert validate_pdf_path(pptx_path, allowed_suffixes={"pdf", "pptx"}) == pptx_path.resolve()
 
 
 def test_is_supported_input_handles_pdf_and_pptx():

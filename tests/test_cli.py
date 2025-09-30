@@ -161,9 +161,7 @@ def test_describe_rejects_extra_arguments(capsys: pytest.CaptureFixture[str]) ->
 
 @pytest.mark.usefixtures("fake_actions")
 def test_run_action_converts_values(capsys: pytest.CaptureFixture[str]) -> None:
-    code = cli.main(
-        ["run", "sample_action", "--foo", "5", "--mode", "high", "--flag", "yes"]
-    )
+    code = cli.main(["run", "sample_action", "--foo", "5", "--mode", "high", "--flag", "yes"])
     assert code == 0
     captured = capsys.readouterr()
     result = json.loads(captured.out)
@@ -217,9 +215,7 @@ def test_run_action_accepts_dash_dash_separator(
 
 
 @pytest.mark.usefixtures("fake_actions")
-def test_run_action_handles_path_output(
-    capsys: pytest.CaptureFixture[str], tmp_path: Path
-) -> None:
+def test_run_action_handles_path_output(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     destination = tmp_path / "example.txt"
     code = cli.main(["run", "echo_action", "--path", str(destination)])
     assert code == 0

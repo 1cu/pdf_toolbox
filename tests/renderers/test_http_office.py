@@ -103,9 +103,7 @@ def test_to_pdf_streams_response(tmp_path, monkeypatch):
 
         return 200, _chunks()
 
-    monkeypatch.setattr(
-        "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
-    )
+    monkeypatch.setattr("pdf_toolbox.renderers.http_office._post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint(
         "https://example.test/render",
@@ -148,9 +146,7 @@ def test_to_pdf_uses_gotenberg_field(tmp_path, monkeypatch):
 
         return 200, _chunks()
 
-    monkeypatch.setattr(
-        "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
-    )
+    monkeypatch.setattr("pdf_toolbox.renderers.http_office._post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint("https://host/forms/libreoffice/convert")
     pptx = tmp_path / "slides.pptx"
@@ -176,9 +172,7 @@ def test_to_pdf_raises_on_bad_status(tmp_path, monkeypatch):
 
         return 500, _chunks()
 
-    monkeypatch.setattr(
-        "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
-    )
+    monkeypatch.setattr("pdf_toolbox.renderers.http_office._post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint("https://example.test")
     pptx = tmp_path / "deck.pptx"
@@ -201,9 +195,7 @@ def test_to_pdf_raises_on_empty_response(tmp_path, monkeypatch):
         del endpoint, files, headers, timeout, verify
         return 200, iter(())
 
-    monkeypatch.setattr(
-        "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
-    )
+    monkeypatch.setattr("pdf_toolbox.renderers.http_office._post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint("https://example.test")
     pptx = tmp_path / "deck.pptx"
@@ -228,9 +220,7 @@ def test_to_pdf_maps_timeout(tmp_path, monkeypatch):
         del endpoint, files, headers, timeout, verify
         raise requests_mod.Timeout("boom")
 
-    monkeypatch.setattr(
-        "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
-    )
+    monkeypatch.setattr("pdf_toolbox.renderers.http_office._post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint("https://example.test")
     pptx = tmp_path / "deck.pptx"
@@ -253,9 +243,7 @@ def test_to_pdf_maps_connection_error(tmp_path, monkeypatch):
         del endpoint, files, headers, timeout, verify
         raise requests_mod.ConnectionError("boom")
 
-    monkeypatch.setattr(
-        "pdf_toolbox.renderers.http_office._post_stream_file", fake_post
-    )
+    monkeypatch.setattr("pdf_toolbox.renderers.http_office._post_stream_file", fake_post)
 
     renderer = _renderer_with_endpoint("https://example.test")
     pptx = tmp_path / "deck.pptx"
@@ -455,9 +443,7 @@ def test_post_stream_file_streams_and_closes(tmp_path, monkeypatch):
         captured.update(
             {
                 "endpoint": endpoint,
-                "headers": dict(
-                    cast(Mapping[str, str] | None, options.get("headers")) or {}
-                ),
+                "headers": dict(cast(Mapping[str, str] | None, options.get("headers")) or {}),
                 "timeout": cast(float | None, options.get("timeout")),
                 "verify": bool(options.get("verify")),
                 "stream": bool(options.get("stream", True)),

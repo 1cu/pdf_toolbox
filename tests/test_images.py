@@ -30,9 +30,7 @@ def noise_pdf(tmp_path_factory: pytest.TempPathFactory) -> str:
     buffer = bytearray()
     counter = 0
     while len(buffer) < needed:
-        block = hashlib.blake2b(
-            seed + counter.to_bytes(4, "little"), digest_size=64
-        ).digest()
+        block = hashlib.blake2b(seed + counter.to_bytes(4, "little"), digest_size=64).digest()
         buffer.extend(block)
         counter += 1
     pixels = bytes(buffer[:needed])
@@ -184,9 +182,7 @@ def test_pdf_to_images_dpi_resolution(sample_pdf, tmp_path, dpi_label):
     )[0]
     with Image.open(base_path) as base_img:
         base_size = base_img.size
-    outputs = pdf_to_images(
-        sample_pdf, PdfImageOptions(dpi=dpi_label, out_dir=str(high_dir))
-    )
+    outputs = pdf_to_images(sample_pdf, PdfImageOptions(dpi=dpi_label, out_dir=str(high_dir)))
     assert len(outputs) == 3
     with Image.open(outputs[0]) as img:
         dpi = DPI_PRESETS[dpi_label]
@@ -207,9 +203,7 @@ def test_pdf_to_images_dpi_resolution_full_matrix(sample_pdf, tmp_path, dpi_labe
     with Image.open(base_path) as base_img:
         base_size = base_img.size
     dpi_dir = tmp_path / "dpi" / Path(dpi_label.replace(" ", "_").lower())
-    outputs = pdf_to_images(
-        sample_pdf, PdfImageOptions(dpi=dpi_label, out_dir=str(dpi_dir))
-    )[0]
+    outputs = pdf_to_images(sample_pdf, PdfImageOptions(dpi=dpi_label, out_dir=str(dpi_dir)))[0]
     with Image.open(outputs) as img:
         dpi = DPI_PRESETS[dpi_label]
         expected = (
@@ -232,9 +226,7 @@ def test_pdf_to_images_high_dpi(tmp_path, dpi_label):
     doc.close()
 
     out_dir = tmp_path / "out"
-    outputs = pdf_to_images(
-        str(pdf_path), PdfImageOptions(dpi=dpi_label, out_dir=str(out_dir))
-    )
+    outputs = pdf_to_images(str(pdf_path), PdfImageOptions(dpi=dpi_label, out_dir=str(out_dir)))
     dpi = DPI_PRESETS[dpi_label]
     expected = (math.ceil(10 * dpi / 72), math.ceil(10 * dpi / 72))
     with Image.open(outputs[0]) as img:
@@ -269,9 +261,7 @@ def test_pdf_to_images_dimensions(sample_pdf, tmp_path):
 def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):
     low_dir = tmp_path / "low"
     high_dir = tmp_path / "high"
-    base_path = pdf_to_images(
-        sample_pdf, PdfImageOptions(dpi=72, out_dir=str(low_dir))
-    )[0]
+    base_path = pdf_to_images(sample_pdf, PdfImageOptions(dpi=72, out_dir=str(low_dir)))[0]
     with Image.open(base_path) as base_img:
         base_size = base_img.size
     outputs = pdf_to_images(sample_pdf, PdfImageOptions(dpi=200, out_dir=str(high_dir)))
@@ -330,9 +320,7 @@ def test_pdf_to_images_invalid_page_range(sample_pdf):
 
 
 def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
-    outputs = pdf_to_images(
-        sample_pdf, PdfImageOptions(out_dir=str(tmp_path), dpi="Low (72 dpi)")
-    )
+    outputs = pdf_to_images(sample_pdf, PdfImageOptions(out_dir=str(tmp_path), dpi="Low (72 dpi)"))
     assert len(outputs) == 3
     for output_path in outputs:
         path_obj = Path(output_path)
@@ -341,9 +329,7 @@ def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
-def test_pdf_to_images_max_size_reduces_quality(
-    noise_pdf, tmp_path, fmt, lossy_baselines
-):
+def test_pdf_to_images_max_size_reduces_quality(noise_pdf, tmp_path, fmt, lossy_baselines):
     base_size, base_dims = lossy_baselines[fmt]
     limited_dir = tmp_path / "limited"
     limit_mb = base_size * 0.8 / (1024 * 1024)
@@ -381,9 +367,7 @@ def test_pdf_to_images_max_size_too_small_raises(noise_pdf, tmp_path, fmt):
 
 
 @pytest.mark.parametrize("fmt", ["PNG"])
-def test_pdf_to_images_max_size_lossless_scales_down(
-    noise_pdf, tmp_path, fmt, png_baseline
-):
+def test_pdf_to_images_max_size_lossless_scales_down(noise_pdf, tmp_path, fmt, png_baseline):
     base_size, base_dims = png_baseline
     limited_dir = tmp_path / "limited"
     limit_mb = max(base_size / (1024 * 1024 * 50), 1e-3)
@@ -409,9 +393,7 @@ def test_pdf_to_images_png_max_size_too_small_raises(noise_pdf, tmp_path):
     with pytest.raises(RuntimeError, match="Could not reduce image below max_size_mb"):
         pdf_to_images(
             noise_pdf,
-            PdfImageOptions(
-                image_format="PNG", out_dir=str(tmp_path), max_size_mb=1e-6
-            ),
+            PdfImageOptions(image_format="PNG", out_dir=str(tmp_path), max_size_mb=1e-6),
         )
 
 
@@ -445,9 +427,7 @@ def test_pdf_to_images_tiff_max_size(noise_pdf, tmp_path, tiff_baseline):
     limit_mb = tiff_baseline * 2 / (1024 * 1024)
     limited = pdf_to_images(
         noise_pdf,
-        PdfImageOptions(
-            image_format="TIFF", out_dir=str(tmp_path), max_size_mb=limit_mb
-        ),
+        PdfImageOptions(image_format="TIFF", out_dir=str(tmp_path), max_size_mb=limit_mb),
     )[0]
     limited_size = Path(limited).stat().st_size
     assert limited_size <= limit_mb * 1024 * 1024

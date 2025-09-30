@@ -140,8 +140,7 @@ def test_load_qt_failure_logs(caplog: pytest.LogCaptureFixture) -> None:
     assert isinstance(error, ImportError)
     assert app_cls is None
     assert any(
-        record.getMessage() == "Qt import failed" and record.exc_info
-        for record in caplog.records
+        record.getMessage() == "Qt import failed" and record.exc_info for record in caplog.records
     )
 
 

@@ -32,9 +32,7 @@ def unlock_pdf(
     doc = open_pdf(input_pdf)
     if doc.needs_pass and not doc.authenticate(password or ""):
         raise ValueError(ERR_INVALID_PW)
-    out_path = sane_output_dir(input_pdf, out_dir) / (
-        f"{Path(input_pdf).stem}_unlocked.pdf"
-    )
+    out_path = sane_output_dir(input_pdf, out_dir) / (f"{Path(input_pdf).stem}_unlocked.pdf")
     raise_if_cancelled(cancel, doc)
     save_pdf(
         doc,
