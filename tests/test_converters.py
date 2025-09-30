@@ -8,6 +8,7 @@ from pdf_toolbox.actions.pdf_images import PdfImageOptions, pdf_to_images
 from pdf_toolbox.actions.unlock import unlock_pdf
 
 
+@pytest.mark.slow
 def test_pdf_to_images_png(sample_pdf, tmp_path):
     outputs = pdf_to_images(
         sample_pdf,
@@ -26,6 +27,7 @@ def test_pdf_to_images_jpeg(sample_pdf, tmp_path):
     assert all(Path(output_path).exists() for output_path in outputs)
 
 
+@pytest.mark.slow
 def test_pdf_to_images_tiff(sample_pdf, tmp_path):
     outputs = pdf_to_images(
         sample_pdf,

@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_locale(root: Path, lang: str) -> dict:
     path = root / "src" / "pdf_toolbox" / "locales" / f"{lang}.json"
@@ -37,6 +39,7 @@ def _scan_referenced_keys(root: Path) -> tuple[set[str], set[str]]:
     return strings, labels
 
 
+@pytest.mark.slow
 def test_locales_complete_and_consistent():
     root = Path(__file__).resolve().parents[1]
     locales_dir = root / "src" / "pdf_toolbox" / "locales"

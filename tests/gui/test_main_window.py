@@ -209,6 +209,7 @@ def test_build_form_skips_pptx_probe_for_unrelated_actions(
         window.close()
 
 
+@pytest.mark.slow
 def test_build_form_resets_form_between_actions(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Subsequent form builds clear previously added rows."""
 
@@ -551,6 +552,7 @@ def test_update_status_reflects_log_state(qtbot) -> None:
         window.close()
 
 
+@pytest.mark.slow
 def test_collect_args_handles_composite_widgets(
     monkeypatch: pytest.MonkeyPatch, qtbot, tmp_path: Path
 ) -> None:
@@ -599,6 +601,7 @@ def test_collect_args_handles_composite_widgets(
         window.close()
 
 
+@pytest.mark.slow
 def test_collect_args_multi_file_requires_value(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
     """Empty multi-file inputs raise a validation error."""
 
@@ -904,6 +907,7 @@ def test_on_finished_handles_iterable_results(qtbot) -> None:
         window.close()
 
 
+@pytest.mark.slow
 def test_on_finished_appends_existing_log(qtbot) -> None:
     """Existing log text is preserved when new results arrive."""
     window = _make_window(qtbot)
@@ -1202,6 +1206,7 @@ def test_format_error_message_plain_string(qtbot) -> None:
         window.close()
 
 
+@pytest.mark.slow
 def test_close_event_waits_for_worker(qtbot, stub_worker) -> None:
     """Closing the window cancels and waits for running workers."""
     window = _make_window(qtbot)

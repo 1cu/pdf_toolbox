@@ -15,6 +15,7 @@ pytest_plugins = ("tests.gui.conftest_qt",)
 
 
 @pytest.mark.gui
+@pytest.mark.slow
 @pytest.mark.usefixtures("force_lang_en", "temp_config_dir", "no_file_dialogs")
 def test_main_window_boots_and_exposes_core_widgets(qtbot):
     """Launch the main window and verify essential widgets are present."""

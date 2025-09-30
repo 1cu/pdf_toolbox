@@ -384,7 +384,12 @@ def test_miro_export_miro_pptx(monkeypatch, sample_pdf, tmp_path):
     assert explicit_manifest.exists()
 
 
-def test_miro_export_pptx_without_provider(tmp_path):
+def test_miro_export_pptx_without_provider(monkeypatch, tmp_path):
+    # Mock HTTP renderer to not be available
+    from pdf_toolbox.renderers import http_office
+
+    monkeypatch.setattr(http_office.PptxHttpOfficeRenderer, "can_handle", lambda _: False)
+
     pptx_path = tmp_path / "deck.pptx"
     pptx_path.write_text("pptx")
     with pytest.raises(PptxProviderUnavailableError) as exc:

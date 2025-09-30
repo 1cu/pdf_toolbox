@@ -40,6 +40,7 @@ def _find_action_item(window: gui.MainWindow, fqname: str):
     pytest.fail(f"Action {fqname} not found in tree")
 
 
+@pytest.mark.slow
 def test_pdf_to_images_via_ui(
     qtbot,
     pdf_with_image: str,

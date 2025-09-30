@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from numbers import Real
 from time import perf_counter
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import pytest
 
@@ -80,14 +81,15 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_call(item: pytest.Item):
+def pytest_runtest_call(item: pytest.Item) -> Generator[None, Any]:
     """Record call duration and marker metadata for *item*."""
     start = perf_counter()
     outcome = yield
     duration = perf_counter() - start
     error: Exception | None = None
     try:
-        outcome.get_result()
+        if outcome is not None and hasattr(outcome, "get_result"):
+            outcome.get_result()
     except Exception as exc:
         error = exc
     finally:

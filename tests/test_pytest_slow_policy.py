@@ -130,6 +130,7 @@ def test_runtest_call_records_user_properties(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(slow_policy, "perf_counter", FakePerfCounter())
 
     generator = slow_policy.pytest_runtest_call(cast(pytest.Item, item))
+    assert generator is not None
     next(generator)
 
     class Outcome:

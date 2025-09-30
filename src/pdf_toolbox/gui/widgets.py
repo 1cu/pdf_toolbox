@@ -27,7 +27,7 @@ from pdf_toolbox.i18n import tr
 class QtLogHandler(QObject, logging.Handler):
     """Send log records to a ``QPlainTextEdit`` widget."""
 
-    message = Signal(object)
+    message = Signal(logging.LogRecord)
 
     def __init__(self, widget: QPlainTextEdit, on_update: Callable[[], None]):
         """Initialize with target widget and update callback."""

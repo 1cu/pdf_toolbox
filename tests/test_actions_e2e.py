@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 
 import fitz
+import pytest
 from PIL import Image
 
 from pdf_toolbox.actions.extract import extract_range, split_pdf
@@ -49,6 +50,7 @@ def test_split_pdf_e2e(sample_pdf: str, tmp_path: Path) -> None:
     assert counts == [2, 1]
 
 
+@pytest.mark.slow
 def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
     """`pdf_to_images` renders with DPI and dimension/size overrides."""
     dpi_outputs = pdf_to_images(
@@ -119,6 +121,7 @@ def test_pdf_to_images_e2e(sample_pdf: str, tmp_path: Path) -> None:
             )
 
 
+@pytest.mark.slow
 def test_unlock_pdf_e2e(tmp_path: Path) -> None:
     """`unlock_pdf` removes encryption and preserves content."""
     protected = tmp_path / "protected.pdf"

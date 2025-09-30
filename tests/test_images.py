@@ -174,6 +174,7 @@ def test_pdf_to_images_invalid_page_type(sample_pdf):
     "dpi_label",
     ["Low (72 dpi)", "High (300 dpi)"],
 )
+@pytest.mark.slow
 def test_pdf_to_images_dpi_resolution(sample_pdf, tmp_path, dpi_label):
     low_dir = tmp_path / "low"
     high_dir = tmp_path / "high"
@@ -274,6 +275,7 @@ def test_pdf_to_images_custom_dpi(sample_pdf, tmp_path):
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+@pytest.mark.slow
 def test_pdf_to_images_lossy_quality_preset(sample_pdf, tmp_path, fmt):
     images = pdf_to_images(
         sample_pdf,
@@ -290,6 +292,7 @@ def test_pdf_to_images_lossy_quality_preset(sample_pdf, tmp_path, fmt):
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+@pytest.mark.slow
 def test_pdf_to_images_lossy_quality_custom(sample_pdf, tmp_path, fmt):
     images = pdf_to_images(
         sample_pdf,
@@ -329,6 +332,7 @@ def test_pdf_to_images_creates_files(sample_pdf, tmp_path):
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+@pytest.mark.slow
 def test_pdf_to_images_max_size_reduces_quality(noise_pdf, tmp_path, fmt, lossy_baselines):
     base_size, base_dims = lossy_baselines[fmt]
     limited_dir = tmp_path / "limited"
@@ -358,6 +362,7 @@ def test_pdf_to_images_numeric_quality(noise_pdf, tmp_path):
 
 
 @pytest.mark.parametrize("fmt", ["JPEG", "WEBP"])
+@pytest.mark.slow
 def test_pdf_to_images_max_size_too_small_raises(noise_pdf, tmp_path, fmt):
     with pytest.raises(RuntimeError, match="Could not reduce image below max_size_mb"):
         pdf_to_images(
@@ -389,6 +394,7 @@ def test_pdf_to_images_max_size_lossless_scales_down(noise_pdf, tmp_path, fmt, p
         assert limited_img.size[1] < base_dims[1]
 
 
+@pytest.mark.slow
 def test_pdf_to_images_png_max_size_too_small_raises(noise_pdf, tmp_path):
     with pytest.raises(RuntimeError, match="Could not reduce image below max_size_mb"):
         pdf_to_images(
