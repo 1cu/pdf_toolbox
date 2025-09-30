@@ -184,7 +184,12 @@ show_resolution_status() {
     echo "📊 Resolution Status:"
     echo "  Resolved: $resolved_count"
     echo "  Total: $total_comments"
-    echo "  Progress: $(( resolved_count * 100 / ${total_comments:-1} ))%"
+    if [ "${total_comments:-0}" -gt 0 ]; then
+        progress=$(( resolved_count * 100 / total_comments ))
+    else
+        progress=0
+    fi
+    echo "  Progress: ${progress}%"
     echo ""
 
     # Show resolved comments
