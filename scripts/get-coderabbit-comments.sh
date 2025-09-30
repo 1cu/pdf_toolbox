@@ -8,17 +8,18 @@ set -euo pipefail
 if [ $# -lt 1 ]; then
     echo "❌ Error: Missing PR number argument"
     echo ""
-    echo "Usage: $0 <PR_NUMBER> [--resolve <COMMENT_ID>] [--status] [--cleanup] [--help]"
+    echo "Usage: $0 <PR_NUMBER> [--resolve <COMMENT_ID1,COMMENT_ID2,...>] [--status] [--cleanup] [--help]"
     echo "Example: $0 123"
     echo "         $0 123 --resolve 2386777571"
+    echo "         $0 123 --resolve 2386777571,2386777572,2386777573"
     echo "         $0 123 --status"
     echo "         $0 --cleanup"
     echo ""
     echo "Commands:"
-    echo "  --resolve <COMMENT_ID>  Mark a comment as resolved by AI"
-    echo "  --status               Show resolution status"
-    echo "  --cleanup              Clean up closed PRs and archive resolutions"
-    echo "  --help                Show this help"
+    echo "  --resolve <COMMENT_IDS>          Mark one or more comments as resolved by AI (comma-separated)"
+    echo "  --status                         Show resolution status"
+    echo "  --cleanup                        Clean up closed PRs and archive resolutions"
+    echo "  --help                          Show this help"
     exit 1
 fi
 
@@ -40,8 +41,44 @@ if ! gh auth status &> /dev/null; then
     exit 1
 fi
 
-OWNER=1cu
-REPO=pdf_toolbox
+# Auto-detect repository information from current git context
+get_repo_info() {
+    local remote_url
+    remote_url=$(git remote get-url origin 2>/dev/null || echo "")
+    
+    if [ -z "$remote_url" ]; then
+        echo "❌ Error: Not in a git repository or no 'origin' remote found"
+        echo "Please run this script from within a git repository with a GitHub remote"
+        exit 1
+    fi
+    
+    # Extract owner and repo from various URL formats
+    # GitHub HTTPS: https://github.com/owner/repo.git
+    # GitHub SSH: git@github.com:owner/repo.git
+    # GitHub HTTPS (no .git): https://github.com/owner/repo
+    local owner_repo
+    
+    # Handle SSH format: git@github.com:owner/repo.git
+    if [[ "$remote_url" =~ git@github\.com:([^/]+)/([^/]+) ]]; then
+        local repo_name="${BASH_REMATCH[2]}"
+        # Remove .git suffix if present
+        repo_name="${repo_name%.git}"
+        owner_repo="${BASH_REMATCH[1]}/${repo_name}"
+    # Handle HTTPS format: https://github.com/owner/repo.git
+    elif [[ "$remote_url" =~ https://github\.com/([^/]+)/([^/]+) ]]; then
+        local repo_name="${BASH_REMATCH[2]}"
+        # Remove .git suffix if present
+        repo_name="${repo_name%.git}"
+        owner_repo="${BASH_REMATCH[1]}/${repo_name}"
+    else
+        echo "❌ Error: Not a GitHub repository"
+        echo "Remote URL: $remote_url"
+        echo "Please ensure you're in a GitHub repository"
+        exit 1
+    fi
+    
+    echo "$owner_repo"
+}
 
 PR="$1"
 
@@ -58,7 +95,7 @@ elif [ $# -gt 1 ]; then
     case "$2" in
         --resolve)
             if [ $# -lt 3 ]; then
-                echo "❌ Error: --resolve requires a comment ID"
+                echo "❌ Error: --resolve requires one or more comment IDs (comma-separated)"
                 exit 1
             fi
             COMMAND="resolve"
@@ -78,24 +115,40 @@ elif [ $# -gt 1 ]; then
     esac
 fi
 
+# Get repository information (skip for help and cleanup commands)
+if [ "$COMMAND" != "help" ] && [ "$COMMAND" != "cleanup" ]; then
+    REPO_INFO=$(get_repo_info)
+    OWNER=$(echo "$REPO_INFO" | cut -d'/' -f1)
+    REPO=$(echo "$REPO_INFO" | cut -d'/' -f2)
+    
+    # Show detected repository information (only for non-status commands to avoid clutter)
+    if [ "$COMMAND" != "status" ]; then
+        echo "🔍 Detected repository: $OWNER/$REPO" >&2
+    fi
+fi
+
 # Handle help command
 if [ "$COMMAND" = "help" ]; then
     echo "Enhanced GitHub PR Comments Fetcher with AI Resolution Support"
     echo ""
-    echo "Usage: $0 <PR_NUMBER> [--resolve <COMMENT_ID>] [--status] [--cleanup] [--help]"
+    echo "This script automatically detects the GitHub repository from the current git context."
+    echo "Make sure you're in a GitHub repository with an 'origin' remote."
+    echo ""
+    echo "Usage: $0 <PR_NUMBER> [--resolve <COMMENT_ID1,COMMENT_ID2,...>] [--status] [--cleanup] [--help]"
     echo ""
     echo "Commands:"
-    echo "  (no command)           Fetch and display all comments"
-    echo "  --resolve <COMMENT_ID> Mark a comment as resolved by AI"
-    echo "  --status               Show resolution status"
-    echo "  --cleanup              Clean up closed PRs and archive resolutions"
-    echo "  --help                Show this help"
+    echo "  (no command)                    Fetch and display all comments"
+    echo "  --resolve <COMMENT_IDS>        Mark one or more comments as resolved by AI (comma-separated)"
+    echo "  --status                        Show resolution status"
+    echo "  --cleanup                       Clean up closed PRs and archive resolutions"
+    echo "  --help                         Show this help"
     echo ""
     echo "Examples:"
-    echo "  $0 123                 # Fetch all comments for PR 123"
-    echo "  $0 123 --resolve 2386777571  # Mark comment as resolved"
-    echo "  $0 123 --status        # Show resolution status"
-    echo "  $0 --cleanup           # Clean up closed PRs and archive resolutions"
+    echo "  $0 123                          # Fetch all comments for PR 123"
+    echo "  $0 123 --resolve 2386777571    # Mark single comment as resolved"
+    echo "  $0 123 --resolve 2386777571,2386777572,2386777573  # Mark multiple comments as resolved"
+    echo "  $0 123 --status                 # Show resolution status"
+    echo "  $0 --cleanup                    # Clean up closed PRs and archive resolutions"
     exit 0
 fi
 
@@ -134,6 +187,45 @@ save_resolution() {
             resolved_at: $timestamp,
             resolved_by: "ai"
         }]
+    ')
+
+    echo "$updated_resolutions" > "$resolution_file"
+}
+
+save_multiple_resolutions() {
+    local comment_ids="$1"
+    local resolution_file
+    local current_resolutions
+    local updated_resolutions
+    local timestamp
+
+    resolution_file=$(get_resolution_file)
+    current_resolutions=$(load_resolutions)
+    timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+    # Split comma-separated comment IDs and create resolution entries
+    local IFS=','
+    local comment_id_array=($comment_ids)
+    local resolution_entries="[]"
+
+    for comment_id in "${comment_id_array[@]}"; do
+        # Trim whitespace
+        comment_id=$(echo "$comment_id" | xargs)
+        if [ -n "$comment_id" ]; then
+            resolution_entries=$(echo "$resolution_entries" | jq --arg id "$comment_id" --arg ts "$timestamp" '
+                . += [{
+                    comment_id: $id,
+                    resolved_at: $ts,
+                    resolved_by: "ai"
+                }]
+            ')
+        fi
+    done
+
+    # Add all resolved comments and history entries
+    updated_resolutions=$(echo "$current_resolutions" | jq --argjson new_resolutions "$resolution_entries" '
+        .resolved_comments = (.resolved_comments + ($new_resolutions | map(.comment_id))) |
+        .resolution_history = (.resolution_history + $new_resolutions)
     ')
 
     echo "$updated_resolutions" > "$resolution_file"
@@ -316,9 +408,19 @@ update_local_comments_state() {
 
 # Handle resolution commands
 if [ "$COMMAND" = "resolve" ]; then
-    save_resolution "$COMMENT_ID"
-    update_local_comments_state
-    echo "✅ Comment $COMMENT_ID marked as resolved"
+    # Check if multiple comment IDs are provided (comma-separated)
+    if [[ "$COMMENT_ID" == *","* ]]; then
+        save_multiple_resolutions "$COMMENT_ID"
+        update_local_comments_state
+        # Count the number of resolved comments
+        local count
+        count=$(echo "$COMMENT_ID" | tr ',' '\n' | wc -l | xargs)
+        echo "✅ $count comments marked as resolved: $COMMENT_ID"
+    else
+        save_resolution "$COMMENT_ID"
+        update_local_comments_state
+        echo "✅ Comment $COMMENT_ID marked as resolved"
+    fi
     exit 0
 fi
 
