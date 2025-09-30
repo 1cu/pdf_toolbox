@@ -262,14 +262,14 @@ cleanup_closed_prs() {
             if [ -f "$resolution_file" ]; then
                 mv "$resolution_file" ".local/_Archive/pr-$pr_num-resolutions.json"
                 echo "    ✅ Archived resolutions" >&2
-                ((archived_count++))
+                archived_count=$((archived_count + 1))
             fi
 
             # Remove JSON and summary files
             rm -f ".local/pr-$pr_num-change-comments.json"
             rm -f ".local/pr-$pr_num-summary.txt"
             echo "    🗑️  Removed JSON and summary files" >&2
-            ((cleaned_count++))
+            cleaned_count=$((cleaned_count + 1))
         elif [ "$pr_state" = "unknown" ]; then
             echo "  ⚠️  Could not determine state of PR #$pr_num (may not exist or no access)" >&2
         else
@@ -479,11 +479,11 @@ jq -n --slurpfile threads .local/temp-threads.json --slurpfile comments .local/t
   def generate_summary($comments):
     {
       total_comments: ($comments | length),
-      by_type: ($comments | group_by(.type) | map({type: .[0].type, count: length})),
-      by_author: ($comments | group_by(.author) | map({author: .[0].author, count: length})),
-      by_priority: ($comments | group_by(.priority) | map({priority: .[0].priority, count: length})),
-      by_category: ($comments | group_by(.category) | map({category: .[0].category, count: length})),
-      by_file: ($comments | map(select(.file_path != null)) | group_by(.file_path) | map({file: .[0].file_path, count: length})),
+      by_type: ($comments | sort_by(.type) | group_by(.type) | map({type: .[0].type, count: length})),
+      by_author: ($comments | sort_by(.author) | group_by(.author) | map({author: .[0].author, count: length})),
+      by_priority: ($comments | sort_by(.priority) | group_by(.priority) | map({priority: .[0].priority, count: length})),
+      by_category: ($comments | sort_by(.category) | group_by(.category) | map({category: .[0].category, count: length})),
+      by_file: ($comments | map(select(.file_path != null)) | sort_by(.file_path) | group_by(.file_path) | map({file: .[0].file_path, count: length})),
       inline_comments: ($comments | map(select(.type == "inline-comment")) | length),
       pr_comments: ($comments | map(select(.type == "pr-comment")) | length),
       with_code_changes: ($comments | map(select(.has_code_changes == true)) | length),

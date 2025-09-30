@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from types import SimpleNamespace
 from typing import cast
 
@@ -37,7 +38,7 @@ class _StubItem:
         self.user_properties: list[tuple[str, object]] = []
         self._markers = list(markers or [])
 
-    def iter_markers(self, name: str | None = None):
+    def iter_markers(self, name: str | None = None) -> Iterator[object]:
         if name == "slow":
             return iter(self._markers)
         return iter(())
@@ -78,10 +79,16 @@ def test_pytest_runtest_call_records_metadata_when_test_errors() -> None:
     item = _StubItem(config)
 
     hook = pytest_runtest_call(item=cast(pytest.Item, item))
+    assert hook is not None
     next(hook)
 
+    # Simulate a failing outcome by sending a mock outcome object
+    class MockOutcome:
+        def get_result(self) -> None:
+            raise RuntimeError("boom")
+
     with pytest.raises(RuntimeError):
-        hook.send(_FailingOutcome())
+        hook.send(MockOutcome())
 
     durations = [value for key, value in item.user_properties if key == _PROP_DURATION]
     assert durations
