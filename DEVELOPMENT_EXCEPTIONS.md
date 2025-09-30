@@ -24,13 +24,13 @@
 | tests/gui/conftest_qt.py:217                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:220                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/test_e2e_pdf_images.py:11              | pragma: no cover             | skip when PySide6 missing                                             | -        |
-| tests/gui/test_main_window.py:514                | N802                         | mimic Qt worker API naming                                            | -        |
-| tests/gui/test_main_window.py:528                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
-| tests/gui/test_main_window.py:636                | N802                         | mimic Qt worker API naming                                            | -        |
-| tests/gui/test_main_window.py:646                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
-| tests/gui/test_main_window.py:724                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:728                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:1210               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
+| tests/gui/test_main_window.py:515                | N802                         | mimic Qt worker API naming                                            | -        |
+| tests/gui/test_main_window.py:529                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
+| tests/gui/test_main_window.py:639                | N802                         | mimic Qt worker API naming                                            | -        |
+| tests/gui/test_main_window.py:649                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
+| tests/gui/test_main_window.py:727                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
+| tests/gui/test_main_window.py:731                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
+| tests/gui/test_main_window.py:1215               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
 | tests/gui/test_widgets.py:127                    | N802                         | stub mirrors Qt URL API                                               | -        |
 | tests/gui/test_widgets.py:134                    | N802                         | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:145                    | N802                         | stub mirrors Qt event API                                             | -        |

@@ -114,6 +114,7 @@ def test_requires_netloc_in_base_url() -> None:
         GitHubClient("token", base_url="https:///missing-host")
 
 
+@pytest.mark.slow
 def test_default_transport_invoked(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
 
@@ -209,6 +210,7 @@ def test_ssl_context_success(monkeypatch: pytest.MonkeyPatch) -> None:
     assert context.loaded is True
 
 
+@pytest.mark.slow
 def test_perform_propagates_github_errors() -> None:
     error = GitHubAPIError("boom", status=500, url="https://api.github.com/test")
 

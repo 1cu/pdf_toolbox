@@ -22,7 +22,12 @@ from pdf_toolbox.renderers.pptx import (
 from pdf_toolbox.renderers.pptx_base import RenderOptions
 
 
-def test_rendering_actions_raise(simple_pptx):
+def test_rendering_actions_raise(monkeypatch, simple_pptx):
+    # Mock HTTP renderer to not be available
+    from pdf_toolbox.renderers import http_office
+
+    monkeypatch.setattr(http_office.PptxHttpOfficeRenderer, "can_handle", lambda _: False)
+
     with pytest.raises(pptx_registry.RendererSelectionError):
         pptx_to_images(simple_pptx)
     with pytest.raises(PptxProviderUnavailableError):
