@@ -20,10 +20,9 @@
 | src/pdf_toolbox/renderers/registry.py:203        | BLE001, RUF100               | renderer constructors may fail arbitrarily; treat as unavailable      | -        |
 | src/pdf_toolbox/renderers/registry.py:244        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
 | src/pdf_toolbox/renderers/registry.py:262        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
-| tests/gui/conftest_qt.py:23                      | pragma: no cover             | skip GUI fixtures when PySide6 missing                                | -        |
-| tests/gui/conftest_qt.py:214                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
-| tests/gui/conftest_qt.py:223                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
-| tests/gui/conftest_qt.py:226                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
+| tests/gui/conftest_qt.py:212                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
+| tests/gui/conftest_qt.py:221                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
+| tests/gui/conftest_qt.py:224                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/test_e2e_pdf_images.py:13              | pragma: no cover             | skip GUI tests when PySide6 missing                                   | -        |
 | tests/gui/test_main_window.py:27                 | pragma: no cover             | skip GUI tests when PySide6 missing                                   | -        |
 | tests/gui/test_main_window.py:520                | N802                         | mimic Qt worker API naming                                            | -        |

@@ -11,14 +11,15 @@ from threading import Event
 from types import SimpleNamespace
 from typing import ClassVar
 
-os.environ.setdefault("QT_OPENGL", "software")
-
 import pytest
 
-pytest.importorskip("PySide6.QtWidgets")
+try:
+    from PySide6.QtCore import QObject, Signal
+    from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
+except ModuleNotFoundError:
+    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
 
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
+os.environ.setdefault("QT_OPENGL", "software")
 
 from pdf_toolbox import config, gui, i18n, utils
 from pdf_toolbox.gui import main_window as gui_main_window
