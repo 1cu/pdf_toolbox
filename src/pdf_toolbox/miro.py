@@ -382,7 +382,9 @@ def _binary_search_dpi_candidates(
     while low <= high:
         dpi = (low + high) // 2
         image = render_page_image(page, dpi, keep_alpha=True)
+        image, _clamped, scale = _clamp_image_to_limits(image)
         allow_transparency = image.mode in {"RGBA", "LA"}
+        effective_dpi = max(1, round(dpi * scale))
         data, _fmt, _selected, encode_attempts, within = _encode_raster(
             image,
             max_bytes,
@@ -390,7 +392,7 @@ def _binary_search_dpi_candidates(
             apply_unsharp=False,
         )
         for attempt in encode_attempts:
-            attempt.dpi = dpi
+            attempt.dpi = effective_dpi
         attempts.extend(encode_attempts)
         size = len(data)
         if within:
@@ -415,15 +417,43 @@ def _binary_search_dpi_candidates(
     return candidates
 
 
+def _clamp_image_to_limits(
+    image: Image.Image,
+) -> tuple[Image.Image, bool, float]:
+    """Return an image constrained to the Miro dimension limits."""
+    width, height = image.size
+    if width <= 0 or height <= 0:
+        return image, False, 1.0
+
+    long_edge = max(width, height)
+    short_edge = min(width, height)
+    if long_edge <= MIRO_MAX_LONG_EDGE and short_edge <= MIRO_MAX_SHORT_EDGE:
+        return image, False, 1.0
+
+    scale_long = MIRO_MAX_LONG_EDGE / long_edge if long_edge else 1.0
+    scale_short = MIRO_MAX_SHORT_EDGE / short_edge if short_edge else 1.0
+    scale = min(scale_long, scale_short, 1.0)
+    if scale >= 1.0:
+        return image, False, 1.0
+
+    new_width = max(1, math.floor(width * scale))
+    new_height = max(1, math.floor(height * scale))
+    resample = getattr(Image, "Resampling", Image).LANCZOS
+    resized = image.resize((new_width, new_height), resample=resample)
+    return resized, True, scale
+
+
 def _finalise_candidate(
     page: fitz.Page,
     dpi: int,
     max_bytes: int,
     attempts: list[PageExportAttempt],
-) -> tuple[bytes, str, PageExportAttempt, bool, int, int]:
+) -> tuple[bytes, str, PageExportAttempt, bool, bool, int, int, int]:
     """Render and encode ``page`` at ``dpi`` capturing result metadata."""
     image = render_page_image(page, dpi, keep_alpha=True)
+    image, clamped, scale = _clamp_image_to_limits(image)
     allow_transparency = image.mode in {"RGBA", "LA"}
+    effective_dpi = max(1, round(dpi * scale))
     data, fmt, selected_attempt, encode_attempts, within = _encode_raster(
         image,
         max_bytes,
@@ -431,9 +461,18 @@ def _finalise_candidate(
         apply_unsharp=True,
     )
     for attempt in encode_attempts:
-        attempt.dpi = dpi
+        attempt.dpi = effective_dpi
     attempts.extend(encode_attempts)
-    return data, fmt, selected_attempt, within, image.width, image.height
+    return (
+        data,
+        fmt,
+        selected_attempt,
+        within,
+        clamped,
+        effective_dpi,
+        image.width,
+        image.height,
+    )
 
 
 def _select_raster_output(
@@ -442,7 +481,7 @@ def _select_raster_output(
     attempts: list[PageExportAttempt],
     candidate_dpis: list[int],
     min_dpi: int,
-) -> tuple[bytes, str, PageExportAttempt | None, int, int, bool, int]:
+) -> tuple[bytes, str, PageExportAttempt | None, int, int, bool, int, bool]:
     """Evaluate candidates and choose the final raster export."""
     tested_dpis: set[int] = set()
     final_data = b""
@@ -452,10 +491,11 @@ def _select_raster_output(
     final_width = 0
     final_height = 0
     dpi_used = candidate_dpis[0]
+    resolution_clamped = False
 
     def refine(
         start_dpi: int,
-    ) -> tuple[int, bytes, str, PageExportAttempt | None, bool, int, int]:
+    ) -> tuple[int, bytes, str, PageExportAttempt | None, bool, int, int, bool]:
         """Try progressively lower DPIs when results exceed the size limit."""
         refined_data = b""
         refined_fmt = ""
@@ -464,6 +504,8 @@ def _select_raster_output(
         refined_width = 0
         refined_height = 0
         dpi = start_dpi
+        refined_clamped = False
+        effective_dpi = max(min_dpi, start_dpi)
 
         while dpi > min_dpi:
             next_dpi = max(min_dpi, dpi - 25)
@@ -477,22 +519,26 @@ def _select_raster_output(
                 refined_fmt,
                 refined_attempt,
                 refined_within,
+                clamped,
+                effective_dpi,
                 refined_width,
                 refined_height,
             ) = _finalise_candidate(page, next_dpi, max_bytes, attempts)
             tested_dpis.add(next_dpi)
+            refined_clamped |= clamped
             dpi = next_dpi
             if refined_within or dpi == min_dpi:
                 break
 
         return (
-            dpi,
+            effective_dpi,
             refined_data,
             refined_fmt,
             refined_attempt,
             refined_within,
             refined_width,
             refined_height,
+            refined_clamped,
         )
 
     for dpi in candidate_dpis:
@@ -501,11 +547,14 @@ def _select_raster_output(
             final_fmt,
             final_attempt,
             final_within,
+            clamped,
+            effective_dpi,
             final_width,
             final_height,
         ) = _finalise_candidate(page, dpi, max_bytes, attempts)
         tested_dpis.add(dpi)
-        dpi_used = dpi
+        resolution_clamped |= clamped
+        dpi_used = effective_dpi
         if final_within:
             return (
                 final_data,
@@ -515,6 +564,7 @@ def _select_raster_output(
                 final_height,
                 final_within,
                 dpi_used,
+                resolution_clamped,
             )
 
     fallback = (
@@ -525,6 +575,7 @@ def _select_raster_output(
         final_height,
         final_within,
         dpi_used,
+        resolution_clamped,
     )
 
     if dpi_used <= min_dpi:
@@ -538,11 +589,13 @@ def _select_raster_output(
         final_within,
         final_width,
         final_height,
+        refined_clamped,
     ) = refine(dpi_used)
 
     if final_attempt is None or not final_data:
         return fallback
 
+    resolution_clamped |= refined_clamped
     return (
         final_data,
         final_fmt,
@@ -551,6 +604,7 @@ def _select_raster_output(
         final_height,
         final_within,
         refined_dpi,
+        resolution_clamped,
     )
 
 
@@ -581,6 +635,7 @@ def _rasterise_page(
         final_height,
         final_within,
         dpi_used,
+        clamped,
     ) = _select_raster_output(
         page,
         max_bytes,
@@ -592,7 +647,7 @@ def _rasterise_page(
     if final_attempt is None:
         raise RuntimeError(NO_RASTER_ATTEMPT_MSG)
 
-    resolution_limited = effective_max_dpi < profile.min_dpi
+    resolution_limited = (effective_max_dpi < profile.min_dpi) or clamped
     return (
         final_data,
         final_fmt,
