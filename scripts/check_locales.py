@@ -68,6 +68,8 @@ def referenced_keys() -> tuple[set[str], set[str]]:
                 sys.modules.pop(name)
         for act in actions_mod.list_actions():
             string_keys.add(act.key)
+            for param in act.form_params:
+                label_keys.add(param.name)
     finally:
         sys.path.remove(str(src))
     return string_keys, label_keys
@@ -94,19 +96,19 @@ def _validate_key_sets(locales: dict[str, dict]) -> bool:
     return ok
 
 
-def _validate_referenced_strings(locales: dict[str, dict], ref_strings: set[str]) -> bool:
-    """Validate that locales contain exactly the referenced string keys."""
+def _validate_referenced_keys(locales: dict[str, dict], group: str, ref_keys: set[str]) -> bool:
+    """Validate that each locale's ``group`` keys equal the referenced set."""
     ok = True
     for lang, data in locales.items():
-        keys = set(data["strings"].keys())
-        if keys == ref_strings:
+        keys = set(data[group].keys())
+        if keys == ref_keys:
             continue
-        extra = sorted(keys - ref_strings)
-        missing = sorted(ref_strings - keys)
+        extra = sorted(keys - ref_keys)
+        missing = sorted(ref_keys - keys)
         if extra:
-            logging.error("%s.json obsolete string keys: %s", lang, extra)
+            logging.error("%s.json obsolete %s keys: %s", lang, group, extra)
         if missing:
-            logging.error("%s.json missing string keys: %s", lang, missing)
+            logging.error("%s.json missing %s keys: %s", lang, group, missing)
         ok = False
     return ok
 
@@ -137,8 +139,10 @@ def main() -> int:
         logging.error("no locales found")
         return 1
     ok = _validate_key_sets(locales)
-    ref_strings, _ = referenced_keys()
-    if not _validate_referenced_strings(locales, ref_strings):
+    ref_strings, ref_labels = referenced_keys()
+    if not _validate_referenced_keys(locales, "strings", ref_strings):
+        ok = False
+    if not _validate_referenced_keys(locales, "labels", ref_labels):
         ok = False
     return 0 if ok else 1
 

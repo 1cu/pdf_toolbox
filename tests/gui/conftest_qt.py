@@ -12,12 +12,8 @@ from types import SimpleNamespace
 from typing import ClassVar
 
 import pytest
-
-try:
-    from PySide6.QtCore import QObject, Signal
-    from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
-except ModuleNotFoundError:
-    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 os.environ.setdefault("QT_OPENGL", "software")
 

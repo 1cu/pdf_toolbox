@@ -6,14 +6,8 @@ import logging
 from pathlib import Path
 
 import pytest
-
-try:
-    from PySide6.QtCore import Qt
-    from PySide6.QtTest import QTest
-except (
-    ModuleNotFoundError
-):  # pragma: no cover  # pdf-toolbox: skip widget tests when PySide6 missing | issue:-
-    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
 
 from pdf_toolbox.gui.widgets import (
     ClickableLabel,

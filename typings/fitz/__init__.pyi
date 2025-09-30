@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from os import PathLike
 from types import TracebackType
-from typing import Any
+from typing import Any, overload
 
 class Matrix:
     a: float
@@ -13,9 +13,29 @@ class Matrix:
     e: float
     f: float
 
-    def __init__(self, *components: float) -> None:
-        """Create a matrix from optional component floats."""
-        ...
+    @overload
+    def __init__(self) -> None: ...
+    @overload
+    def __init__(self, other: Matrix, /) -> None: ...
+    @overload
+    def __init__(self, components: Sequence[float], /) -> None: ...
+    @overload
+    def __init__(self, angle: float, /) -> None: ...
+    @overload
+    def __init__(self, zoom_x: float, zoom_y: float, /) -> None: ...
+    @overload
+    def __init__(self, shear_x: float, shear_y: float, scale: float, /) -> None: ...
+    @overload
+    def __init__(
+        self,
+        a: float,
+        b: float,
+        c: float,
+        d: float,
+        e: float,
+        f: float,
+        /,
+    ) -> None: ...  # pdf-toolbox: PyMuPDF signature requires six components | issue:-
 
 class Rect:
     width: float

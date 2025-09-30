@@ -8,24 +8,18 @@ from pathlib import Path
 from typing import Literal, cast
 
 import pytest
-
-try:
-    from PySide6.QtCore import QUrl
-    from PySide6.QtGui import QCloseEvent
-    from PySide6.QtWidgets import (
-        QApplication,
-        QCheckBox,
-        QComboBox,
-        QDialogButtonBox,
-        QDoubleSpinBox,
-        QLabel,
-        QLineEdit,
-        QSpinBox,
-    )
-except (
-    ModuleNotFoundError
-):  # pragma: no cover  # pdf-toolbox: skip GUI tests when PySide6 missing | issue:-
-    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
+from PySide6.QtCore import QUrl
+from PySide6.QtGui import QCloseEvent
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QLabel,
+    QLineEdit,
+    QSpinBox,
+)
 
 from pdf_toolbox import actions, gui
 from pdf_toolbox.gui.main_window import ComboBoxWithSpin
@@ -1233,7 +1227,7 @@ def test_check_author_prompts_when_missing(
     """Missing author metadata triggers a warning and dialog."""
     import pdf_toolbox.gui.main_window as mw
 
-    monkeypatch.setattr(mw, "_load_author_info", lambda: (_ for _ in ()).throw(RuntimeError()))
+    monkeypatch.setattr(mw, "_load_author_info", lambda: ("", ""))
     window = _make_window(qtbot)
     try:
         invoked: list[str] = []

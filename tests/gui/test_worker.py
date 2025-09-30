@@ -4,12 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-try:
-    from pdf_toolbox.gui.worker import Worker
-except (
-    ImportError
-):  # pragma: no cover  # pdf-toolbox: skip worker tests when PySide6 missing | issue:-
-    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
+from pdf_toolbox.gui.worker import Worker
 
 pytest_plugins = ("tests.gui.conftest_qt",)
 

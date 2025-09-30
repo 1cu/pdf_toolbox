@@ -5,13 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
-try:
-    from PySide6.QtCore import Qt
-except (
-    ModuleNotFoundError
-):  # pragma: no cover  # pdf-toolbox: skip GUI tests when PySide6 missing | issue:-
-    pytest.skip("PySide6 is required for GUI tests", allow_module_level=True)
+from PySide6.QtCore import Qt
 
 from pdf_toolbox import gui
 
