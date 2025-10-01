@@ -21,6 +21,7 @@ Examples:
 """
 
 import argparse
+import concurrent.futures
 import json
 import logging
 import os
@@ -119,8 +120,8 @@ class GitHubAPI:
     def _detect_repository(self) -> None:
         """Detect repository from git remote with CI fallbacks."""
         try:
-            result = subprocess.run(  # noqa: S603  # nosec B603, B607  # nosec B603, B607  # pdf-toolbox: git CLI call with fixed arguments | issue:-
-                ["git", "remote", "get-url", "origin"],  # noqa: S607  # nosec B607  # nosec B607  # pdf-toolbox: git CLI with fixed arguments | issue:-
+            result = subprocess.run(  # noqa: S603  # nosec B603, B607  # pdf-toolbox: git CLI call with fixed arguments | issue:-
+                ["git", "remote", "get-url", "origin"],  # noqa: S607  # nosec B607  # pdf-toolbox: git CLI with fixed arguments | issue:-
                 capture_output=True,
                 text=True,
                 check=True,
@@ -193,8 +194,6 @@ class GitHubAPI:
 
     def fetch_comments(self, pr_number: int) -> tuple[list[Comment], list[Comment]]:
         """Fetch comments from GitHub API."""
-        import concurrent.futures
-
         if RICH_AVAILABLE:
             console = Console()
             console.print("[bold blue]Fetching comments...[/bold blue]")

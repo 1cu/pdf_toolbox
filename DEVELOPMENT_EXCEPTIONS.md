@@ -4,24 +4,24 @@
 
 | File                                             | Rule                            | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ------------------------------- | --------------------------------------------------------------------- | -------- |
-| scripts/get_coderabbit_comments.py:28            | B404                            | subprocess needed for git/gh CLI calls                                | -        |
-| scripts/get_coderabbit_comments.py:71            | TRY003                          | helper function for consistent error messages                         | -        |
-| scripts/get_coderabbit_comments.py:76            | TRY003                          | helper function for consistent error messages                         | -        |
-| scripts/get_coderabbit_comments.py:122           | B603, B607, S603                | git CLI call with fixed arguments                                     | -        |
-| scripts/get_coderabbit_comments.py:123           | B607, S607                      | git CLI with fixed arguments                                          | -        |
-| scripts/get_coderabbit_comments.py:171           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
-| scripts/get_coderabbit_comments.py:172           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
-| scripts/get_coderabbit_comments.py:182           | TRY300                          | return in try block for early exit                                    | -        |
-| scripts/get_coderabbit_comments.py:234           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
-| scripts/get_coderabbit_comments.py:235           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
-| scripts/get_coderabbit_comments.py:293           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
-| scripts/get_coderabbit_comments.py:294           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
-| scripts/get_coderabbit_comments.py:372           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
-| scripts/get_coderabbit_comments.py:425           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
-| scripts/get_coderabbit_comments.py:426           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
-| scripts/get_coderabbit_comments.py:762           | TRY300                          | return in try block for early exit                                    | -        |
-| scripts/get_coderabbit_comments.py:791           | C901, PLR0912, PLR0915          | complex table rendering with multiple display modes                   | -        |
-| scripts/get_coderabbit_comments.py:951           | C901, PLR0911, PLR0912, PLR0915 | complex CLI argument handling with multiple command modes             | -        |
+| scripts/get_coderabbit_comments.py:29            | B404                            | subprocess needed for git/gh CLI calls                                | -        |
+| scripts/get_coderabbit_comments.py:72            | TRY003                          | helper function for consistent error messages                         | -        |
+| scripts/get_coderabbit_comments.py:77            | TRY003                          | helper function for consistent error messages                         | -        |
+| scripts/get_coderabbit_comments.py:123           | B603, B607, S603                | git CLI call with fixed arguments                                     | -        |
+| scripts/get_coderabbit_comments.py:124           | B607, S607                      | git CLI with fixed arguments                                          | -        |
+| scripts/get_coderabbit_comments.py:172           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
+| scripts/get_coderabbit_comments.py:173           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
+| scripts/get_coderabbit_comments.py:183           | TRY300                          | return in try block for early exit                                    | -        |
+| scripts/get_coderabbit_comments.py:233           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
+| scripts/get_coderabbit_comments.py:234           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
+| scripts/get_coderabbit_comments.py:292           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
+| scripts/get_coderabbit_comments.py:293           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
+| scripts/get_coderabbit_comments.py:371           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
+| scripts/get_coderabbit_comments.py:424           | B603, B607, S603                | gh CLI call with fixed arguments                                      | -        |
+| scripts/get_coderabbit_comments.py:425           | B607, S607                      | gh CLI with fixed arguments                                           | -        |
+| scripts/get_coderabbit_comments.py:761           | TRY300                          | return in try block for early exit                                    | -        |
+| scripts/get_coderabbit_comments.py:790           | C901, PLR0912, PLR0915          | complex table rendering with multiple display modes                   | -        |
+| scripts/get_coderabbit_comments.py:950           | C901, PLR0911, PLR0912, PLR0915 | complex CLI argument handling with multiple command modes             | -        |
 | src/pdf_toolbox/gui/main_window.py:125           | PLR0915                         | constructor sets up many widgets                                      | -        |
 | src/pdf_toolbox/gui/main_window.py:556           | TRY004                          | GUI handler expects ValueError                                        | -        |
 | src/pdf_toolbox/gui/main_window.py:844           | N802                            | Qt requires camelCase event name                                      | -        |

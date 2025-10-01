@@ -18,7 +18,7 @@ from pdf_toolbox.utils import parse_page_spec
 
 @pytest.mark.slow
 def test_pptx_to_images_e2e(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     simple_pptx: str,
     sample_pdf: str,
     tmp_path: Path,
@@ -26,7 +26,7 @@ def test_pptx_to_images_e2e(
     output_dir = tmp_path / "images"
 
     @contextmanager
-    def fake_convert(input_pptx: str):
+    def fake_convert(input_pptx: str) -> str:
         assert Path(input_pptx).exists()
         yield sample_pdf
 
@@ -69,7 +69,7 @@ def test_pptx_to_images_e2e(
 
 
 def test_pptx_to_pdf_e2e(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     simple_pptx: str,
     sample_pdf: str,
     tmp_path: Path,
