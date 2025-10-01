@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import fitz
+import pytest
 from PIL import Image
 
 from pdf_toolbox.actions import pptx as pptx_actions
@@ -15,6 +16,7 @@ from pdf_toolbox.renderers.pptx_base import BasePptxRenderer, RenderOptions
 from pdf_toolbox.utils import parse_page_spec
 
 
+@pytest.mark.slow
 def test_pptx_to_images_e2e(
     monkeypatch,
     simple_pptx: str,
