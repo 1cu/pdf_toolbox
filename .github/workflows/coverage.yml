@@ -67,7 +67,7 @@ jobs:
       contents: write
     steps:
       - name: Download badge
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0  # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
         with:
           name: coverage-badge
           path: public/badges
