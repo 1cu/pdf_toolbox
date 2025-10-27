@@ -44,7 +44,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: Compress-Archive -Path dist\pdf_toolbox-${{ steps.version.outputs.version }} -DestinationPath pdf_toolbox-${{ steps.version.outputs.version }}-windows.zip
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)  # actions/upload-artifact@v4.6.2 (2025-03-19)
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)  # actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
           name: pdf_toolbox-${{ steps.version.outputs.version }}-${{ runner.os }}
           path: pdf_toolbox-*.zip

@@ -52,7 +52,7 @@ jobs:
           coverage-badge -o dist/badges/coverage.svg -f
 
       - name: Upload badge artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
         with:
           name: coverage-badge
           path: dist/badges/coverage.svg
