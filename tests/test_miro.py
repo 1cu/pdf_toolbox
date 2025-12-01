@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from pathlib import Path
+from threading import Event
 
 import pytest
 from PIL import Image
@@ -110,6 +111,28 @@ def test_export_warns_when_limit_impossible(monkeypatch, pdf_with_image, tmp_pat
         profile=tight_profile,
     )
     assert outcome.page_results[0].warnings
+
+
+def test_rasterise_page_aborts_on_cancel(monkeypatch):
+    cancel = Event()
+    cancel.set()
+
+    class DummyPage:
+        rect = type("Rect", (), {"width": 10, "height": 10})()
+
+    def fail_render(*_args, **_kwargs):
+        pytest.fail("render should not run when cancelled")
+
+    monkeypatch.setattr(miro, "render_page_image", fail_render)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        miro._rasterise_page(
+            DummyPage(),
+            PROFILE_MIRO,
+            PROFILE_MIRO.max_bytes,
+            attempts=[],
+            cancel=cancel,
+        )
 
 
 def test_export_prefers_highest_allowed_dpi(monkeypatch, sample_pdf, tmp_path):

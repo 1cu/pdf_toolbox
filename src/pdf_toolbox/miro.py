@@ -360,12 +360,14 @@ def _select_raster_candidate(
     return data, fmt, attempt, attempts.copy(), False
 
 
-def _binary_search_dpi_candidates(
+def _binary_search_dpi_candidates(  # noqa: PLR0913  # pdf-toolbox: DPI search needs explicit bounds and bookkeeping | issue:-
     page: fitz.Page,
     min_dpi: int,
     max_dpi: int,
     max_bytes: int,
     attempts: list[PageExportAttempt],
+    *,
+    cancel: Event | None = None,
 ) -> list[int]:
     """Return promising DPI values discovered via binary search."""
     low = min_dpi
@@ -374,6 +376,7 @@ def _binary_search_dpi_candidates(
     best_any: tuple[int, int] | None = None
 
     while low <= high:
+        raise_if_cancelled(cancel)
         dpi = (low + high) // 2
         image = render_page_image(page, dpi, keep_alpha=True)
         image, _clamped, scale = _clamp_image_to_limits(image)
@@ -440,8 +443,11 @@ def _finalise_candidate(
     dpi: int,
     max_bytes: int,
     attempts: list[PageExportAttempt],
+    *,
+    cancel: Event | None = None,
 ) -> tuple[bytes, str, PageExportAttempt, bool, bool, int, int, int]:
     """Render and encode ``page`` at ``dpi`` capturing result metadata."""
+    raise_if_cancelled(cancel)
     image = render_page_image(page, dpi, keep_alpha=True)
     image, clamped, scale = _clamp_image_to_limits(image)
     allow_transparency = image.mode in {"RGBA", "LA"}
@@ -467,12 +473,14 @@ def _finalise_candidate(
     )
 
 
-def _select_raster_output(
+def _select_raster_output(  # noqa: PLR0913  # pdf-toolbox: selection requires explicit parameters to trace tuning | issue:-
     page: fitz.Page,
     max_bytes: int,
     attempts: list[PageExportAttempt],
     candidate_dpis: list[int],
     min_dpi: int,
+    *,
+    cancel: Event | None = None,
 ) -> tuple[bytes, str, PageExportAttempt | None, int, int, bool, int, bool]:
     """Evaluate candidates and choose the final raster export."""
     tested_dpis: set[int] = set()
@@ -500,12 +508,14 @@ def _select_raster_output(
         effective_dpi = max(min_dpi, start_dpi)
 
         while dpi > min_dpi:
+            raise_if_cancelled(cancel)
             next_dpi = max(min_dpi, dpi - 25)
             if next_dpi in tested_dpis and next_dpi == dpi:
                 break
             if next_dpi in tested_dpis:
                 dpi = next_dpi
                 continue
+            kwargs = {"cancel": cancel} if cancel is not None else {}
             (
                 refined_data,
                 refined_fmt,
@@ -515,7 +525,7 @@ def _select_raster_output(
                 effective_dpi,
                 refined_width,
                 refined_height,
-            ) = _finalise_candidate(page, next_dpi, max_bytes, attempts)
+            ) = _finalise_candidate(page, next_dpi, max_bytes, attempts, **kwargs)
             tested_dpis.add(next_dpi)
             refined_clamped |= clamped
             dpi = next_dpi
@@ -534,6 +544,8 @@ def _select_raster_output(
         )
 
     for dpi in candidate_dpis:
+        raise_if_cancelled(cancel)
+        kwargs = {"cancel": cancel} if cancel is not None else {}
         (
             final_data,
             final_fmt,
@@ -543,7 +555,7 @@ def _select_raster_output(
             effective_dpi,
             final_width,
             final_height,
-        ) = _finalise_candidate(page, dpi, max_bytes, attempts)
+        ) = _finalise_candidate(page, dpi, max_bytes, attempts, **kwargs)
         tested_dpis.add(dpi)
         resolution_clamped |= clamped
         dpi_used = effective_dpi
@@ -606,8 +618,10 @@ def _rasterise_page(
     max_bytes: int,
     *,
     attempts: list[PageExportAttempt],
+    cancel: Event | None = None,
 ) -> tuple[bytes, str, int, int, int, bool, bool]:
     """Return encoded raster bytes for *page* respecting ``profile``."""
+    raise_if_cancelled(cancel)
     effective_min_dpi, effective_max_dpi = _calculate_dpi_window(page, profile)
     candidate_dpis = _binary_search_dpi_candidates(
         page,
@@ -615,10 +629,12 @@ def _rasterise_page(
         effective_max_dpi,
         max_bytes,
         attempts,
+        cancel=cancel,
     )
     if not candidate_dpis:
         raise RuntimeError(NO_RASTER_ATTEMPT_MSG)
 
+    kwargs = {"cancel": cancel} if cancel is not None else {}
     (
         final_data,
         final_fmt,
@@ -634,6 +650,7 @@ def _rasterise_page(
         attempts,
         candidate_dpis,
         effective_min_dpi,
+        **kwargs,
     )
 
     if final_attempt is None:
@@ -651,14 +668,17 @@ def _rasterise_page(
     )
 
 
-def _export_page(
+def _export_page(  # noqa: PLR0913,PLR0915  # pdf-toolbox: export flow needs explicit inputs and branching for warnings | issue:-
     doc: fitz.Document,
     page_number: int,
     out_base: Path,
     profile: ExportProfile,
     max_bytes: int,
+    *,
+    cancel: Event | None = None,
 ) -> PageExportResult:
     """Export a single page and return its result."""
+    raise_if_cancelled(cancel, doc)
     page = doc.load_page(page_number - 1)
     result = PageExportResult(
         page=page_number,
@@ -706,7 +726,9 @@ def _export_page(
             )
             out_path.unlink(missing_ok=True)
 
+        raise_if_cancelled(cancel, doc)
         attempts: list[PageExportAttempt] = []
+        kwargs = {"cancel": cancel} if cancel is not None else {}
         (
             data,
             fmt,
@@ -720,6 +742,7 @@ def _export_page(
             profile,
             max_bytes,
             attempts=attempts,
+            **kwargs,
         )
         result.attempts.extend(attempts)
         out_path = out_base / f"{stem}_Page_{page_number}.{fmt.lower()}"
@@ -796,7 +819,14 @@ def export_pdf_for_miro(  # noqa: PLR0913  # pdf-toolbox: export pipeline expose
 
         for page_no in page_numbers:
             raise_if_cancelled(cancel, doc)
-            res = _export_page(doc, page_no, out_base, profile, profile.max_bytes)
+            res = _export_page(
+                doc,
+                page_no,
+                out_base,
+                profile,
+                profile.max_bytes,
+                cancel=cancel,
+            )
             results.append(res)
             if res.output_path:
                 files.append(str(res.output_path))
