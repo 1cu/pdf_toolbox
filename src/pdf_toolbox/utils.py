@@ -21,11 +21,13 @@ from pdf_toolbox.validation import validate_config
 REQUIRED_LIBS: Iterable[str] = (
     "fitz",
     "PIL.Image",
+    "pytesseract",
 )
 # suggestions for installing optional runtime libraries
 LIB_HINTS: dict[str, str] = {
     "fitz": "pip install pymupdf",
     "PIL.Image": "pip install pillow",
+    "pytesseract": "pip install pytesseract (requires system tesseract-ocr)",
 }
 # store configuration in a platform-specific user config directory
 CONFIG_FILE = Path(user_config_dir("pdf_toolbox")) / "pdf_toolbox_config.json"
