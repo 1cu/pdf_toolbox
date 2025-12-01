@@ -8,7 +8,7 @@ import fitz
 import pytest
 from PIL import Image, ImageDraw, ImageFont
 
-from pdf_toolbox import config
+from pdf_toolbox import config, i18n
 from pdf_toolbox.actions import ocr
 
 
@@ -43,6 +43,7 @@ def test_extract_handwritten_notes_exports_markdown_and_text(tmp_path, monkeypat
 
     monkeypatch.setattr(ocr, "_ensure_ocr_language_available", lambda _lang, _cmd: None)
     monkeypatch.setattr(ocr, "_run_ocr", fake_ocr)
+    monkeypatch.setitem(i18n._STATE, "lang", "en")
 
     result = ocr.extract_handwritten_notes(
         str(pdf_path),
@@ -61,14 +62,14 @@ def test_extract_handwritten_notes_exports_markdown_and_text(tmp_path, monkeypat
     assert all(mode == "L" for mode in calls)
 
     markdown = expected_md.read_text(encoding="utf-8")
-    assert "# OCR Ergebnisse für handwritten.pdf" in markdown
-    assert "## Seite 1" in markdown
-    assert "## Seite 2" in markdown
+    assert f"# {i18n.tr('ocr.results_for', name='handwritten.pdf')}" in markdown
+    assert f"## {i18n.tr('ocr.page', number=1)}" in markdown
+    assert f"## {i18n.tr('ocr.page', number=2)}" in markdown
     assert "recognized-1" in markdown
     assert "recognized-2" in markdown
 
     text_export = expected_txt.read_text(encoding="utf-8")
-    assert "Seite 1" in text_export
+    assert f"{i18n.tr('pdf_toolbox.ocr.page_label')} 1" in text_export
     assert "recognized-1" in text_export
     assert text_export.endswith("\n")
 
@@ -82,6 +83,7 @@ def test_extract_handwritten_notes_handles_empty_pages(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ocr, "_ensure_ocr_language_available", lambda _lang, _cmd: None)
     monkeypatch.setattr(ocr, "_run_ocr", fake_ocr)
+    monkeypatch.setitem(i18n._STATE, "lang", "en")
 
     result = ocr.extract_handwritten_notes(
         str(pdf_path),
@@ -95,9 +97,9 @@ def test_extract_handwritten_notes_handles_empty_pages(tmp_path, monkeypatch):
     assert result.markdown_path == str(expected_md)
     assert result.text_path is None
     assert result.page_text == ["image-text-deu", ""]
-    assert "## Seite 1" in markdown
+    assert f"## {i18n.tr('ocr.page', number=1)}" in markdown
     assert "image-text-deu" in markdown
-    assert "_Kein Text erkannt._" in markdown
+    assert i18n.tr("ocr.no_text_detected") in markdown
 
 
 def test_run_ocr_uses_pytesseract(monkeypatch):

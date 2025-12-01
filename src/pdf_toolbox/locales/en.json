@@ -75,7 +75,11 @@
         "strings.miro_custom_dpi_unresolved": "DPI could not be resolved for the custom profile.",
         "system": "System",
         "unlock_pdf": "Unlock PDF",
-        "warning": "Warning"
+        "warning": "Warning",
+        "ocr.results_for": "OCR results for {name}",
+        "ocr.page": "Page {number}",
+        "ocr.no_text_detected": "_No text detected._",
+        "pdf_toolbox.ocr.page_label": "Page"
     },
     "labels": {
         "cancel": "Cancel",

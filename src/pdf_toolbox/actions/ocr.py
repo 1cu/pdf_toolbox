@@ -20,6 +20,7 @@ from PIL import Image, ImageEnhance, ImageOps
 
 from pdf_toolbox import config
 from pdf_toolbox.actions import action
+from pdf_toolbox.i18n import tr
 from pdf_toolbox.image_utils import apply_unsharp_mask
 from pdf_toolbox.utils import (
     logger,
@@ -68,7 +69,7 @@ class OcrExtractionResult:
 
 
 @action(category="PDF")
-def extract_handwritten_notes(  # pdf-toolbox: public API keeps parameter parity | issue:-
+def extract_handwritten_notes(
     input_pdf: str,
     output_txt: str | None = None,
     *,
@@ -179,7 +180,7 @@ def _run_ocr_on_image(
 
 
 def _run_ocr(image: Image.Image, *, lang: str, tesseract_cmd: str | None = None) -> str:
-    import pytesseract  # pdf-toolbox: defer pytesseract import until needed | issue:-
+    import pytesseract
 
     module = cast(_PytesseractModule, pytesseract)
     _apply_tesseract_cmd(module, tesseract_cmd)
@@ -189,7 +190,7 @@ def _run_ocr(image: Image.Image, *, lang: str, tesseract_cmd: str | None = None)
 @cache
 def _ensure_ocr_language_available(lang: str, tesseract_cmd: str | None) -> None:
     """Validate that Tesseract has the requested language data installed."""
-    import pytesseract  # pdf-toolbox: defer pytesseract import until needed | issue:-
+    import pytesseract
 
     module = cast(_PytesseractModule, pytesseract)
     _apply_tesseract_cmd(module, tesseract_cmd)
@@ -236,10 +237,10 @@ def _write_markdown(
     page_numbers: list[int],
     page_text: list[str],
 ) -> None:
-    lines = [f"# OCR Ergebnisse für {pdf_name}", ""]
+    lines = [f'# {tr("ocr.results_for", name=pdf_name)}', ""]
     for page_number, text in zip(page_numbers, page_text, strict=True):
-        lines.append(f"## Seite {page_number}")
-        lines.append(text or "_Kein Text erkannt._")
+        lines.append(f'## {tr("ocr.page", number=page_number)}')
+        lines.append(text or tr("ocr.no_text_detected"))
         lines.append("")
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -247,7 +248,7 @@ def _write_markdown(
 def _write_plain_text(output_path: Path, page_numbers: list[int], page_text: list[str]) -> None:
     lines = []
     for page_number, text in zip(page_numbers, page_text, strict=True):
-        lines.append(f"Seite {page_number}:")
+        lines.append(f'{tr("pdf_toolbox.ocr.page_label")} {page_number}:')
         if text:
             lines.append(text)
         lines.append("")
