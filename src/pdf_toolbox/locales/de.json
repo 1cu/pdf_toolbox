@@ -75,7 +75,7 @@
         "strings.miro_custom_dpi_unresolved": "DPI konnte für das benutzerdefinierte Profil nicht ermittelt werden.",
         "system": "System",
         "unlock_pdf": "PDF entsperren",
-        "warning": "Hinweis",
+        "warning": "Hinweis"
     },
     "labels": {
         "cancel": "Abbrechen",

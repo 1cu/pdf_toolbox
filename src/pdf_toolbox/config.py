@@ -113,7 +113,6 @@ def get_pptx_renderer_choice(
 
 def get_tesseract_cmd(cfg: Mapping[str, object] | None = None) -> str | None:
     """Return the configured Tesseract executable path, if set."""
-
     source = cfg if cfg is not None else load_config()
     value = source.get(_TESSERACT_CMD_KEY)
     if not value:
@@ -123,7 +122,6 @@ def get_tesseract_cmd(cfg: Mapping[str, object] | None = None) -> str | None:
 
 def remember_tesseract_cmd(tesseract_cmd: str) -> None:
     """Persist a Tesseract executable path for future runs."""
-
     cfg = load_config()
     cfg[_TESSERACT_CMD_KEY] = str(Path(tesseract_cmd).expanduser())
     save_config(cfg)
@@ -132,9 +130,9 @@ def remember_tesseract_cmd(tesseract_cmd: str) -> None:
 __all__ = [
     "CONFIG_PATH",
     "DEFAULT_CONFIG",
-    "get_tesseract_cmd",
     "PptxRendererChoice",
     "get_pptx_renderer_choice",
+    "get_tesseract_cmd",
     "load_config",
     "load_config_at",
     "remember_tesseract_cmd",

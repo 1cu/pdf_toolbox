@@ -75,7 +75,7 @@
         "strings.miro_custom_dpi_unresolved": "DPI could not be resolved for the custom profile.",
         "system": "System",
         "unlock_pdf": "Unlock PDF",
-        "warning": "Warning",
+        "warning": "Warning"
     },
     "labels": {
         "cancel": "Cancel",
