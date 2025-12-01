@@ -11,14 +11,15 @@ Read the primary docs before making changes:
 - [DEVELOPMENT](DEVELOPMENT.md) — maintainer notes and tooling details.
 - [DEVELOPMENT_EXCEPTIONS](DEVELOPMENT_EXCEPTIONS.md) — generated overview of
   accepted exceptions.
+- [CLAUDE.md](CLAUDE.md) — comprehensive guidance for Claude Code instances.
 
 ## Set up the environment
 
-- Use Python 3.13 only.
+- Use Python 3.13 only (version constraint: `>=3.13,<3.15` due to PySide6).
 - Before running `pre-commit`, install the system Qt libraries with
   `./scripts/ci/install-qt-headless.sh` (run as root or via `sudo`) so the GUI
   hooks have the dependencies they expect.
-- Install Python dependencies with `pip install -e '.[dev]'`.
+- Install Python dependencies with `pip install -e '.[dev]'` or `pdm install`.
 - Enable git hooks with `pre-commit install`.
 - Run Qt with a native display on desktop machines; do not override
   `QT_QPA_PLATFORM` locally.
@@ -28,16 +29,16 @@ Read the primary docs before making changes:
 
 ## Follow the workflow
 
-- Run `pre-commit run --all-files` before committing. Hooks format code, lint,
-  type-check, run tests, enforce coverage, scan with bandit, and refresh the
-  exception overview.
+- Run `pre-commit run --all-files` before committing. Hooks format code (ruff,
+  mdformat), lint (ruff, mypy, bandit), run tests (pytest with coverage),
+  validate locales, and refresh the exception overview.
 - CI runs `pre-commit run --all-files` under Xvfb, so the same lint, format,
   security, metadata, and test hooks run in CI. Keep the pytest hook green
   locally.
 - Use the shorter aliases when iterating (`pre-commit run format|lint|tests`).
 - Workflows pin third-party actions to immutable commit SHAs and periodically
   update to the latest stable release.
-- Keep commits focused and use short imperative subject lines (≤72 characters).
+- Keep commits focused and use short imperative subject lines (≤72 characters).
 
 ## Meet the quality bar
 
@@ -80,3 +81,5 @@ Read the primary docs before making changes:
 - [ ] No undocumented exceptions or blanket disables appeared.
 - [ ] Docs mention `python -m pdf_toolbox.gui` as the GUI entry point.
 - [ ] New user-facing strings use locale keys and the i18n helpers.
+- [ ] Tests cover both success and failure paths.
+- [ ] No unmarked slow tests (optimize or mark with `@pytest.mark.slow`).
