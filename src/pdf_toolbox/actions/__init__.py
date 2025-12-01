@@ -329,6 +329,7 @@ ACTION_MODULES = [
     "pdf_images",
     "miro",
     "unlock",
+    "ocr",
 ]
 
 
@@ -366,6 +367,7 @@ __all__ = [
     "extract",
     "list_actions",
     "miro",
+    "ocr",
     "pdf_images",
     "pptx",
     "unlock",
