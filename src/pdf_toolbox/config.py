@@ -32,6 +32,7 @@ _PPTX_RENDERER_ALIASES: dict[str, KnownPptxRenderer] = {
     "http_office": "http_office",
     "lightweight": "lightweight",
 }
+_TESSERACT_CMD_KEY = "tesseract_cmd"
 
 DEFAULT_CONFIG = {
     "last_open_dir": str(Path.home()),
@@ -43,6 +44,7 @@ DEFAULT_CONFIG = {
     "log_level": "INFO",
     "language": "system",
     _PPTX_RENDERER_KEY: _PPTX_RENDERER_DEFAULT,
+    _TESSERACT_CMD_KEY: None,
     "http_office": {},
 }
 
@@ -109,13 +111,31 @@ def get_pptx_renderer_choice(
     return _normalise_pptx_renderer(value)
 
 
+def get_tesseract_cmd(cfg: Mapping[str, object] | None = None) -> str | None:
+    """Return the configured Tesseract executable path, if set."""
+    source = cfg if cfg is not None else load_config()
+    value = source.get(_TESSERACT_CMD_KEY)
+    if not value:
+        return None
+    return str(Path(str(value)).expanduser())
+
+
+def remember_tesseract_cmd(tesseract_cmd: str) -> None:
+    """Persist a Tesseract executable path for future runs."""
+    cfg = load_config()
+    cfg[_TESSERACT_CMD_KEY] = str(Path(tesseract_cmd).expanduser())
+    save_config(cfg)
+
+
 __all__ = [
     "CONFIG_PATH",
     "DEFAULT_CONFIG",
     "PptxRendererChoice",
     "get_pptx_renderer_choice",
+    "get_tesseract_cmd",
     "load_config",
     "load_config_at",
+    "remember_tesseract_cmd",
     "save_config",
     "save_config_at",
 ]

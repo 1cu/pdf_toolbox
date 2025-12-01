@@ -14,6 +14,7 @@ classifiers = [
 dependencies = [
   "PySide6>=6.9.2",
   "pillow>=11.3.0",
+  "pytesseract>=0.3.13",
   "pymupdf>=1.26.4",
   "python-pptx>=1.0.2",
   "platformdirs>=4.4.0",
@@ -132,3 +133,4 @@ fail_on_unmarked_slow = true
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "PLR2004", "D103", "D100", "PLC0415", "S106"]
 "scripts/check_coverage.py" = ["S314"]
+"src/pdf_toolbox/actions/ocr.py" = ["PLR0913", "PLC0415"]
