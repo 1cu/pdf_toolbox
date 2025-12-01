@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 from PyInstaller.building.build_main import Analysis, COLLECT, EXE, PYZ
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import (
+    collect_data_files,
+    collect_dynamic_libs,
+    collect_submodules,
+)
 
+binaries = collect_dynamic_libs("PyMuPDF")
 hiddenimports = (
     ["pythoncom", "pywintypes"]
     + collect_submodules("win32com")
@@ -13,13 +18,13 @@ hiddenimports = (
     + collect_submodules("pdf_toolbox.actions")
 )
 
-datas = collect_data_files("pdf_toolbox.locales")
+datas = collect_data_files("pdf_toolbox.locales") + collect_data_files("PyMuPDF")
 
 analysis = Analysis(
     ["src/pdf_toolbox/gui/__main__.py"],
     hiddenimports=hiddenimports,
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=datas,
     hooksconfig={},
 )
