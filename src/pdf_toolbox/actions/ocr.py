@@ -237,9 +237,9 @@ def _write_markdown(
     page_numbers: list[int],
     page_text: list[str],
 ) -> None:
-    lines = [f'# {tr("ocr.results_for", name=pdf_name)}', ""]
+    lines = [f"# {tr('ocr.results_for', name=pdf_name)}", ""]
     for page_number, text in zip(page_numbers, page_text, strict=True):
-        lines.append(f'## {tr("ocr.page", number=page_number)}')
+        lines.append(f"## {tr('ocr.page', number=page_number)}")
         lines.append(text or tr("ocr.no_text_detected"))
         lines.append("")
     output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -248,7 +248,7 @@ def _write_markdown(
 def _write_plain_text(output_path: Path, page_numbers: list[int], page_text: list[str]) -> None:
     lines = []
     for page_number, text in zip(page_numbers, page_text, strict=True):
-        lines.append(f'{tr("pdf_toolbox.ocr.page_label")} {page_number}:')
+        lines.append(f"{tr('pdf_toolbox.ocr.page_label')} {page_number}:")
         if text:
             lines.append(text)
         lines.append("")

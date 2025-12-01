@@ -53,7 +53,7 @@ from pdf_toolbox.renderers.pptx import (
     PptxRenderingError,
 )
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
-from pdf_toolbox.utils import _load_author_info, configure_logging
+from pdf_toolbox.utils import _load_author_info, configure_logging, logger
 
 _PPTX_ERROR_KEYS_BY_CODE = {
     "backend_crashed": "pptx_backend_crashed",
@@ -362,7 +362,12 @@ class MainWindow(QMainWindow):
             widget = factory(param)
             if widget is not None:
                 return widget
-        return QLineEdit()
+        widget = QLineEdit()
+        config_key = param.full_name if param.parent else param.name
+        effective_default = self.cfg.get(config_key, param.default)
+        if effective_default is not inspect._empty and effective_default is not None:
+            widget.setText(str(effective_default))
+        return widget
 
     def _maybe_create_union_widget(self, param: Param) -> WidgetValue | None:
         ann = param.annotation
@@ -377,9 +382,17 @@ class MainWindow(QMainWindow):
             spin_box = QSpinBox()
             spin_box.setMinimum(0)
             spin_box.setMaximum(10_000)
-            if isinstance(param.default, int):
-                spin_box.setValue(param.default)
+            config_key = param.full_name if param.parent else param.name
+            effective_default = self.cfg.get(config_key, param.default)
+            if isinstance(effective_default, int):
+                spin_box.setValue(effective_default)
             return spin_box
+
+        config_key = param.full_name if param.parent else param.name
+        effective_default = self.cfg.get(config_key, param.default)
+        if effective_default is inspect._empty:
+            effective_default = None
+
         combo_box = QComboBox()
         spin_box = QSpinBox()
         spin_box.setMinimum(0)
@@ -388,14 +401,14 @@ class MainWindow(QMainWindow):
         for choice in choices:
             combo_box.addItem(str(choice), choice)
         combo_box.addItem(tr("gui_custom"), _CUSTOM_CHOICE_SENTINEL)
-        if isinstance(param.default, str) and param.default in choices:
-            idx = combo_box.findData(param.default)
+        if isinstance(effective_default, str) and effective_default in choices:
+            idx = combo_box.findData(effective_default)
             combo_box.setCurrentIndex(max(idx, 0))
             spin_box.setVisible(False)
-        elif isinstance(param.default, int):
+        elif isinstance(effective_default, int):
             idx = combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
             combo_box.setCurrentIndex(max(idx, 0))
-            spin_box.setValue(param.default)
+            spin_box.setValue(effective_default)
             spin_box.setVisible(True)
         else:
             spin_box.setVisible(combo_box.currentData() == _CUSTOM_CHOICE_SENTINEL)
@@ -413,8 +426,10 @@ class MainWindow(QMainWindow):
         combo_box = QComboBox()
         choices = list(get_args(ann))
         combo_box.addItems(choices)
-        if isinstance(param.default, str) and param.default in choices:
-            combo_box.setCurrentText(param.default)
+        config_key = param.full_name if param.parent else param.name
+        effective_default = self.cfg.get(config_key, param.default)
+        if isinstance(effective_default, str) and effective_default in choices:
+            combo_box.setCurrentText(effective_default)
         return combo_box
 
     def _maybe_create_file_widget(self, param: Param) -> WidgetValue | None:
@@ -438,14 +453,19 @@ class MainWindow(QMainWindow):
             spin_box = QSpinBox()
             spin_box.setMinimum(1)
             spin_box.setMaximum(9999)
-            spin_box.setValue(int(self.cfg.get("split_pages", 1)))
+            config_key = param.full_name if param.parent else param.name
+            default = self.cfg.get(config_key, param.default)
+            if isinstance(default, int):
+                spin_box.setValue(default)
             return spin_box
         return None
 
     def _maybe_create_bool_widget(self, param: Param) -> WidgetValue | None:
-        if isinstance(param.default, bool):
+        config_key = param.full_name if param.parent else param.name
+        effective_default = self.cfg.get(config_key, param.default)
+        if isinstance(effective_default, bool):
             check_box = QCheckBox()
-            check_box.setChecked(bool(param.default))
+            check_box.setChecked(effective_default)
             return check_box
         return None
 
@@ -738,6 +758,7 @@ class MainWindow(QMainWindow):
         self._set_output_targets(())
         if not self.current_action:
             return
+        self._save_current_settings()
         try:
             kwargs = self.collect_args()
         except ValueError as exc:
@@ -797,6 +818,51 @@ class MainWindow(QMainWindow):
             source = self.current_action.name if self.current_action else ""
             self.log.add_entry(text, level="RESULT", source=source)
         self.worker = None
+
+    def _extract_widget_value(self, widget: WidgetValue) -> object:  # noqa: PLR0911  # pdf-toolbox: widget type dispatch requires multiple returns | issue:-
+        """Extract the current value from a widget."""
+        if isinstance(widget, ComboBoxWithSpin):
+            return self._value_from_combo_with_spin(widget)
+        if isinstance(widget, QLineEdit):
+            return widget.text().strip() or None
+        if isinstance(widget, QComboBox):
+            return self._value_from_combo_box(widget)
+        if isinstance(widget, QCheckBox):
+            return widget.isChecked()
+        if isinstance(widget, QSpinBox):
+            return int(widget.value())
+        if isinstance(widget, QDoubleSpinBox):
+            return float(widget.value())
+        return None
+
+    def _save_current_settings(self) -> None:
+        """Persist current widget values to the configuration."""
+        if not self.current_action:
+            return
+
+        # Build map of full_name -> param
+        param_map = {p.full_name: p for p in self.current_action.form_params}
+
+        for full_name, widget in self.current_widgets.items():
+            if isinstance(widget, FileEdit):
+                continue
+
+            param = param_map.get(full_name)
+            if not param:
+                continue
+
+            # For nested dataclass parameters, save with the full dotted name
+            # For top-level parameters, save with just the name
+            config_key = full_name if param.parent else param.name
+
+            try:
+                val = self._extract_widget_value(widget)
+                if val is not None:
+                    self.cfg[config_key] = val
+            except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: GUI settings save errors should not block execution | issue:-
+                logger.warning("Failed to save setting %s: %s", config_key, exc)
+
+        save_config(self.cfg)
 
     def on_error(self, error: object) -> None:
         """Handle errors emitted by the worker thread."""
