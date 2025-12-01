@@ -36,6 +36,7 @@ def extract_handwritten_notes(
     *,
     preprocess: bool = False,
     lang: str = "deu",
+    tesseract_cmd: str | None = None,
     pages: str | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
@@ -50,6 +51,8 @@ def extract_handwritten_notes(
             sharpening) before OCR when ``True``.
         lang: Language code passed to the OCR engine. Defaults to ``"deu"`` for
             German.
+        tesseract_cmd: Optional path to the Tesseract executable when it is not
+            available on the default ``PATH``.
         pages: Optional page specification (e.g. ``"1,3-4"``) limiting the OCR
             pass.
         out_dir: Optional directory for generated files. Defaults to the PDF
@@ -60,7 +63,7 @@ def extract_handwritten_notes(
         :class:`OcrExtractionResult` with output paths and collected page text.
     """
     logger.info("Running OCR on embedded images in %s", input_pdf)
-    _ensure_ocr_language_available(lang)
+    _ensure_ocr_language_available(lang, tesseract_cmd)
     output_dir = sane_output_dir(input_pdf, out_dir)
     markdown_path = output_dir / f"{Path(input_pdf).stem}_ocr.md"
     txt_path = output_dir / output_txt if output_txt else None
@@ -71,7 +74,13 @@ def extract_handwritten_notes(
         for page_number in page_numbers:
             raise_if_cancelled(cancel, doc)
             page = doc.load_page(page_number - 1)
-            page_text = _extract_page_text(doc, page, preprocess=preprocess, lang=lang)
+            page_text = _extract_page_text(
+                doc,
+                page,
+                preprocess=preprocess,
+                lang=lang,
+                tesseract_cmd=tesseract_cmd,
+            )
             collected.append(page_text)
         raise_if_cancelled(cancel, doc)
 
@@ -93,6 +102,7 @@ def _extract_page_text(
     *,
     preprocess: bool,
     lang: str,
+    tesseract_cmd: str | None,
 ) -> str:
     seen_xrefs: set[int] = set()
     extracted: list[str] = []
@@ -103,33 +113,39 @@ def _extract_page_text(
         seen_xrefs.add(xref)
         info = doc.extract_image(xref)
         pil_image = Image.open(io.BytesIO(info["image"]))
-        text = _run_ocr_on_image(pil_image, preprocess=preprocess, lang=lang)
+        text = _run_ocr_on_image(
+            pil_image, preprocess=preprocess, lang=lang, tesseract_cmd=tesseract_cmd
+        )
         extracted.append(text.strip())
     joined = "\n\n".join(filter(None, extracted)).strip()
     return joined
 
 
-def _run_ocr_on_image(image: Image.Image, *, preprocess: bool, lang: str) -> str:
+def _run_ocr_on_image(
+    image: Image.Image, *, preprocess: bool, lang: str, tesseract_cmd: str | None
+) -> str:
     prepared = image.convert("RGB")
     if preprocess:
         prepared = ImageOps.grayscale(prepared)
         prepared = ImageEnhance.Contrast(prepared).enhance(1.4)
         prepared = apply_unsharp_mask(prepared, radius=0.8, amount=0.7, threshold=2)
-    return _run_ocr(prepared, lang=lang).strip()
+    return _run_ocr(prepared, lang=lang, tesseract_cmd=tesseract_cmd).strip()
 
 
-def _run_ocr(image: Image.Image, *, lang: str) -> str:
+def _run_ocr(image: Image.Image, *, lang: str, tesseract_cmd: str | None = None) -> str:
     import pytesseract
 
+    _apply_tesseract_cmd(pytesseract, tesseract_cmd)
     return pytesseract.image_to_string(image, lang=lang)
 
 
 @lru_cache(maxsize=None)
-def _ensure_ocr_language_available(lang: str) -> None:
+def _ensure_ocr_language_available(lang: str, tesseract_cmd: str | None) -> None:
     """Validate that Tesseract has the requested language data installed."""
 
     import pytesseract
 
+    _apply_tesseract_cmd(pytesseract, tesseract_cmd)
     try:
         available_languages = set(pytesseract.get_languages(config=""))
     except (
@@ -146,6 +162,22 @@ def _ensure_ocr_language_available(lang: str) -> None:
             f"Tesseract language data for '{lang}' is not installed. "
             "Install the matching tesseract-ocr language package and retry."
         )
+
+
+def _apply_tesseract_cmd(pytesseract: object, tesseract_cmd: str | None) -> None:
+    """Set a custom Tesseract executable if provided and ensure it exists."""
+
+    if tesseract_cmd is None:
+        return
+
+    command_path = Path(tesseract_cmd).expanduser()
+    if not command_path.exists():
+        raise RuntimeError(
+            f"Tesseract executable not found at '{command_path}'. "
+            "Install tesseract-ocr or provide a valid path."
+        )
+
+    pytesseract.pytesseract.tesseract_cmd = str(command_path)
 
 
 def _write_markdown(

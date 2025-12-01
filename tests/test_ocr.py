@@ -32,11 +32,11 @@ def test_extract_handwritten_notes_exports_markdown_and_text(tmp_path, monkeypat
     pdf_path = _make_pdf_with_images(tmp_path)
     calls: list[str] = []
 
-    def fake_ocr(image, *, lang: str) -> str:  # type: ignore[override]
+    def fake_ocr(image, *, lang: str, tesseract_cmd: str | None = None) -> str:  # type: ignore[override]
         calls.append(image.mode)
         return f"recognized-{len(calls)} ({lang})"
 
-    monkeypatch.setattr(ocr, "_ensure_ocr_language_available", lambda lang: None)
+    monkeypatch.setattr(ocr, "_ensure_ocr_language_available", lambda lang, cmd: None)
     monkeypatch.setattr(ocr, "_run_ocr", fake_ocr)
 
     result = ocr.extract_handwritten_notes(
@@ -68,10 +68,10 @@ def test_extract_handwritten_notes_exports_markdown_and_text(tmp_path, monkeypat
 def test_extract_handwritten_notes_handles_empty_pages(tmp_path, monkeypatch):
     pdf_path = _make_pdf_with_images(tmp_path, pages=2, include_image_on_last=False)
 
-    def fake_ocr(image, *, lang: str) -> str:  # type: ignore[override]
+    def fake_ocr(image, *, lang: str, tesseract_cmd: str | None = None) -> str:  # type: ignore[override]
         return f"image-text-{lang}"
 
-    monkeypatch.setattr(ocr, "_ensure_ocr_language_available", lambda lang: None)
+    monkeypatch.setattr(ocr, "_ensure_ocr_language_available", lambda lang, cmd: None)
     monkeypatch.setattr(ocr, "_run_ocr", fake_ocr)
 
     result = ocr.extract_handwritten_notes(
@@ -124,3 +124,55 @@ def test_extract_handwritten_notes_requires_installed_language(tmp_path, monkeyp
 
     with pytest.raises(RuntimeError, match="language data for 'deu' is not installed"):
         ocr.extract_handwritten_notes(str(pdf_path), out_dir=str(tmp_path))
+
+
+def test_extract_handwritten_notes_allows_custom_tesseract_path(tmp_path, monkeypatch):
+    pdf_path = _make_pdf_with_images(tmp_path)
+
+    class DummyTesseract:
+        TesseractNotFoundError = RuntimeError
+        TesseractError = RuntimeError
+
+        def __init__(self):
+            self.pytesseract = self
+            self.tesseract_cmd = "default"
+
+        def get_languages(self, *, config: str = "") -> list[str]:  # type: ignore[override]
+            return ["deu"]
+
+        def image_to_string(self, image: Image.Image, *, lang: str) -> str:  # type: ignore[override]
+            return self.tesseract_cmd
+
+    dummy = DummyTesseract()
+    monkeypatch.setitem(sys.modules, "pytesseract", dummy)
+    ocr._ensure_ocr_language_available.cache_clear()
+
+    tesseract_bin = tmp_path / "bin" / "tesseract"
+    tesseract_bin.parent.mkdir()
+    tesseract_bin.write_text("binary")
+
+    result = ocr.extract_handwritten_notes(
+        str(pdf_path), out_dir=str(tmp_path), tesseract_cmd=str(tesseract_bin)
+    )
+
+    assert dummy.tesseract_cmd == str(tesseract_bin)
+    assert result.page_text == [str(tesseract_bin), str(tesseract_bin)]
+
+
+def test_extract_handwritten_notes_rejects_missing_tesseract_path(tmp_path, monkeypatch):
+    pdf_path = _make_pdf_with_images(tmp_path)
+
+    class DummyTesseract:
+        TesseractNotFoundError = RuntimeError
+        TesseractError = RuntimeError
+        pytesseract = None
+
+    monkeypatch.setitem(sys.modules, "pytesseract", DummyTesseract())
+    ocr._ensure_ocr_language_available.cache_clear()
+
+    missing_path = tmp_path / "missing" / "tesseract"
+
+    with pytest.raises(RuntimeError, match="Tesseract executable not found"):
+        ocr.extract_handwritten_notes(
+            str(pdf_path), out_dir=str(tmp_path), tesseract_cmd=str(missing_path)
+        )
