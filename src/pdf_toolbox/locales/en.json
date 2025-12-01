@@ -99,6 +99,6 @@
         "remember_tesseract_cmd": "Remember Tesseract path",
         "tesseract_cmd": "Tesseract executable",
         "width": "Width",
-        "write_manifest": "Write manifest (debug)",
-    },
+        "write_manifest": "Write manifest (debug)"
+    }
 }

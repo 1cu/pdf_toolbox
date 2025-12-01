@@ -68,7 +68,7 @@ class OcrExtractionResult:
 
 
 @action(category="PDF")
-def extract_handwritten_notes(  # noqa: PLR0913  # pdf-toolbox: public API keeps parameter parity | issue:-
+def extract_handwritten_notes(  # pdf-toolbox: public API keeps parameter parity | issue:-
     input_pdf: str,
     output_txt: str | None = None,
     *,
@@ -179,7 +179,7 @@ def _run_ocr_on_image(
 
 
 def _run_ocr(image: Image.Image, *, lang: str, tesseract_cmd: str | None = None) -> str:
-    import pytesseract  # noqa: PLC0415  # pdf-toolbox: defer pytesseract import until needed | issue:-
+    import pytesseract  # pdf-toolbox: defer pytesseract import until needed | issue:-
 
     module = cast(_PytesseractModule, pytesseract)
     _apply_tesseract_cmd(module, tesseract_cmd)
@@ -189,7 +189,7 @@ def _run_ocr(image: Image.Image, *, lang: str, tesseract_cmd: str | None = None)
 @cache
 def _ensure_ocr_language_available(lang: str, tesseract_cmd: str | None) -> None:
     """Validate that Tesseract has the requested language data installed."""
-    import pytesseract  # noqa: PLC0415  # pdf-toolbox: defer pytesseract import until needed | issue:-
+    import pytesseract  # pdf-toolbox: defer pytesseract import until needed | issue:-
 
     module = cast(_PytesseractModule, pytesseract)
     _apply_tesseract_cmd(module, tesseract_cmd)

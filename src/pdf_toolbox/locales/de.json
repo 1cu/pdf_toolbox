@@ -99,6 +99,6 @@
         "remember_tesseract_cmd": "Tesseract-Pfad speichern",
         "tesseract_cmd": "Tesseract-Binärdatei",
         "width": "Breite",
-        "write_manifest": "Manifest schreiben (Debug)",
-    },
+        "write_manifest": "Manifest schreiben (Debug)"
+    }
 }
