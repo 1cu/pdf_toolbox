@@ -23,7 +23,7 @@ analysis = Analysis(
     datas=datas,
     hooksconfig={},
 )
-pyz = PYZ(analysis.pure, analysis.zipped_data)
+pyz = PYZ(analysis.pure, analysis.zipped_data, optimize=2)
 exe = EXE(
     pyz,
     analysis.scripts,

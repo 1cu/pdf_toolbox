@@ -31,10 +31,10 @@ jobs:
         run: echo "version=$(python scripts/get_version.py)" >> "$GITHUB_OUTPUT"
       - name: Build executable (macOS)
         if: runner.os == 'macOS'
-        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w src/pdf_toolbox/gui/__main__.py
+        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w --optimize 2 src/pdf_toolbox/gui/__main__.py
       - name: Build executable (Windows)
         if: runner.os == 'Windows'
-        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w --collect-all PySide6 src/pdf_toolbox/gui/__main__.py
+        run: pyinstaller -n pdf_toolbox-${{ steps.version.outputs.version }} -w --optimize 2 --collect-all PySide6 src/pdf_toolbox/gui/__main__.py
       - name: Package executable (macOS)
         if: runner.os == 'macOS'
         run: |
