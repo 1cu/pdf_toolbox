@@ -121,7 +121,7 @@ def test_rasterise_page_aborts_on_cancel(monkeypatch):
         rect = type("Rect", (), {"width": 10, "height": 10})()
 
     def fail_render(*_args, **_kwargs):
-        raise AssertionError("render should not run when cancelled")
+        pytest.fail("render should not run when cancelled")
 
     monkeypatch.setattr(miro, "render_page_image", fail_render)
 

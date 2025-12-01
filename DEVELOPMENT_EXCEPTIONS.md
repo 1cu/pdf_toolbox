@@ -12,7 +12,10 @@
 | src/pdf_toolbox/gui/widgets.py:306               | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:311               | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:329               | N802                         | Qt requires camelCase event name                                      | -        |
-| src/pdf_toolbox/miro.py:762                      | PLR0913                      | export pipeline exposes optional tuning knobs                         | -        |
+| src/pdf_toolbox/miro.py:363                      | PLR0913                      | DPI search needs explicit bounds and bookkeeping                      | -        |
+| src/pdf_toolbox/miro.py:476                      | PLR0913                      | selection requires explicit parameters to trace tuning                | -        |
+| src/pdf_toolbox/miro.py:671                      | PLR0913, PLR0915             | export flow needs explicit inputs and branching for warnings          | -        |
+| src/pdf_toolbox/miro.py:785                      | PLR0913                      | export pipeline exposes optional tuning knobs                         | -        |
 | src/pdf_toolbox/renderers/\_requests_types.py:28 | PLR0913                      | mirror requests.post signature for accuracy                           | -        |
 | src/pdf_toolbox/renderers/registry.py:82         | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
 | src/pdf_toolbox/renderers/registry.py:105        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning    | -        |
