@@ -3,10 +3,11 @@ import io
 import sys
 from pathlib import Path
 
-import pytest
 import fitz
+import pytest
 from PIL import Image, ImageDraw, ImageFont
 
+from pdf_toolbox import config
 from pdf_toolbox.actions import ocr
 
 
@@ -176,3 +177,83 @@ def test_extract_handwritten_notes_rejects_missing_tesseract_path(tmp_path, monk
         ocr.extract_handwritten_notes(
             str(pdf_path), out_dir=str(tmp_path), tesseract_cmd=str(missing_path)
         )
+
+
+def test_extract_handwritten_notes_uses_configured_tesseract_path(tmp_path, monkeypatch):
+    pdf_path = _make_pdf_with_images(tmp_path)
+    config_path = tmp_path / "config" / "pdf_toolbox.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+
+    tesseract_bin = tmp_path / "bin" / "tesseract"
+    tesseract_bin.parent.mkdir()
+    tesseract_bin.write_text("binary")
+
+    config.save_config_at(
+        config_path, {**config.DEFAULT_CONFIG, "tesseract_cmd": str(tesseract_bin)}
+    )
+    monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+    monkeypatch.setattr(ocr.config, "CONFIG_PATH", config_path)
+
+    class DummyTesseract:
+        TesseractNotFoundError = RuntimeError
+        TesseractError = RuntimeError
+
+        def __init__(self):
+            self.pytesseract = self
+            self.tesseract_cmd = "default"
+
+        def get_languages(self, *, config: str = "") -> list[str]:  # type: ignore[override]
+            return ["deu"]
+
+        def image_to_string(self, image: Image.Image, *, lang: str) -> str:  # type: ignore[override]
+            return self.tesseract_cmd
+
+    dummy = DummyTesseract()
+    monkeypatch.setitem(sys.modules, "pytesseract", dummy)
+    ocr._ensure_ocr_language_available.cache_clear()
+
+    result = ocr.extract_handwritten_notes(str(pdf_path), out_dir=str(tmp_path))
+
+    assert dummy.tesseract_cmd == str(tesseract_bin)
+    assert result.page_text == [str(tesseract_bin), str(tesseract_bin)]
+
+
+def test_extract_handwritten_notes_remembers_tesseract_path(tmp_path, monkeypatch):
+    pdf_path = _make_pdf_with_images(tmp_path)
+    config_path = tmp_path / "config" / "pdf_toolbox.json"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr(config, "CONFIG_PATH", config_path)
+    monkeypatch.setattr(ocr.config, "CONFIG_PATH", config_path)
+
+    class DummyTesseract:
+        TesseractNotFoundError = RuntimeError
+        TesseractError = RuntimeError
+
+        def __init__(self):
+            self.pytesseract = self
+            self.tesseract_cmd = "default"
+
+        def get_languages(self, *, config: str = "") -> list[str]:  # type: ignore[override]
+            return ["deu"]
+
+        def image_to_string(self, image: Image.Image, *, lang: str) -> str:  # type: ignore[override]
+            return self.tesseract_cmd
+
+    dummy = DummyTesseract()
+    monkeypatch.setitem(sys.modules, "pytesseract", dummy)
+    ocr._ensure_ocr_language_available.cache_clear()
+
+    tesseract_bin = tmp_path / "bin" / "tesseract"
+    tesseract_bin.parent.mkdir()
+    tesseract_bin.write_text("binary")
+
+    ocr.extract_handwritten_notes(
+        str(pdf_path),
+        out_dir=str(tmp_path),
+        tesseract_cmd=str(tesseract_bin),
+        remember_tesseract_cmd=True,
+    )
+
+    saved_config = config.load_config_at(config_path)
+    assert saved_config["tesseract_cmd"] == str(tesseract_bin)

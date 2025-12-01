@@ -9,6 +9,7 @@ from threading import Event
 import fitz
 from PIL import Image, ImageEnhance, ImageOps
 
+from pdf_toolbox import config
 from pdf_toolbox.actions import action
 from pdf_toolbox.image_utils import apply_unsharp_mask
 from pdf_toolbox.utils import (
@@ -37,6 +38,7 @@ def extract_handwritten_notes(
     preprocess: bool = False,
     lang: str = "deu",
     tesseract_cmd: str | None = None,
+    remember_tesseract_cmd: bool = False,
     pages: str | None = None,
     out_dir: str | None = None,
     cancel: Event | None = None,
@@ -52,7 +54,11 @@ def extract_handwritten_notes(
         lang: Language code passed to the OCR engine. Defaults to ``"deu"`` for
             German.
         tesseract_cmd: Optional path to the Tesseract executable when it is not
-            available on the default ``PATH``.
+            available on the default ``PATH``. When omitted a previously stored
+            value from the application configuration is used when present.
+        remember_tesseract_cmd: When ``True`` the provided Tesseract path is
+            saved to the application config and reused automatically in future
+            runs when ``tesseract_cmd`` is omitted.
         pages: Optional page specification (e.g. ``"1,3-4"``) limiting the OCR
             pass.
         out_dir: Optional directory for generated files. Defaults to the PDF
@@ -63,7 +69,8 @@ def extract_handwritten_notes(
         :class:`OcrExtractionResult` with output paths and collected page text.
     """
     logger.info("Running OCR on embedded images in %s", input_pdf)
-    _ensure_ocr_language_available(lang, tesseract_cmd)
+    effective_tesseract_cmd = _resolve_tesseract_cmd(tesseract_cmd)
+    _ensure_ocr_language_available(lang, effective_tesseract_cmd)
     output_dir = sane_output_dir(input_pdf, out_dir)
     markdown_path = output_dir / f"{Path(input_pdf).stem}_ocr.md"
     txt_path = output_dir / output_txt if output_txt else None
@@ -79,10 +86,13 @@ def extract_handwritten_notes(
                 page,
                 preprocess=preprocess,
                 lang=lang,
-                tesseract_cmd=tesseract_cmd,
+                tesseract_cmd=effective_tesseract_cmd,
             )
             collected.append(page_text)
         raise_if_cancelled(cancel, doc)
+
+    if tesseract_cmd is not None and remember_tesseract_cmd:
+        _remember_tesseract_cmd(tesseract_cmd)
 
     _write_markdown(markdown_path, Path(input_pdf).name, page_numbers, collected)
     if txt_path is not None:
@@ -178,6 +188,20 @@ def _apply_tesseract_cmd(pytesseract: object, tesseract_cmd: str | None) -> None
         )
 
     pytesseract.pytesseract.tesseract_cmd = str(command_path)
+
+
+def _resolve_tesseract_cmd(tesseract_cmd: str | None) -> str | None:
+    """Return the provided command or a persisted configuration value."""
+
+    if tesseract_cmd:
+        return tesseract_cmd
+    return config.get_tesseract_cmd()
+
+
+def _remember_tesseract_cmd(tesseract_cmd: str) -> None:
+    """Persist the Tesseract path for future OCR runs."""
+
+    config.remember_tesseract_cmd(tesseract_cmd)
 
 
 def _write_markdown(
