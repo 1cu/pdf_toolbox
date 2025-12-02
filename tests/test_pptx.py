@@ -113,11 +113,11 @@ def test_renderer_config(monkeypatch, tmp_path, simple_pptx):
             captured_pdf["range_spec"] = range_spec
             return str(target)
 
-    monkeypatch.setattr(
-        pptx_registry,
-        "_REGISTRY",
-        dict(pptx_registry._REGISTRY),
-    )
+    # Create a fresh registry for this test
+    fresh_registry = pptx_registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True
+    monkeypatch.setattr(pptx_registry, "_REGISTRY_INSTANCE", fresh_registry)
+    monkeypatch.setattr(pptx_registry, "_BUILTIN_MODULES", {})
     pptx_registry.register(DummyRenderer)
     monkeypatch.setattr(
         pptx,
@@ -196,11 +196,11 @@ def test_pptx_to_images_normalises_params(monkeypatch, simple_pptx, tmp_path):
             target.write_text("pdf")
             return str(target)
 
-    monkeypatch.setattr(
-        pptx_registry,
-        "_REGISTRY",
-        dict(pptx_registry._REGISTRY),
-    )
+    # Create a fresh registry for this test
+    fresh_registry = pptx_registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True
+    monkeypatch.setattr(pptx_registry, "_REGISTRY_INSTANCE", fresh_registry)
+    monkeypatch.setattr(pptx_registry, "_BUILTIN_MODULES", {})
     pptx_registry.register(DummyRenderer)
     monkeypatch.setattr(
         pptx,
@@ -281,11 +281,11 @@ def test_pptx_to_images_returns_out_dir_when_empty(monkeypatch, simple_pptx, tmp
             target.write_text("pdf")
             return str(target)
 
-    monkeypatch.setattr(
-        pptx_registry,
-        "_REGISTRY",
-        dict(pptx_registry._REGISTRY),
-    )
+    # Create a fresh registry for this test
+    fresh_registry = pptx_registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True
+    monkeypatch.setattr(pptx_registry, "_REGISTRY_INSTANCE", fresh_registry)
+    monkeypatch.setattr(pptx_registry, "_BUILTIN_MODULES", {})
     pptx_registry.register(DummyRenderer)
     monkeypatch.setattr(
         pptx,
@@ -344,11 +344,11 @@ def test_pptx_to_images_returns_temp_dir_when_empty(monkeypatch, simple_pptx, tm
             target.write_text("pdf")
             return str(target)
 
-    monkeypatch.setattr(
-        pptx_registry,
-        "_REGISTRY",
-        dict(pptx_registry._REGISTRY),
-    )
+    # Create a fresh registry for this test
+    fresh_registry = pptx_registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True
+    monkeypatch.setattr(pptx_registry, "_REGISTRY_INSTANCE", fresh_registry)
+    monkeypatch.setattr(pptx_registry, "_BUILTIN_MODULES", {})
     pptx_registry.register(DummyRenderer)
     monkeypatch.setattr(
         pptx,
@@ -405,7 +405,11 @@ def test_convert_pptx_to_pdf_cleans_up(monkeypatch, simple_pptx, tmp_path):
             target.write_text("pdf")
             return str(target)
 
-    monkeypatch.setattr(pptx_registry, "_REGISTRY", {})
+    # Create a fresh empty registry for this test
+    fresh_registry = pptx_registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True
+    monkeypatch.setattr(pptx_registry, "_REGISTRY_INSTANCE", fresh_registry)
+    monkeypatch.setattr(pptx_registry, "_BUILTIN_MODULES", {})
     pptx_registry.register(DummyRenderer)
     monkeypatch.setattr(pptx_registry, "get_pptx_renderer_choice", lambda _cfg=None: "dummy")
 

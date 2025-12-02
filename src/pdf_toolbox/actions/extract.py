@@ -36,17 +36,19 @@ def extract_range(
     with open_pdf(input_pdf) as doc:
         page_numbers = parse_page_spec(pages, doc.page_count)
         new_doc = fitz.open()
-        for page in page_numbers:
+        try:
+            for page in page_numbers:
+                raise_if_cancelled(cancel)
+                new_doc.insert_pdf(doc, from_page=page - 1, to_page=page - 1)
+            update_metadata(new_doc, note=" | extract_range")
+            safe_spec = pages.replace(",", "_").replace("-", "_").strip("_")
+            out_path = sane_output_dir(input_pdf, out_dir) / (
+                f"{Path(input_pdf).stem}_Extract_{safe_spec}.pdf"
+            )
             raise_if_cancelled(cancel)
-            new_doc.insert_pdf(doc, from_page=page - 1, to_page=page - 1)
-        update_metadata(new_doc, note=" | extract_range")
-        safe_spec = pages.replace(",", "_").replace("-", "_").strip("_")
-        out_path = sane_output_dir(input_pdf, out_dir) / (
-            f"{Path(input_pdf).stem}_Extract_{safe_spec}.pdf"
-        )
-        raise_if_cancelled(cancel)
-        new_doc.save(out_path)
-        new_doc.close()
+            new_doc.save(out_path)
+        finally:
+            new_doc.close()
     logger.info("Extracted pages written to %s", out_path)
     return str(out_path)
 
@@ -66,14 +68,16 @@ def split_pdf(
             raise_if_cancelled(cancel)
             end = min(start + pages_per_file, doc.page_count)
             new_doc = fitz.open()
-            new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
-            update_metadata(new_doc, note=" | split_pdf")
-            out_path = sane_output_dir(input_pdf, out_dir) / (
-                f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
-            )
-            raise_if_cancelled(cancel)
-            new_doc.save(out_path)
-            new_doc.close()
+            try:
+                new_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
+                update_metadata(new_doc, note=" | split_pdf")
+                out_path = sane_output_dir(input_pdf, out_dir) / (
+                    f"{Path(input_pdf).stem}_Split_{start + 1}_{end}.pdf"
+                )
+                raise_if_cancelled(cancel)
+                new_doc.save(out_path)
+            finally:
+                new_doc.close()
             logger.info("Created %s", out_path)
             outputs.append(str(out_path))
     return outputs

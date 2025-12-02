@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from contextlib import suppress
 from pathlib import Path
 from typing import Any, Literal
 
@@ -65,11 +64,29 @@ def _normalise_pptx_renderer(value: Any) -> PptxRendererChoice:
 
 
 def load_config_at(path: Path) -> dict:
-    """Load configuration from a specific path."""
+    """Load configuration from a specific path.
+
+    If the config file exists but is corrupted (invalid JSON), logs an error
+    and returns default configuration. Missing files are silently ignored.
+    """
     cfg = DEFAULT_CONFIG.copy()
-    if path.exists():
-        with suppress(Exception):
-            cfg.update(json.loads(path.read_text()))
+    if not path.exists():
+        return cfg
+
+    try:
+        user_cfg = json.loads(path.read_text())
+        cfg.update(user_cfg)
+    except json.JSONDecodeError as exc:
+        utils.logger.error(
+            "Config file corrupted at %s (line %d, col %d): %s. Using defaults.",
+            path,
+            exc.lineno,
+            exc.colno,
+            exc.msg,
+        )
+    except Exception as exc:
+        utils.logger.warning("Failed to load config from %s: %s. Using defaults.", path, exc)
+
     cfg[_PPTX_RENDERER_KEY] = _normalise_pptx_renderer(cfg.get(_PPTX_RENDERER_KEY))
     return cfg
 

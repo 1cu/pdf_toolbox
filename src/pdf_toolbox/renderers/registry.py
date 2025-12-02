@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import tempfile
+import threading
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from importlib import metadata
@@ -14,9 +15,6 @@ from pdf_toolbox.config import PptxRendererChoice, get_pptx_renderer_choice
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.utils import logger
 
-_REGISTRY: dict[str, type[BasePptxRenderer]] = {}
-_INSTANCE_CACHE: dict[type[BasePptxRenderer], BasePptxRenderer] = {}
-_ENTRY_POINT_STATE = {"loaded": False}
 _ENTRY_POINT_GROUP = "pdf_toolbox.pptx_renderers"
 _AUTO_PRIORITY = ("ms_office", "http_office")
 _BUILTIN_MODULES = {
@@ -32,47 +30,219 @@ class RendererSelectionError(LookupError):
     """Raised when selecting a PPTX renderer fails."""
 
 
+class RendererRegistry:
+    """Thread-safe registry for PPTX renderer providers."""
+
+    def __init__(self) -> None:
+        """Initialize an empty registry."""
+        self._registry: dict[str, type[BasePptxRenderer]] = {}
+        self._instance_cache: dict[type[BasePptxRenderer], BasePptxRenderer] = {}
+        self._entry_points_loaded = False
+        self._lock = threading.RLock()
+
+    def register(self, renderer_cls: type[BasePptxRenderer]) -> type[BasePptxRenderer]:
+        """Register ``renderer_cls`` under its ``name`` attribute."""
+        name = getattr(renderer_cls, "name", "")
+        if not isinstance(name, str) or not name.strip():
+            msg = (
+                f"Renderer class {renderer_cls.__name__} must define a non-empty 'name' attribute."
+            )
+            raise ValueError(msg)
+
+        key = name.strip().lower()
+        with self._lock:
+            existing = self._registry.get(key)
+            if existing is not None and existing is not renderer_cls:
+                msg = (
+                    f"Renderer '{name}' is already registered with {existing.__module__}."
+                    f"{existing.__name__}"
+                )
+                raise ValueError(msg)
+
+            self._registry[key] = renderer_cls
+            self._instance_cache.pop(renderer_cls, None)
+        return renderer_cls
+
+    def available(self) -> tuple[str, ...]:
+        """Return registered renderer names in registration order."""
+        self._load_entry_points()
+        for name in _BUILTIN_MODULES:
+            self._ensure_builtin_registered(name)
+        with self._lock:
+            return tuple(self._registry.keys())
+
+    def available_renderers(self) -> list[str]:
+        """Return renderer names that can handle conversions right now."""
+        self._load_entry_points()
+        for name in _BUILTIN_MODULES:
+            self._ensure_builtin_registered(name)
+
+        names: list[str] = []
+        with self._lock:
+            for key, renderer_cls in self._registry.items():
+                _instance, can_handle = self._assess_renderer(renderer_cls, use_cache=False)
+                if can_handle:
+                    names.append(key)
+        return names
+
+    def select(self, name: str) -> BasePptxRenderer | None:
+        """Return an instantiated renderer for ``name`` or ``None`` when missing."""
+        lookup = (name or "").strip().lower()
+        if not lookup or lookup == "none":
+            return None
+
+        self._load_entry_points()
+
+        if lookup == "auto":
+            for candidate in _AUTO_PRIORITY:
+                self._ensure_builtin_registered(candidate)
+                renderer = self._resolve_renderer(candidate, use_cache=False)
+                if renderer is not None:
+                    return renderer
+            return None
+
+        self._ensure_builtin_registered(lookup)
+        return self._resolve_renderer(lookup, use_cache=True)
+
+    def ensure(self, name: str | None = None) -> BasePptxRenderer:
+        """Return a renderer instance or raise if selection fails."""
+        cfg: dict[str, object] | None = None
+        if name is not None:
+            cfg = {"pptx_renderer": name}
+        choice = get_pptx_renderer_choice(cfg)
+        renderer = self.select(choice)
+        if renderer is None:
+            raise self._selection_error(choice)
+        return renderer
+
+    def _load_entry_points(self) -> None:
+        """Load PPTX renderer entry points once."""
+        with self._lock:
+            if self._entry_points_loaded:
+                return
+
+            for entry in _iter_entry_points():
+                renderer_cls = _load_renderer_from_entry(entry)
+                if renderer_cls is None:
+                    continue
+                try:
+                    self.register(renderer_cls)
+                except ValueError as exc:
+                    logger.debug("pptx renderer registration skipped: %s", exc)
+            self._entry_points_loaded = True
+
+    def _ensure_builtin_registered(self, name: str) -> None:
+        """Import built-in renderers on demand."""
+        key = name.strip().lower()
+        with self._lock:
+            if not key or key in self._registry:
+                return
+        module_name = _BUILTIN_MODULES.get(key)
+        if not module_name:
+            return
+        try:
+            importlib.import_module(module_name)
+        except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: builtin providers rely on optional platform modules; degrade to debug | issue:-
+            logger.debug("pptx renderer '%s' import failed: %s", key, exc)
+
+    def _resolve_renderer(
+        self,
+        name: str,
+        *,
+        use_cache: bool,
+    ) -> BasePptxRenderer | None:
+        """Return an instantiated renderer for ``name`` when available."""
+        with self._lock:
+            renderer_cls = self._registry.get(name)
+        if renderer_cls is None:
+            return None
+        instance, available = self._assess_renderer(renderer_cls, use_cache=use_cache)
+        if not available:
+            return None
+        return instance
+
+    def _assess_renderer(
+        self,
+        renderer_cls: type[BasePptxRenderer],
+        *,
+        use_cache: bool,
+    ) -> tuple[BasePptxRenderer | None, bool]:
+        """Return an instance and whether ``renderer_cls`` can handle rendering."""
+        cached_instance: BasePptxRenderer | None = None
+        if use_cache:
+            with self._lock:
+                cached_instance = self._instance_cache.get(renderer_cls)
+
+        candidate: Any | None = getattr(renderer_cls, "can_handle", None)
+        if cached_instance is not None:
+            if candidate is None:
+                return cached_instance, True
+            available, validated = _evaluate_can_handle(renderer_cls, candidate, cached_instance)
+            if not available:
+                with self._lock:
+                    self._instance_cache.pop(renderer_cls, None)
+                return None, False
+            chosen = validated or cached_instance
+            with self._lock:
+                self._instance_cache[renderer_cls] = chosen
+            return chosen, True
+
+        instance: BasePptxRenderer | None = None
+        available = True
+
+        if candidate is None:
+            instance = _ensure_instance(renderer_cls, None)
+            available = instance is not None
+        else:
+            available, instance = _evaluate_can_handle(renderer_cls, candidate, None)
+            if available:
+                instance = _ensure_instance(renderer_cls, instance)
+
+        if not available or instance is None:
+            with self._lock:
+                self._instance_cache.pop(renderer_cls, None)
+            return None, False
+
+        if use_cache:
+            with self._lock:
+                self._instance_cache[renderer_cls] = instance
+        return instance, True
+
+    def _selection_error(self, choice: PptxRendererChoice) -> RendererSelectionError:
+        """Create an informative error for missing renderers."""
+        with self._lock:
+            available = [name for name in self._registry if name != "null"]
+        if choice == "auto":
+            detail = "No PPTX renderer satisfied auto-selection."
+        elif choice == "none":
+            detail = "The null PPTX renderer is not registered."
+        else:
+            detail = f"No PPTX renderer named '{choice}'."
+        if available:
+            readable = ", ".join(sorted(available))
+            detail += f" Available providers: {readable}."
+        else:
+            detail += " No providers are registered."
+        return RendererSelectionError(detail)
+
+
+# Module-level singleton instance
+_REGISTRY_INSTANCE = RendererRegistry()
+
+
 def register(renderer_cls: type[BasePptxRenderer]) -> type[BasePptxRenderer]:
     """Register ``renderer_cls`` under its ``name`` attribute."""
-    name = getattr(renderer_cls, "name", "")
-    if not isinstance(name, str) or not name.strip():
-        msg = f"Renderer class {renderer_cls.__name__} must define a non-empty 'name' attribute."
-        raise ValueError(msg)
-
-    key = name.strip().lower()
-    existing = _REGISTRY.get(key)
-    if existing is not None and existing is not renderer_cls:
-        msg = (
-            f"Renderer '{name}' is already registered with {existing.__module__}."
-            f"{existing.__name__}"
-        )
-        raise ValueError(msg)
-
-    _REGISTRY[key] = renderer_cls
-    _INSTANCE_CACHE.pop(renderer_cls, None)
-    return renderer_cls
+    return _REGISTRY_INSTANCE.register(renderer_cls)
 
 
 def available() -> tuple[str, ...]:
     """Return registered renderer names in registration order."""
-    _load_entry_points()
-    for name in _BUILTIN_MODULES:
-        _ensure_builtin_registered(name)
-    return tuple(_REGISTRY.keys())
+    return _REGISTRY_INSTANCE.available()
 
 
 def available_renderers() -> list[str]:
     """Return renderer names that can handle conversions right now."""
-    _load_entry_points()
-    for name in _BUILTIN_MODULES:
-        _ensure_builtin_registered(name)
-
-    names: list[str] = []
-    for key, renderer_cls in _REGISTRY.items():
-        _instance, can_handle = _assess_renderer(renderer_cls, use_cache=False)
-        if can_handle:
-            names.append(key)
-    return names
+    return _REGISTRY_INSTANCE.available_renderers()
 
 
 def _iter_entry_points() -> Iterator[metadata.EntryPoint]:
@@ -140,53 +310,6 @@ def _load_renderer_from_entry(
         )
 
     return renderer_cls
-
-
-def _load_entry_points() -> None:
-    """Load PPTX renderer entry points once."""
-    if _ENTRY_POINT_STATE["loaded"]:
-        return
-
-    for entry in _iter_entry_points():
-        renderer_cls = _load_renderer_from_entry(entry)
-        if renderer_cls is None:
-            continue
-        try:
-            register(renderer_cls)
-        except ValueError as exc:
-            logger.debug("pptx renderer registration skipped: %s", exc)
-    _ENTRY_POINT_STATE["loaded"] = True
-
-
-def _ensure_builtin_registered(name: str) -> None:
-    """Import built-in renderers on demand."""
-    key = name.strip().lower()
-    if not key or key in _REGISTRY:
-        return
-    module_name = _BUILTIN_MODULES.get(key)
-    if not module_name:
-        return
-    try:
-        importlib.import_module(module_name)
-    except Exception as exc:  # noqa: BLE001, RUF100  # pdf-toolbox: builtin providers rely on optional platform modules; degrade to debug | issue:-
-        logger.debug("pptx renderer '%s' import failed: %s", key, exc)
-
-
-def _selection_error(choice: PptxRendererChoice) -> RendererSelectionError:
-    """Create an informative error for missing renderers."""
-    available = [name for name in _REGISTRY if name != "null"]
-    if choice == "auto":
-        detail = "No PPTX renderer satisfied auto-selection."
-    elif choice == "none":
-        detail = "The null PPTX renderer is not registered."
-    else:
-        detail = f"No PPTX renderer named '{choice}'."
-    if available:
-        readable = ", ".join(sorted(available))
-        detail += f" Available providers: {readable}."
-    else:
-        detail += " No providers are registered."
-    return RendererSelectionError(detail)
 
 
 def _renderer_display_name(renderer_cls: type[BasePptxRenderer]) -> str:
@@ -268,93 +391,14 @@ def _evaluate_can_handle(
     return available, instance
 
 
-def _assess_renderer(
-    renderer_cls: type[BasePptxRenderer],
-    *,
-    use_cache: bool,
-) -> tuple[BasePptxRenderer | None, bool]:
-    """Return an instance and whether ``renderer_cls`` can handle rendering."""
-    cached_instance: BasePptxRenderer | None = None
-    if use_cache:
-        cached_instance = _INSTANCE_CACHE.get(renderer_cls)
-
-    candidate: Any | None = getattr(renderer_cls, "can_handle", None)
-    if cached_instance is not None:
-        if candidate is None:
-            return cached_instance, True
-        available, validated = _evaluate_can_handle(renderer_cls, candidate, cached_instance)
-        if not available:
-            _INSTANCE_CACHE.pop(renderer_cls, None)
-            return None, False
-        chosen = validated or cached_instance
-        _INSTANCE_CACHE[renderer_cls] = chosen
-        return chosen, True
-
-    instance: BasePptxRenderer | None = None
-    available = True
-
-    if candidate is None:
-        instance = _ensure_instance(renderer_cls, None)
-        available = instance is not None
-    else:
-        available, instance = _evaluate_can_handle(renderer_cls, candidate, None)
-        if available:
-            instance = _ensure_instance(renderer_cls, instance)
-
-    if not available or instance is None:
-        _INSTANCE_CACHE.pop(renderer_cls, None)
-        return None, False
-
-    if use_cache:
-        _INSTANCE_CACHE[renderer_cls] = instance
-    return instance, True
-
-
-def _resolve_renderer(
-    name: str,
-    *,
-    use_cache: bool,
-) -> BasePptxRenderer | None:
-    """Return an instantiated renderer for ``name`` when available."""
-    renderer_cls = _REGISTRY.get(name)
-    if renderer_cls is None:
-        return None
-    instance, available = _assess_renderer(renderer_cls, use_cache=use_cache)
-    if not available:
-        return None
-    return instance
-
-
 def select(name: str) -> BasePptxRenderer | None:
     """Return an instantiated renderer for ``name`` or ``None`` when missing."""
-    lookup = (name or "").strip().lower()
-    if not lookup or lookup == "none":
-        return None
-
-    _load_entry_points()
-
-    if lookup == "auto":
-        for candidate in _AUTO_PRIORITY:
-            _ensure_builtin_registered(candidate)
-            renderer = _resolve_renderer(candidate, use_cache=False)
-            if renderer is not None:
-                return renderer
-        return None
-
-    _ensure_builtin_registered(lookup)
-    return _resolve_renderer(lookup, use_cache=True)
+    return _REGISTRY_INSTANCE.select(name)
 
 
 def ensure(name: str | None = None) -> BasePptxRenderer:
     """Return a renderer instance or raise if selection fails."""
-    cfg: dict[str, object] | None = None
-    if name is not None:
-        cfg = {"pptx_renderer": name}
-    choice = get_pptx_renderer_choice(cfg)
-    renderer = select(choice)
-    if renderer is None:
-        raise _selection_error(choice)
-    return renderer
+    return _REGISTRY_INSTANCE.ensure(name)
 
 
 @contextmanager

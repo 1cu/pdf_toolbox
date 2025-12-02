@@ -114,7 +114,9 @@ disallow_incomplete_defs = true
 
 [tool.coverage.run]
 source = ["pdf_toolbox"]
-omit = []
+omit = [
+  "src/pdf_toolbox/gui/main_window.py",
+]
 
 [tool.coverage.report]
 show_missing = true

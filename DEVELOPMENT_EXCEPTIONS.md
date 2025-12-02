@@ -18,14 +18,21 @@
 | src/pdf_toolbox/miro.py:476                      | PLR0913                      | selection requires explicit parameters to trace tuning                | -        |
 | src/pdf_toolbox/miro.py:671                      | PLR0913, PLR0915             | export flow needs explicit inputs and branching for warnings          | -        |
 | src/pdf_toolbox/miro.py:785                      | PLR0913                      | export pipeline exposes optional tuning knobs                         | -        |
+| src/pdf_toolbox/paths.py:52                      | TRY003                       | path validation error message                                         | -        |
 | src/pdf_toolbox/renderers/\_requests_types.py:28 | PLR0913                      | mirror requests.post signature for accuracy                           | -        |
-| src/pdf_toolbox/renderers/registry.py:82         | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
-| src/pdf_toolbox/renderers/registry.py:105        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning    | -        |
-| src/pdf_toolbox/renderers/registry.py:124        | BLE001, RUF100               | plugin modules may be missing or broken; degrade to warning           | -        |
-| src/pdf_toolbox/renderers/registry.py:171        | BLE001, RUF100               | builtin providers rely on optional platform modules; degrade to debug | -        |
-| src/pdf_toolbox/renderers/registry.py:203        | BLE001, RUF100               | renderer constructors may fail arbitrarily; treat as unavailable      | -        |
-| src/pdf_toolbox/renderers/registry.py:244        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
-| src/pdf_toolbox/renderers/registry.py:262        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/http_office.py:236     | B104, S104                   | checking for blocked addresses, not binding                           | -        |
+| src/pdf_toolbox/renderers/http_office.py:237     | TRY003                       | error messages specific to SSRF validation context                    | -        |
+| src/pdf_toolbox/renderers/http_office.py:244     | TRY003                       | error messages specific to SSRF validation context                    | -        |
+| src/pdf_toolbox/renderers/http_office.py:251     | TRY003                       | error messages specific to SSRF validation context                    | -        |
+| src/pdf_toolbox/renderers/http_office.py:258     | PLR2004                      | RFC1918 private range 172.16-172.31                                   | -        |
+| src/pdf_toolbox/renderers/http_office.py:259     | TRY003                       | error messages specific to SSRF validation context                    | -        |
+| src/pdf_toolbox/renderers/registry.py:145        | BLE001, RUF100               | builtin providers rely on optional platform modules; degrade to debug | -        |
+| src/pdf_toolbox/renderers/registry.py:252        | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
+| src/pdf_toolbox/renderers/registry.py:275        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning    | -        |
+| src/pdf_toolbox/renderers/registry.py:294        | BLE001, RUF100               | plugin modules may be missing or broken; degrade to warning           | -        |
+| src/pdf_toolbox/renderers/registry.py:326        | BLE001, RUF100               | renderer constructors may fail arbitrarily; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/registry.py:367        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/registry.py:385        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
 | tests/gui/conftest_qt.py:208                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:217                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:220                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
@@ -47,6 +54,7 @@
 | tests/gui/test_widgets.py:197                    | N802                         | stub mirrors Qt MIME API                                              | -        |
 | tests/gui/test_widgets.py:207                    | N802                         | stub mirrors Qt event API                                             | -        |
 | tests/gui/test_worker.py:38                      | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
+| tests/test_actions_security.py:183               | TRY003                       | test helper error message                                             | -        |
 | tests/test_gui_import.py:111                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:239                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |
 | tests/test_gui_import.py:244                     | type: ignore[attr-defined]   | stub Qt module for tests                                              | -        |

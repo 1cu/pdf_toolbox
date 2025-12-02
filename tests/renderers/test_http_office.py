@@ -561,11 +561,14 @@ def test_to_images_raises_unsupported(tmp_path):
 
 
 def test_registry_can_handle_depends_on_endpoint(monkeypatch):
-    monkeypatch.setitem(registry._ENTRY_POINT_STATE, "loaded", True)
+    registry._REGISTRY_INSTANCE._entry_points_loaded = True
     monkeypatch.setattr(registry, "_BUILTIN_MODULES", {})
     monkeypatch.setattr(http_office_module, "requests", object())
 
-    monkeypatch.setattr(registry, "_REGISTRY", {})
+    # Reset the registry instance
+    fresh_registry = registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True
+    monkeypatch.setattr(registry, "_REGISTRY_INSTANCE", fresh_registry)
     monkeypatch.setattr(
         http_office_module,
         "load_config",
@@ -575,7 +578,10 @@ def test_registry_can_handle_depends_on_endpoint(monkeypatch):
     renderer = registry.select("http_office")
     assert isinstance(renderer, http_office_module.PptxHttpOfficeRenderer)
 
-    monkeypatch.setattr(registry, "_REGISTRY", {})
+    # Create a fresh registry to test without endpoint config
+    fresh_registry2 = registry.RendererRegistry()
+    fresh_registry2._entry_points_loaded = True
+    monkeypatch.setattr(registry, "_REGISTRY_INSTANCE", fresh_registry2)
     monkeypatch.setattr(http_office_module, "load_config", lambda: {})
     registry.register(http_office_module.PptxHttpOfficeRenderer)
     assert registry.select("http_office") is None

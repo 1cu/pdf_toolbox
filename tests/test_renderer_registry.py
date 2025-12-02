@@ -30,10 +30,11 @@ class _BaseStub(BasePptxRenderer):
 
 
 def _reset_registry(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(registry, "_REGISTRY", {})
-    monkeypatch.setitem(registry._ENTRY_POINT_STATE, "loaded", True)
+    # Create a fresh registry instance for testing
+    fresh_registry = registry.RendererRegistry()
+    fresh_registry._entry_points_loaded = True  # Skip entry point loading in tests
+    monkeypatch.setattr(registry, "_REGISTRY_INSTANCE", fresh_registry)
     monkeypatch.setattr(registry, "_BUILTIN_MODULES", {})
-    monkeypatch.setattr(registry, "_INSTANCE_CACHE", {})
 
 
 def test_register_and_available(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -148,7 +149,7 @@ def test_entry_points_registration_variants(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _reset_registry(monkeypatch)
-    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    registry._REGISTRY_INSTANCE._entry_points_loaded = False
 
     class ClassRenderer(_BaseStub):
         name = "from_class"
@@ -197,7 +198,7 @@ def test_entry_points_registration_variants(
 
 def test_entry_point_discovery_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     _reset_registry(monkeypatch)
-    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    registry._REGISTRY_INSTANCE._entry_points_loaded = False
 
     def boom() -> object:
         raise RuntimeError("boom")
@@ -209,7 +210,7 @@ def test_entry_point_discovery_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_entry_points_legacy_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
     _reset_registry(monkeypatch)
-    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    registry._REGISTRY_INSTANCE._entry_points_loaded = False
 
     class LegacyEntry:
         def __init__(self, name: str, payload: object) -> None:
@@ -230,7 +231,7 @@ def test_entry_points_legacy_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_entry_point_load_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     _reset_registry(monkeypatch)
-    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    registry._REGISTRY_INSTANCE._entry_points_loaded = False
 
     class ExplodingEntry:
         name = "explode"
@@ -250,7 +251,7 @@ def test_entry_point_load_failure(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_entry_point_string_import_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     _reset_registry(monkeypatch)
-    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    registry._REGISTRY_INSTANCE._entry_points_loaded = False
 
     class ImportEntry:
         name = "import"
@@ -289,7 +290,7 @@ def test_available_triggers_builtin_import(monkeypatch: pytest.MonkeyPatch) -> N
         registry.register(BuiltinRenderer)
         return fake_module
 
-    monkeypatch.setattr(registry, "_load_entry_points", lambda: None)
+    monkeypatch.setattr(registry._REGISTRY_INSTANCE, "_load_entry_points", lambda: None)
     monkeypatch.setattr(registry, "_BUILTIN_MODULES", {"builtin": module_name})
     monkeypatch.setattr(registry.importlib, "import_module", fake_import)
 
@@ -301,9 +302,9 @@ def test_available_triggers_builtin_import(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_builtin_import_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     _reset_registry(monkeypatch)
-    monkeypatch.setattr(registry, "_ENTRY_POINT_STATE", {"loaded": False})
+    registry._REGISTRY_INSTANCE._entry_points_loaded = False
     monkeypatch.setattr(registry, "_BUILTIN_MODULES", {"broken": "pkg.broken"})
-    monkeypatch.setattr(registry, "_load_entry_points", lambda: None)
+    monkeypatch.setattr(registry._REGISTRY_INSTANCE, "_load_entry_points", lambda: None)
 
     def boom(_module: str) -> None:
         raise RuntimeError("boom")
@@ -493,7 +494,7 @@ def test_ensure_successful_selection(monkeypatch: pytest.MonkeyPatch) -> None:
         return None
 
     monkeypatch.setattr(registry, "get_pptx_renderer_choice", fake_choice)
-    monkeypatch.setattr(registry, "select", fake_select)
+    monkeypatch.setattr(registry._REGISTRY_INSTANCE, "select", fake_select)
 
     assert registry.ensure() is ready_instance
     assert registry.ensure("ready") is ready_instance

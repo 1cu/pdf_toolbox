@@ -6,13 +6,13 @@ import importlib
 import inspect
 import types
 import typing as t
-from contextlib import suppress
 from dataclasses import MISSING, dataclass, field, fields, is_dataclass
 from functools import cache
 from threading import RLock
 from weakref import WeakKeyDictionary
 
 from pdf_toolbox.i18n import tr
+from pdf_toolbox.utils import logger
 
 
 @dataclass
@@ -336,8 +336,13 @@ ACTION_MODULES = [
 @cache
 def _auto_discover() -> None:
     for name in ACTION_MODULES:
-        with suppress(Exception):
-            _register_module(f"{__name__}.{name}")
+        module_path = f"{__name__}.{name}"
+        try:
+            _register_module(module_path)
+        except (ImportError, AttributeError) as exc:
+            logger.warning("Failed to load action module %s: %s", module_path, exc)
+        except Exception as exc:
+            logger.error("Unexpected error loading action module %s: %s", module_path, exc)
 
 
 def list_actions() -> list[Action]:

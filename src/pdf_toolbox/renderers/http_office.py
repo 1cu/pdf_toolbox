@@ -219,13 +219,49 @@ class PptxHttpOfficeRenderer(BasePptxRenderer):
         endpoint: str,
         mode: Literal["stirling", "gotenberg"],
     ) -> str:
-        """Return a validated endpoint for ``mode``."""
+        """Return a validated endpoint for ``mode``.
+
+        Raises PptxRenderingError if the endpoint targets localhost, private
+        IP ranges, or other potentially unsafe destinations (SSRF protection).
+        """
         parsed = urlparse(endpoint)
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise PptxRenderingError(
                 tr("pptx.http.invalid_endpoint"),
                 code="unavailable",
             )
+
+        # SSRF protection: Block localhost and internal addresses
+        hostname = (parsed.hostname or "").lower()
+        if hostname in {"localhost", "127.0.0.1", "::1", "0.0.0.0"}:  # noqa: S104  # nosec B104  # pdf-toolbox: checking for blocked addresses, not binding | issue:-
+            raise PptxRenderingError(  # noqa: TRY003  # pdf-toolbox: error messages specific to SSRF validation context | issue:-
+                "Endpoint cannot target localhost for security reasons",
+                code="unavailable",
+            )
+
+        # Block link-local addresses (169.254.x.x for IPv4, fe80::/10 for IPv6)
+        if hostname.startswith("169.254.") or hostname.startswith("fe80:"):
+            raise PptxRenderingError(  # noqa: TRY003  # pdf-toolbox: error messages specific to SSRF validation context | issue:-
+                "Endpoint cannot target link-local addresses",
+                code="unavailable",
+            )
+
+        # Block private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+        if hostname.startswith("10.") or hostname.startswith("192.168."):
+            raise PptxRenderingError(  # noqa: TRY003  # pdf-toolbox: error messages specific to SSRF validation context | issue:-
+                "Endpoint cannot target private IP addresses",
+                code="unavailable",
+            )
+        if hostname.startswith("172."):
+            try:
+                second_octet = int(hostname.split(".")[1])
+                if 16 <= second_octet <= 31:  # noqa: PLR2004  # pdf-toolbox: RFC1918 private range 172.16-172.31 | issue:-
+                    raise PptxRenderingError(  # noqa: TRY003  # pdf-toolbox: error messages specific to SSRF validation context | issue:-
+                        "Endpoint cannot target private IP addresses",
+                        code="unavailable",
+                    )
+            except (IndexError, ValueError):
+                pass
 
         if mode == "stirling" and parsed.path in {"", "/"}:
             # Allow users to supply either the full endpoint or the base host.
