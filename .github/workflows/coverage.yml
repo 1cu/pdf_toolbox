@@ -14,10 +14,10 @@ jobs:
     env:
       QT_QPA_PLATFORM: xcb
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3  # pinned: actions/checkout@v5.0.0 (2025-08-11)
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3  # pinned: actions/checkout@v6.0.0 (2025-08-11)
 
       - name: Set up Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c  # pinned: actions/setup-python@v6.0.0 (2025-09-04)
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548  # pinned: actions/setup-python@v6.1.0 (2025-09-04)
         with:
           python-version: '3.13'
 
@@ -52,7 +52,7 @@ jobs:
           coverage-badge -o dist/badges/coverage.svg -f
 
       - name: Upload badge artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # pinned: actions/upload-artifact@v4.6.2 (2025-03-19)
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4  # pinned: actions/upload-artifact@v5.0.0 (2025-03-19)
         with:
           name: coverage-badge
           path: dist/badges/coverage.svg
@@ -67,7 +67,7 @@ jobs:
       contents: write
     steps:
       - name: Download badge
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # pinned: actions/download-artifact@v5.0.0 (2025-08-05)
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53  # pinned: actions/download-artifact@v6.0.0 (2025-08-05)
         with:
           name: coverage-badge
           path: public/badges
