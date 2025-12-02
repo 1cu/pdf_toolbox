@@ -116,6 +116,7 @@ disallow_incomplete_defs = true
 source = ["pdf_toolbox"]
 omit = [
   "src/pdf_toolbox/gui/main_window.py",
+  "src/pdf_toolbox/gui/form_builder.py",
 ]
 
 [tool.coverage.report]

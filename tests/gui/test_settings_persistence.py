@@ -50,8 +50,8 @@ def test_action_settings_are_saved(monkeypatch: pytest.MonkeyPatch, qtbot) -> No
         window.build_form(act)
 
         # quality is LineEdit by default for unknown int params
-        window.current_widgets["quality"].setText("90")
-        window.current_widgets["name"].setText("custom")
+        window.form_builder.current_widgets["quality"].setText("90")
+        window.form_builder.current_widgets["name"].setText("custom")
 
         # Mock worker to avoid actual execution
         monkeypatch.setattr(Worker, "start", lambda _: None)
@@ -86,8 +86,8 @@ def test_paths_are_not_saved(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
         window.current_action = act
         window.build_form(act)
 
-        window.current_widgets["input_pdf"].setText("/tmp/input.pdf")  # noqa: S108  # pdf-toolbox: test fixture path only | issue:-
-        window.current_widgets["output_dir"].setText("/tmp/output")  # noqa: S108  # pdf-toolbox: test fixture path only | issue:-
+        window.form_builder.current_widgets["input_pdf"].setText("/tmp/input.pdf")  # noqa: S108  # pdf-toolbox: test fixture path only | issue:-
+        window.form_builder.current_widgets["output_dir"].setText("/tmp/output")  # noqa: S108  # pdf-toolbox: test fixture path only | issue:-
 
         # Mock worker
         monkeypatch.setattr(Worker, "start", lambda _: None)
@@ -120,8 +120,8 @@ def test_settings_are_restored(monkeypatch: pytest.MonkeyPatch, qtbot) -> None:
         window.current_action = act
         window.build_form(act)
 
-        assert window.current_widgets["quality"].text() == "75"
-        assert window.current_widgets["name"].text() == "restored"
+        assert window.form_builder.current_widgets["quality"].text() == "75"
+        assert window.form_builder.current_widgets["name"].text() == "restored"
 
     finally:
         window.close()
@@ -149,8 +149,8 @@ def test_nested_dataclass_settings_are_saved(monkeypatch: pytest.MonkeyPatch, qt
         window.build_form(act)
 
         # Nested params should be saved with dotted names
-        window.current_widgets["options.quality"].setText("95")
-        window.current_widgets["options.format"].setText("JPEG")
+        window.form_builder.current_widgets["options.quality"].setText("95")
+        window.form_builder.current_widgets["options.format"].setText("JPEG")
 
         monkeypatch.setattr(Worker, "start", lambda _: None)
 
@@ -184,8 +184,8 @@ def test_nested_dataclass_settings_are_restored(monkeypatch: pytest.MonkeyPatch,
         window.build_form(act)
 
         # Should restore from nested keys
-        assert window.current_widgets["options.quality"].text() == "90"
-        assert window.current_widgets["options.format"].text() == "WEBP"
+        assert window.form_builder.current_widgets["options.quality"].text() == "90"
+        assert window.form_builder.current_widgets["options.format"].text() == "WEBP"
 
     finally:
         window.close()

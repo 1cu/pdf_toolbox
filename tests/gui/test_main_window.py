@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from pdf_toolbox import actions, gui
-from pdf_toolbox.gui.main_window import ComboBoxWithSpin
+from pdf_toolbox.gui.form_builder import _CUSTOM_CHOICE_SENTINEL, ComboBoxWithSpin
 from pdf_toolbox.gui.widgets import FileEdit
 
 pytest_plugins = ("tests.gui.conftest_qt",)
@@ -36,7 +36,7 @@ pytestmark = [
 def _expect_widget[TWidget](
     window: gui.MainWindow, key: str, expected_type: type[TWidget]
 ) -> TWidget:
-    widget = window.current_widgets[key]
+    widget = window.form_builder.current_widgets[key]
     assert isinstance(widget, expected_type)
     return cast(TWidget, widget)
 
@@ -119,11 +119,11 @@ def test_build_form_handles_pep604_union(monkeypatch: pytest.MonkeyPatch, qtbot)
     try:
         window.build_form(act)
         window.show()
-        widget = window.current_widgets["dpi"]
+        widget = window.form_builder.current_widgets["dpi"]
         assert isinstance(widget, ComboBoxWithSpin)
         assert widget.combo_box.currentText() == "High"
         assert not widget.spin_box.isVisible()
-        idx = widget.combo_box.findData("__custom__")
+        idx = widget.combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
         widget.combo_box.setCurrentIndex(max(idx, 0))
         QApplication.processEvents()
         assert widget.spin_box.isVisible()
@@ -144,9 +144,9 @@ def test_build_form_union_int_default(monkeypatch: pytest.MonkeyPatch, qtbot) ->
         window.build_form(act)
         window.show()
         QApplication.processEvents()
-        widget = window.current_widgets["dpi"]
+        widget = window.form_builder.current_widgets["dpi"]
         assert isinstance(widget, ComboBoxWithSpin)
-        assert widget.combo_box.currentData() == "__custom__"
+        assert widget.combo_box.currentData() == _CUSTOM_CHOICE_SENTINEL
         assert widget.spin_box.isVisible()
         assert widget.spin_box.value() == 150
     finally:
@@ -181,7 +181,7 @@ def test_build_form_hides_cancel(monkeypatch: pytest.MonkeyPatch, qtbot) -> None
     window = _make_window(qtbot)
     try:
         window.build_form(act)
-        assert "cancel" not in window.current_widgets
+        assert "cancel" not in window.form_builder.current_widgets
     finally:
         window.close()
 
@@ -225,10 +225,10 @@ def test_build_form_resets_form_between_actions(monkeypatch: pytest.MonkeyPatch,
     window = _make_window(qtbot)
     try:
         window.build_form(act_one)
-        assert "path" in window.current_widgets
+        assert "path" in window.form_builder.current_widgets
         window.build_form(act_two)
-        assert "path" not in window.current_widgets
-        assert "name" in window.current_widgets
+        assert "path" not in window.form_builder.current_widgets
+        assert "name" in window.form_builder.current_widgets
     finally:
         window.close()
 
@@ -252,7 +252,7 @@ def test_build_form_unknown_saved_profile_defaults_to_miro(
         item = top_item.child(0)
         assert item is not None
         window.on_item_clicked(item)
-        combo = window.profile_combo
+        combo = window.form_builder.profile_combo
         assert combo is not None
         assert combo.currentData() == "miro"
     finally:
@@ -270,7 +270,7 @@ def test_build_form_union_without_literal(monkeypatch: pytest.MonkeyPatch, qtbot
     window = _make_window(qtbot)
     try:
         window.build_form(act)
-        widget = window.current_widgets["level"]
+        widget = window.form_builder.current_widgets["level"]
         assert isinstance(widget, QSpinBox)
         assert widget.minimum() == 0
     finally:
@@ -289,7 +289,7 @@ def test_build_form_creates_multi_file_field(monkeypatch: pytest.MonkeyPatch, qt
     window = _make_window(qtbot)
     try:
         window.build_form(act)
-        widget = window.current_widgets["paths"]
+        widget = window.form_builder.current_widgets["paths"]
         assert isinstance(widget, mw.FileEdit)
         assert widget.multi is True
     finally:
@@ -314,7 +314,7 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
         item = top_item.child(0)
         assert item is not None
         window.on_item_clicked(item)
-        combo = window.profile_combo
+        combo = window.form_builder.profile_combo
         assert combo is not None
         assert combo.currentData() == "custom"
         for name in (
@@ -322,7 +322,7 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
             "options.dpi",
             "options.quality",
         ):
-            widget = window.field_rows.get(name)
+            widget = window.form_builder.field_rows.get(name)
             assert widget is not None
             assert widget.isVisible()
         assert saved == {}
@@ -334,11 +334,11 @@ def test_miro_profile_toggles_fields(monkeypatch: pytest.MonkeyPatch, qtbot) -> 
             "options.dpi",
             "options.quality",
         ):
-            widget = window.field_rows.get(name)
+            widget = window.form_builder.field_rows.get(name)
             assert widget is not None
             assert not widget.isVisible()
-        assert window.profile_help_label is not None
-        assert window.profile_help_label.isVisible()
+        assert window.form_builder.profile_help_label is not None
+        assert window.form_builder.profile_help_label.isVisible()
         assert window.cfg["last_export_profile"] == "miro"
         assert saved.get("last_export_profile") == "miro"
     finally:
@@ -573,10 +573,10 @@ def test_collect_args_handles_composite_widgets(
     try:
         window.current_action = act
         window.build_form(act)
-        assert "dpi" in window.current_widgets
-        widget = window.current_widgets["dpi"]
+        assert "dpi" in window.form_builder.current_widgets
+        widget = window.form_builder.current_widgets["dpi"]
         assert isinstance(widget, ComboBoxWithSpin)
-        idx = widget.combo_box.findData("__custom__")
+        idx = widget.combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
         widget.combo_box.setCurrentIndex(max(idx, 0))
         widget.spin_box.setValue(300)
         file_one = tmp_path / "a.pdf"
@@ -695,7 +695,7 @@ def test_set_row_visible_toggles_label_visibility(monkeypatch: pytest.MonkeyPatc
     window = _make_window(qtbot)
     try:
         window.build_form(act)
-        widget = window.field_rows["path"]
+        widget = window.form_builder.field_rows["path"]
         label = window.form_layout.labelForField(widget)
         assert label is not None
         window._set_row_visible("path", False)

@@ -5,11 +5,10 @@
 | File                                             | Rule                         | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------- | -------- |
 | src/pdf_toolbox/actions/ocr.py:162               | type: ignore[attr-defined]   | pymupdf stubs lack extract_image                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:111           | PLR0915                      | constructor sets up many widgets                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:562           | TRY004                       | GUI handler expects ValueError                                        | -        |
-| src/pdf_toolbox/gui/main_window.py:808           | PLR0911                      | widget type dispatch requires multiple returns                        | -        |
-| src/pdf_toolbox/gui/main_window.py:848           | BLE001, RUF100               | GUI settings save errors should not block execution                   | -        |
-| src/pdf_toolbox/gui/main_window.py:867           | N802                         | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:103           | PLR0915                      | constructor sets up many widgets                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:470           | PLR0911                      | widget type dispatch requires multiple returns                        | -        |
+| src/pdf_toolbox/gui/main_window.py:514           | BLE001, RUF100               | GUI settings save errors should not block execution                   | -        |
+| src/pdf_toolbox/gui/main_window.py:533           | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:145               | N802                         | QSyntaxHighlighter requires camelCase hook name                       | -        |
 | src/pdf_toolbox/gui/widgets.py:306               | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:311               | N802                         | Qt requires camelCase event name                                      | -        |

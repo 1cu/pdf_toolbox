@@ -5,12 +5,11 @@ from __future__ import annotations
 import html
 import inspect
 import sys
-import types
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from importlib import metadata
 from pathlib import Path
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices
@@ -40,12 +39,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from pdf_toolbox.actions import Action, Param
+from pdf_toolbox.actions import Action
 from pdf_toolbox.config import CONFIG_PATH, load_config, save_config
 from pdf_toolbox.gui.error_formatter import ErrorFormatter
+from pdf_toolbox.gui.form_builder import (
+    _CUSTOM_CHOICE_SENTINEL,
+    ActionFormBuilder,
+    ComboBoxWithSpin,
+)
 from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, LogDisplay, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
-from pdf_toolbox.i18n import label as tr_label
 from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.renderers import registry as pptx_registry
 from pdf_toolbox.renderers.pptx import (
@@ -68,17 +71,6 @@ _PPTX_ERROR_KEY_REFERENCES = (
     tr("pptx_unavailable"),
     tr("pptx_unsupported_option"),
 )
-
-_CUSTOM_CHOICE_SENTINEL = "__custom__"
-
-
-@dataclass
-class ComboBoxWithSpin:
-    """Container for combo box widgets paired with a spin box."""
-
-    combo_box: QComboBox
-    spin_box: QSpinBox
-
 
 type WidgetValue = (
     QLineEdit | QComboBox | QCheckBox | QSpinBox | QDoubleSpinBox | FileEdit | ComboBoxWithSpin
@@ -117,10 +109,6 @@ class MainWindow(QMainWindow):
         lang = self.cfg.get("language", "system")
         set_language(None if lang == "system" else lang)
         self.current_action: Action | None = None
-        self.current_widgets: dict[str, WidgetValue] = {}
-        self.field_rows: dict[str, QWidget] = {}
-        self.profile_help_label: QLabel | None = None
-        self.profile_combo: QComboBox | None = None
         self.profile_sensitive_fields = {
             "options.image_format",
             "options.dpi",
@@ -189,6 +177,7 @@ class MainWindow(QMainWindow):
         self.form_widget = QWidget()
         self.form_layout = QFormLayout(self.form_widget)
         self.form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        self.form_builder = ActionFormBuilder(self.form_layout, self.cfg)
         splitter.addWidget(self.form_widget)
         splitter.setSizes([250, 650])
 
@@ -270,18 +259,12 @@ class MainWindow(QMainWindow):
 
     def build_form(self, action: Action) -> None:
         """Create input widgets for the given action parameters."""
-        self._reset_form_state()
-        profile_initial_value: str | None = None
+        self.banner.setVisible(False)
+        self.form_builder.reset_form()
 
-        for param in self._iter_form_params(action):
-            profile_value = self._handle_profile_param(param)
-            if profile_value is not None:
-                profile_initial_value = profile_value
-                continue
-            widget = self._create_widget_for_param(param)
-            field_widget = self._add_field_to_layout(param, widget)
-            self.current_widgets[param.full_name] = widget
-            self._remember_field(param.full_name, field_widget)
+        profile_initial_value = self.form_builder.build_form(
+            action, on_profile_change=self._apply_profile_ui
+        )
 
         if profile_initial_value:
             self._apply_profile_ui(profile_initial_value, persist=False)
@@ -291,332 +274,11 @@ class MainWindow(QMainWindow):
             provider = self._select_pptx_provider()
         self._update_pptx_banner(provider)
 
-    def _reset_form_state(self) -> None:
-        """Clear previously rendered widgets before rebuilding the form."""
-        while self.form_layout.rowCount():
-            self.form_layout.removeRow(0)
-        self.current_widgets.clear()
-        self.field_rows = {}
-        self.profile_help_label = None
-        self.profile_combo = None
-        self.banner.setVisible(False)
-
-    def _iter_form_params(self, action: Action) -> Iterable[Param]:
-        """Yield form parameters excluding control arguments."""
-        for param in action.form_params:
-            if param.name in {"cancel", "progress_callback"}:
-                continue
-            yield param
-
-    def _handle_profile_param(self, param: Param) -> str | None:
-        """Render the export profile selector if applicable."""
-        if param.name != "export_profile":
-            return None
-        combo_box = QComboBox()
-        combo_box.addItem(tr("gui_export_profile_custom"), userData="custom")
-        combo_box.addItem(tr("gui_export_profile_miro"), userData="miro")
-        saved = self.cfg.get("last_export_profile", "miro")
-        if saved not in {"custom", "miro"}:
-            saved = "miro"
-        index = combo_box.findData(saved)
-        combo_box.setCurrentIndex(max(index, 0))
-        combo_box.currentIndexChanged.connect(
-            lambda _idx, combo=combo_box: self._apply_profile_ui(
-                combo.currentData() or combo.currentText()
-            )
-        )
-        help_label = QLabel(tr("gui_export_profile_miro_help"))
-        help_label.setWordWrap(True)
-        help_label.setVisible(False)
-        self.form_layout.addRow(tr("gui_export_profile_label"), combo_box)
-        self.form_layout.addRow("", help_label)
-        self.current_widgets[param.full_name] = combo_box
-        self.profile_help_label = help_label
-        self.profile_combo = combo_box
-        self._remember_field(param.full_name, combo_box)
-        return combo_box.currentData() or combo_box.currentText()
-
-    def _create_widget_for_param(self, param: Param) -> WidgetValue:
-        """Return the most appropriate widget for ``param``."""
-        for factory in (
-            self._maybe_create_union_widget,
-            self._maybe_create_literal_widget,
-            self._maybe_create_file_widget,
-            self._maybe_create_numeric_widget,
-            self._maybe_create_bool_widget,
-        ):
-            widget = factory(param)
-            if widget is not None:
-                return widget
-        widget = QLineEdit()
-        config_key = param.full_name if param.parent else param.name
-        effective_default = self.cfg.get(config_key, param.default)
-        if effective_default is not inspect._empty and effective_default is not None:
-            widget.setText(str(effective_default))
-        return widget
-
-    def _maybe_create_union_widget(self, param: Param) -> WidgetValue | None:
-        ann = param.annotation
-        union_type = getattr(types, "UnionType", None)
-        if get_origin(ann) not in (Union, union_type) or int not in get_args(ann):
-            return None
-        literal = next(
-            (arg for arg in get_args(ann) if getattr(arg, "__origin__", None) is Literal),
-            None,
-        )
-        if literal is None:
-            spin_box = QSpinBox()
-            spin_box.setMinimum(0)
-            spin_box.setMaximum(10_000)
-            config_key = param.full_name if param.parent else param.name
-            effective_default = self.cfg.get(config_key, param.default)
-            if isinstance(effective_default, int):
-                spin_box.setValue(effective_default)
-            return spin_box
-
-        config_key = param.full_name if param.parent else param.name
-        effective_default = self.cfg.get(config_key, param.default)
-        if effective_default is inspect._empty:
-            effective_default = None
-
-        combo_box = QComboBox()
-        spin_box = QSpinBox()
-        spin_box.setMinimum(0)
-        spin_box.setMaximum(10_000)
-        choices = list(get_args(literal))
-        for choice in choices:
-            combo_box.addItem(str(choice), choice)
-        combo_box.addItem(tr("gui_custom"), _CUSTOM_CHOICE_SENTINEL)
-        if isinstance(effective_default, str) and effective_default in choices:
-            idx = combo_box.findData(effective_default)
-            combo_box.setCurrentIndex(max(idx, 0))
-            spin_box.setVisible(False)
-        elif isinstance(effective_default, int):
-            idx = combo_box.findData(_CUSTOM_CHOICE_SENTINEL)
-            combo_box.setCurrentIndex(max(idx, 0))
-            spin_box.setValue(effective_default)
-            spin_box.setVisible(True)
-        else:
-            spin_box.setVisible(combo_box.currentData() == _CUSTOM_CHOICE_SENTINEL)
-        combo_box.currentIndexChanged.connect(
-            lambda _i, cb=combo_box, sb=spin_box: sb.setVisible(
-                cb.currentData() == _CUSTOM_CHOICE_SENTINEL
-            )
-        )
-        return ComboBoxWithSpin(combo_box=combo_box, spin_box=spin_box)
-
-    def _maybe_create_literal_widget(self, param: Param) -> WidgetValue | None:
-        ann = param.annotation
-        if getattr(ann, "__origin__", None) is not Literal:
-            return None
-        combo_box = QComboBox()
-        choices = list(get_args(ann))
-        combo_box.addItems(choices)
-        config_key = param.full_name if param.parent else param.name
-        effective_default = self.cfg.get(config_key, param.default)
-        if isinstance(effective_default, str) and effective_default in choices:
-            combo_box.setCurrentText(effective_default)
-        return combo_box
-
-    def _maybe_create_file_widget(self, param: Param) -> WidgetValue | None:
-        lower = param.name.lower()
-        if lower in {"input_pdf", "input_pptx", "input_path", "pptx_path", "path"}:
-            return FileEdit(self.cfg)
-        if lower in {"out_dir", "output_dir"}:
-            return FileEdit(self.cfg, directory=True)
-        if lower in {"paths", "files"}:
-            return FileEdit(self.cfg, multi=True)
-        return None
-
-    def _maybe_create_numeric_widget(self, param: Param) -> WidgetValue | None:
-        lower = param.name.lower()
-        if lower == "max_size_mb":
-            double_spin = QDoubleSpinBox()
-            double_spin.setMinimum(0)
-            double_spin.setMaximum(10_000)
-            return double_spin
-        if lower in {"split_pages", "pages_per_file"}:
-            spin_box = QSpinBox()
-            spin_box.setMinimum(1)
-            spin_box.setMaximum(9999)
-            config_key = param.full_name if param.parent else param.name
-            default = self.cfg.get(config_key, param.default)
-            if isinstance(default, int):
-                spin_box.setValue(default)
-            return spin_box
-        return None
-
-    def _maybe_create_bool_widget(self, param: Param) -> WidgetValue | None:
-        config_key = param.full_name if param.parent else param.name
-        effective_default = self.cfg.get(config_key, param.default)
-        if isinstance(effective_default, bool):
-            check_box = QCheckBox()
-            check_box.setChecked(effective_default)
-            return check_box
-        return None
-
-    def _add_field_to_layout(self, param: Param, widget: WidgetValue) -> QWidget:
-        """Insert ``widget`` into the form layout and return the visible QWidget."""
-        if isinstance(widget, ComboBoxWithSpin):
-            container = QWidget()
-            layout = QHBoxLayout(container)
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.addWidget(widget.combo_box)
-            layout.addWidget(widget.spin_box)
-            layout.setStretch(0, 1)
-            self.form_layout.addRow(self._pretty_label(param.name), container)
-            return container
-        if isinstance(widget, FileEdit):
-            container = QWidget()
-            layout = QHBoxLayout(container)
-            layout.setContentsMargins(0, 0, 0, 0)
-            widget.setMinimumWidth(400)
-            layout.addWidget(widget)
-            btn = QPushButton("...")
-            btn.clicked.connect(widget.browse)
-            layout.addWidget(btn)
-            layout.setStretch(0, 1)
-            self.form_layout.addRow(self._pretty_label(param.name), container)
-            return container
-        self.form_layout.addRow(self._pretty_label(param.name), widget)
-        return widget
-
     def collect_args(self) -> dict[str, Any]:
         """Gather user input from the form into keyword arguments."""
         if not self.current_action:
             return {}
-        params = {param.full_name: param for param in self.current_action.form_params}
-        kwargs: dict[str, Any] = {}
-        dataclass_values: dict[str, dict[str, Any]] = {}
-        for full_name, widget in self.current_widgets.items():
-            param = params.get(full_name)
-            optional = self._param_is_optional(param)
-            label_key = param.name if param else full_name.rsplit(".", 1)[-1]
-            target_store, target_key = self._target_store_for(
-                param, full_name, dataclass_values, kwargs
-            )
-            self._assign_widget_value(
-                widget,
-                target_store=target_store,
-                target_key=target_key,
-                optional=optional,
-                label_key=label_key,
-            )
-        for dc_name, dc_type in self.current_action.dataclass_params.items():
-            field_values = dataclass_values.get(dc_name, {})
-            kwargs[dc_name] = dc_type(**field_values)
-        return kwargs
-
-    def _param_is_optional(self, param: Param | None) -> bool:
-        """Return whether *param* may be omitted by the user."""
-        if param is None:
-            return False
-        if param.default is not inspect._empty:
-            return True
-        origin = get_origin(param.annotation)
-        union_type = getattr(types, "UnionType", None)
-        if origin in (Union, union_type):
-            return type(None) in get_args(param.annotation)
-        return False
-
-    def _target_store_for(
-        self,
-        param: Param | None,
-        full_name: str,
-        dataclass_values: dict[str, dict[str, Any]],
-        kwargs: dict[str, Any],
-    ) -> tuple[dict[str, Any], str]:
-        """Return the mapping and key that should receive the widget value."""
-        if param and param.parent:
-            return dataclass_values.setdefault(param.parent, {}), param.name
-        if param:
-            return kwargs, param.name
-        return kwargs, full_name
-
-    def _assign_widget_value(
-        self,
-        widget: WidgetValue,
-        *,
-        target_store: dict[str, Any],
-        target_key: str,
-        optional: bool,
-        label_key: str,
-    ) -> None:
-        """Store the value represented by *widget* in *target_store*."""
-        if isinstance(widget, ComboBoxWithSpin):
-            value = self._value_from_combo_with_spin(widget)
-        elif isinstance(widget, FileEdit):
-            value = self._value_from_file_edit(widget, optional, label_key)
-        elif isinstance(widget, QLineEdit):
-            value = self._value_from_line_edit(widget, optional, label_key)
-        elif isinstance(widget, QComboBox):
-            value = self._value_from_combo_box(widget)
-        elif isinstance(widget, QCheckBox):
-            value = widget.isChecked()
-        elif isinstance(widget, QSpinBox):
-            value = self._value_from_spin_box(widget, optional)
-        elif isinstance(widget, QDoubleSpinBox):
-            value = self._value_from_double_spin(widget, optional)
-        else:
-            msg = f"Unsupported widget type: {type(widget)!r}"
-            raise ValueError(msg)  # noqa: TRY004  # pdf-toolbox: GUI handler expects ValueError | issue:-
-        target_store[target_key] = value
-
-    def _value_from_combo_with_spin(self, widget: ComboBoxWithSpin) -> Any:
-        data = widget.combo_box.currentData()
-        if data == _CUSTOM_CHOICE_SENTINEL:
-            return int(widget.spin_box.value())
-        return data if data is not None else widget.combo_box.currentText()
-
-    def _value_from_file_edit(self, widget: FileEdit, optional: bool, label_key: str) -> Any:
-        text = widget.text().strip()
-        if widget.multi:
-            paths = [file_path for file_path in text.split(";") if file_path]
-            if not paths and not optional:
-                raise self._field_empty_error(label_key)
-            return paths
-        if not text and not optional:
-            raise self._field_empty_error(label_key)
-        return text or None
-
-    def _value_from_line_edit(self, widget: QLineEdit, optional: bool, label_key: str) -> Any:
-        value = widget.text().strip()
-        if not value and not optional:
-            raise self._field_empty_error(label_key)
-        return value or None
-
-    def _value_from_combo_box(self, widget: QComboBox) -> Any:
-        data = widget.currentData()
-        return data if data is not None else widget.currentText()
-
-    def _value_from_spin_box(self, widget: QSpinBox, optional: bool) -> Any:
-        val_int = int(widget.value())
-        return None if optional and val_int == 0 else val_int
-
-    def _value_from_double_spin(self, widget: QDoubleSpinBox, optional: bool) -> Any:
-        val_float = float(widget.value())
-        return None if optional and val_float == 0 else val_float
-
-    def _field_empty_error(self, label_key: str) -> ValueError:
-        """Return a translated error for missing required fields."""
-        return ValueError(tr("field_cannot_be_empty", name=tr_label(label_key)))
-
-    def _pretty_label(self, name: str) -> str:
-        """Return a user-friendly, translated label for a parameter name."""
-        label = tr_label(name)
-        if label == name:  # fallback prettification
-            parts = name.replace("_", " ").split()
-            up = {"pdf", "png", "jpeg", "tiff", "webp"}
-            words: list[str] = []
-            for part in parts:
-                low = part.lower()
-                words.append(low.upper() if low in up else (part.capitalize() if part else part))
-            label = " ".join(words)
-        return tr(label)
-
-    def _remember_field(self, name: str, widget: QWidget) -> None:
-        """Store the widget representing *name* for later visibility tweaks."""
-        self.field_rows[name] = widget
+        return self.form_builder.collect_args(self.current_action)
 
     def _open_pptx_docs(self) -> None:
         """Open the PPTX provider documentation in the default browser."""
@@ -701,7 +363,7 @@ class MainWindow(QMainWindow):
 
     def _set_row_visible(self, name: str, visible: bool) -> None:
         """Show or hide the form row for parameter *name*."""
-        widget = self.field_rows.get(name)
+        widget = self.form_builder.field_rows.get(name)
         if widget is None:
             return
         widget.setVisible(visible)
@@ -714,14 +376,14 @@ class MainWindow(QMainWindow):
         is_miro = profile_value == "miro"
         for field_name in self.profile_sensitive_fields:
             self._set_row_visible(field_name, not is_miro)
-            widget = self.current_widgets.get(field_name)
+            widget = self.form_builder.current_widgets.get(field_name)
             if isinstance(widget, ComboBoxWithSpin):
                 widget.combo_box.setEnabled(not is_miro)
                 widget.spin_box.setEnabled(not is_miro)
             elif isinstance(widget, QWidget):
                 widget.setEnabled(not is_miro)
-        if self.profile_help_label:
-            self.profile_help_label.setVisible(is_miro)
+        if self.form_builder.profile_help_label:
+            self.form_builder.profile_help_label.setVisible(is_miro)
         if persist:
             self.cfg["last_export_profile"] = profile_value
             save_config(self.cfg)
@@ -808,11 +470,15 @@ class MainWindow(QMainWindow):
     def _extract_widget_value(self, widget: WidgetValue) -> object:  # noqa: PLR0911  # pdf-toolbox: widget type dispatch requires multiple returns | issue:-
         """Extract the current value from a widget."""
         if isinstance(widget, ComboBoxWithSpin):
-            return self._value_from_combo_with_spin(widget)
+            data = widget.combo_box.currentData()
+            if data == _CUSTOM_CHOICE_SENTINEL:
+                return int(widget.spin_box.value())
+            return data if data is not None else widget.combo_box.currentText()
         if isinstance(widget, QLineEdit):
             return widget.text().strip() or None
         if isinstance(widget, QComboBox):
-            return self._value_from_combo_box(widget)
+            data = widget.currentData()
+            return data if data is not None else widget.currentText()
         if isinstance(widget, QCheckBox):
             return widget.isChecked()
         if isinstance(widget, QSpinBox):
@@ -829,7 +495,7 @@ class MainWindow(QMainWindow):
         # Build map of full_name -> param
         param_map = {p.full_name: p for p in self.current_action.form_params}
 
-        for full_name, widget in self.current_widgets.items():
+        for full_name, widget in self.form_builder.current_widgets.items():
             if isinstance(widget, FileEdit):
                 continue
 
