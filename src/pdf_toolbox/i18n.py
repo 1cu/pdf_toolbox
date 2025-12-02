@@ -73,7 +73,7 @@ def autodetect() -> str:
         lang = (locale.getlocale(_LC_MESSAGES)[0] or "").lower()
     if not lang:
         with suppress(Exception):
-            lang = (locale.getdefaultlocale()[0] or "").lower()
+            lang = (locale.getlocale()[0] or "").lower()
     if isinstance(lang, str) and lang.startswith("de"):
         return "de"
     return "en"
