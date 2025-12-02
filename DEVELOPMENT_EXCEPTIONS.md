@@ -5,11 +5,11 @@
 | File                                             | Rule                         | Reason                                                                | Issue/PR |
 | ------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------- | -------- |
 | src/pdf_toolbox/actions/ocr.py:162               | type: ignore[attr-defined]   | pymupdf stubs lack extract_image                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:125           | PLR0915                      | constructor sets up many widgets                                      | -        |
-| src/pdf_toolbox/gui/main_window.py:576           | TRY004                       | GUI handler expects ValueError                                        | -        |
-| src/pdf_toolbox/gui/main_window.py:822           | PLR0911                      | widget type dispatch requires multiple returns                        | -        |
-| src/pdf_toolbox/gui/main_window.py:862           | BLE001, RUF100               | GUI settings save errors should not block execution                   | -        |
-| src/pdf_toolbox/gui/main_window.py:910           | N802                         | Qt requires camelCase event name                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:111           | PLR0915                      | constructor sets up many widgets                                      | -        |
+| src/pdf_toolbox/gui/main_window.py:562           | TRY004                       | GUI handler expects ValueError                                        | -        |
+| src/pdf_toolbox/gui/main_window.py:808           | PLR0911                      | widget type dispatch requires multiple returns                        | -        |
+| src/pdf_toolbox/gui/main_window.py:848           | BLE001, RUF100               | GUI settings save errors should not block execution                   | -        |
+| src/pdf_toolbox/gui/main_window.py:867           | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:145               | N802                         | QSyntaxHighlighter requires camelCase hook name                       | -        |
 | src/pdf_toolbox/gui/widgets.py:306               | N802                         | Qt requires camelCase event name                                      | -        |
 | src/pdf_toolbox/gui/widgets.py:311               | N802                         | Qt requires camelCase event name                                      | -        |
@@ -43,7 +43,7 @@
 | tests/gui/test_main_window.py:649                | type: ignore[assignment]     | stub worker lacks QObject base class                                  | -        |
 | tests/gui/test_main_window.py:727                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
 | tests/gui/test_main_window.py:731                | type: ignore[override]       | stub implements abstract renderer for tests                           | -        |
-| tests/gui/test_main_window.py:1215               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
+| tests/gui/test_main_window.py:1216               | type: ignore[no-untyped-def] | Worker injects Event parameter dynamically                            | -        |
 | tests/gui/test_settings_persistence.py:89        | S108                         | test fixture path only                                                | -        |
 | tests/gui/test_settings_persistence.py:90        | S108                         | test fixture path only                                                | -        |
 | tests/gui/test_widgets.py:127                    | N802                         | stub mirrors Qt URL API                                               | -        |

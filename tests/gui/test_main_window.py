@@ -1180,13 +1180,14 @@ def test_on_about_displays_version(
 
 def test_format_exception_message_deduplicates_details(qtbot) -> None:
     """Renderer errors include detail without duplication."""
+    from pdf_toolbox.gui.error_formatter import ErrorFormatter
     from pdf_toolbox.i18n import tr
     from pdf_toolbox.renderers.pptx import PptxRenderingError
 
     window = _make_window(qtbot)
     try:
         err = PptxRenderingError("Extra info", code="invalid_range", detail="Detail")
-        message = window._format_exception_message(err)
+        message = ErrorFormatter.format(err)
         lines = message.splitlines()
         assert lines[0] == tr("pptx_invalid_range")
         assert "Detail" in lines[1]

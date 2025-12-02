@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
 
 from pdf_toolbox.actions import Action, Param
 from pdf_toolbox.config import CONFIG_PATH, load_config, save_config
+from pdf_toolbox.gui.error_formatter import ErrorFormatter
 from pdf_toolbox.gui.widgets import ClickableLabel, FileEdit, LogDisplay, QtLogHandler
 from pdf_toolbox.gui.worker import Worker
 from pdf_toolbox.i18n import label as tr_label
@@ -49,24 +50,9 @@ from pdf_toolbox.i18n import set_language, tr
 from pdf_toolbox.renderers import registry as pptx_registry
 from pdf_toolbox.renderers.pptx import (
     PPTX_PROVIDER_DOCS_URL,
-    PptxProviderUnavailableError,
-    PptxRenderingError,
 )
 from pdf_toolbox.renderers.pptx_base import BasePptxRenderer
 from pdf_toolbox.utils import _load_author_info, configure_logging, logger
-
-_PPTX_ERROR_KEYS_BY_CODE = {
-    "backend_crashed": "pptx_backend_crashed",
-    "conflicting_options": "pptx_conflicting_options",
-    "corrupt": "pptx_corrupt",
-    "empty_selection": "pptx_empty_selection",
-    "invalid_range": "pptx_invalid_range",
-    "permission_denied": "pptx_permission_denied",
-    "resource_limits_exceeded": "pptx_resource_limits",
-    "timeout": "pptx_timeout",
-    "unavailable": "pptx_unavailable",
-    "unsupported_option": "pptx_unsupported_option",
-}
 
 # Ensure locale integrity checks discover dynamically referenced keys.
 _PPTX_ERROR_KEY_REFERENCES = (
@@ -867,7 +853,7 @@ class MainWindow(QMainWindow):
     def on_error(self, error: object) -> None:
         """Handle errors emitted by the worker thread."""
         self._set_output_targets(())
-        message = self._format_error_message(error)
+        message = ErrorFormatter.format(error)
         self.log.setVisible(True)
         source = self.current_action.name if self.current_action else ""
         self.log.add_entry(message, level="ERROR", source=source)
@@ -877,35 +863,6 @@ class MainWindow(QMainWindow):
         self.update_status(tr("error"), "error")
         self.resize(self.width(), self.base_height + self.log.height())
         self.worker = None
-
-    def _format_error_message(self, error: object) -> str:
-        """Return a translated, user-friendly message for *error*."""
-        if isinstance(error, BaseException):
-            return self._format_exception_message(error)
-        return str(error)
-
-    def _format_exception_message(self, error: BaseException) -> str:
-        """Translate PPTX errors while preserving diagnostic detail."""
-        if isinstance(error, PptxProviderUnavailableError):
-            return tr("pptx.no_provider")
-        if isinstance(error, PptxRenderingError):
-            code = (error.code or "").lower()
-            key = _PPTX_ERROR_KEYS_BY_CODE.get(code, "pptx_error_unknown")
-            base = tr(key)
-            extras: list[str] = []
-            if error.detail:
-                extras.append(str(error.detail))
-            raw = str(error)
-            if raw and raw.lower() != code and raw != base:
-                extras.append(raw)
-            filtered: list[str] = []
-            for item in extras:
-                if item and item not in filtered:
-                    filtered.append(item)
-            if filtered:
-                return base + "\n" + "\n".join(filtered)
-            return base
-        return str(error)
 
     def closeEvent(  # noqa: N802  # pdf-toolbox: Qt requires camelCase event name | issue:-
         self, event: QCloseEvent
