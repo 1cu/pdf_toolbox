@@ -25,13 +25,13 @@
 | src/pdf_toolbox/renderers/http_office.py:251     | TRY003                       | error messages specific to SSRF validation context                    | -        |
 | src/pdf_toolbox/renderers/http_office.py:258     | PLR2004                      | RFC1918 private range 172.16-172.31                                   | -        |
 | src/pdf_toolbox/renderers/http_office.py:259     | TRY003                       | error messages specific to SSRF validation context                    | -        |
-| src/pdf_toolbox/renderers/registry.py:145        | BLE001, RUF100               | builtin providers rely on optional platform modules; degrade to debug | -        |
-| src/pdf_toolbox/renderers/registry.py:252        | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
-| src/pdf_toolbox/renderers/registry.py:275        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning    | -        |
-| src/pdf_toolbox/renderers/registry.py:294        | BLE001, RUF100               | plugin modules may be missing or broken; degrade to warning           | -        |
-| src/pdf_toolbox/renderers/registry.py:326        | BLE001, RUF100               | renderer constructors may fail arbitrarily; treat as unavailable      | -        |
-| src/pdf_toolbox/renderers/registry.py:367        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
-| src/pdf_toolbox/renderers/registry.py:385        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/registry.py:155        | BLE001, RUF100               | builtin providers rely on optional platform modules; degrade to debug | -        |
+| src/pdf_toolbox/renderers/registry.py:305        | BLE001, RUF100               | renderer constructors may fail arbitrarily; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/registry.py:346        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/registry.py:379        | BLE001, RUF100               | plugin can_handle implementations may fail; treat as unavailable      | -        |
+| src/pdf_toolbox/renderers/registry.py:392        | BLE001, RUF100               | metadata backends can raise arbitrary errors; degrade to no plugins   | -        |
+| src/pdf_toolbox/renderers/registry.py:415        | BLE001, RUF100               | plugin entry point import may fail arbitrarily; degrade to warning    | -        |
+| src/pdf_toolbox/renderers/registry.py:434        | BLE001, RUF100               | plugin modules may be missing or broken; degrade to warning           | -        |
 | tests/gui/conftest_qt.py:208                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:217                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
 | tests/gui/conftest_qt.py:220                     | type: ignore[override]       | stub preserves Qt camelCase API                                       | -        |
